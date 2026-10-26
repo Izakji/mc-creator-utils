@@ -1,13 +1,7 @@
 {
-  "itemGroup.mccreatorutils": "Example Mod Tab",
-  "block.mccreatorutils.example_block": "Example Block",
-  "item.mccreatorutils.example_item": "Example Item",
-
-  "mccreatorutils.configuration.title": "mc-creator-utils Configs",
-  "mccreatorutils.configuration.section.mccreatorutils.common.toml": "mc-creator-utils Configs",
-  "mccreatorutils.configuration.section.mccreatorutils.common.toml.title": "mc-creator-utils Configs",
-  "mccreatorutils.configuration.items": "Item List",
-  "mccreatorutils.configuration.logDirtBlock": "Log Dirt Block",
-  "mccreatorutils.configuration.magicNumberIntroduction": "Magic Number Text",
-  "mccreatorutils.configuration.magicNumber": "Magic Number"
+  "key.categories.mccreatorutils": "Creator Utils",
+  "key.mccreatorutils.open_gui": "Open Creator Utils",
+  "screen.mccreatorutils.creator_tools": "Creator Utils",
+  "tool.mccreatorutils.camera": "Camera",
+  "tool.mccreatorutils.camera.placeholder": "Camera controls are being prepared."
 }
