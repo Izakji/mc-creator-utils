@@ -46,7 +46,7 @@ authors="Izakji"
 
 # The description text for the mod (multi line!) (#mandatory)
 description='''
-A Minecraft mod that adds various tools and utilities for creators.
+${description}
 '''
 
 # The [[mixins]] block allows you to declare your mixin config to FML so that it gets loaded.
@@ -85,6 +85,20 @@ A Minecraft mod that adds various tools and utilities for creators.
     versionRange="${minecraft_version_range}"
     ordering="NONE"
     side="BOTH"
+
+[[dependencies.${mod_id}]]
+    modId="ldlib2"
+    type="required"
+    versionRange="[${ldlib2_version},)"
+    ordering="NONE"
+    side="CLIENT"
+
+[[dependencies.${mod_id}]]
+    modId="cmdcam"
+    type="optional"
+    versionRange="[2.0.0,)"
+    ordering="NONE"
+    side="CLIENT"
 
 # Features are specific properties of the game environment, that you may want to declare you require. This example declares
 # that your mod requires GL version 3.2 or higher. Other features will be added. They are side aware so declaring this won't
