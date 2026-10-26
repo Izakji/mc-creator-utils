@@ -55,8 +55,7 @@ public final class CreatorToolsUi {
 
         var toolList = new ScrollerView();
         toolList.layout(layout -> layout.widthPercent(100).flex(1));
-        toolList.scrollerStyle(style -> style
-                .mode(ScrollerMode.VERTICAL)
+        toolList.scrollerStyle(style -> style.mode(ScrollerMode.VERTICAL)
                 .verticalScrollDisplay(ScrollDisplay.AUTO)
                 .horizontalScrollDisplay(ScrollDisplay.NEVER));
 

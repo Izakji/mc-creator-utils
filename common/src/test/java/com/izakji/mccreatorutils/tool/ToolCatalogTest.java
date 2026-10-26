@@ -9,9 +9,11 @@ class ToolCatalogTest {
 
     @Test
     void catalogContainsCameraExactlyOnce() {
-        assertEquals(1, ToolCatalog.tools().stream()
-                .filter(tool -> tool.id() == ToolId.CAMERA)
-                .count());
+        assertEquals(
+                1,
+                ToolCatalog.tools().stream()
+                        .filter(tool -> tool.id() == ToolId.CAMERA)
+                        .count());
     }
 
     @Test

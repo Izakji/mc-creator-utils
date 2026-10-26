@@ -34,7 +34,8 @@ public final class CameraToolPanel extends UIElement {
                 .gapAll(5));
 
         var controls = new UIElement();
-        controls.layout(layout -> layout.widthPercent(100).flexDirection(FlexDirection.COLUMN).gapAll(5));
+        controls.layout(layout ->
+                layout.widthPercent(100).flexDirection(FlexDirection.COLUMN).gapAll(5));
         addChild(controls);
 
         var description = new Label();
@@ -58,20 +59,21 @@ public final class CameraToolPanel extends UIElement {
 
     private UIElement buildModeSection() {
         var section = new UIElement();
-        section.layout(layout -> layout.widthPercent(100).flexDirection(FlexDirection.COLUMN).gapAll(2));
+        section.layout(layout ->
+                layout.widthPercent(100).flexDirection(FlexDirection.COLUMN).gapAll(2));
 
         var label = new Label();
         label.setText(Component.translatable("tool.mccreatorutils.camera.mode"));
         section.addChild(label);
 
         var row = new UIElement();
-        row.layout(layout -> layout.widthPercent(100).flexDirection(FlexDirection.ROW).gapAll(4));
+        row.layout(layout ->
+                layout.widthPercent(100).flexDirection(FlexDirection.ROW).gapAll(4));
 
         var modeSelector = new Selector<CamMode>();
         modeSelector.setCandidates(List.of(CamMode.values()));
-        modeSelector.setCandidateUIProvider(UIElementProvider.text(mode -> Component.translatable(mode == null
-                ? "tool.mccreatorutils.camera.mode.select"
-                : mode.translationKey())));
+        modeSelector.setCandidateUIProvider(UIElementProvider.text(mode -> Component.translatable(
+                mode == null ? "tool.mccreatorutils.camera.mode.select" : mode.translationKey())));
         modeSelector.layout(layout -> layout.flex(1).height(14));
 
         var runButton = new Button();
@@ -93,14 +95,16 @@ public final class CameraToolPanel extends UIElement {
 
     private UIElement buildDurationSection() {
         var section = new UIElement();
-        section.layout(layout -> layout.widthPercent(100).flexDirection(FlexDirection.COLUMN).gapAll(2));
+        section.layout(layout ->
+                layout.widthPercent(100).flexDirection(FlexDirection.COLUMN).gapAll(2));
 
         var label = new Label();
         label.setText(Component.translatable("tool.mccreatorutils.camera.duration"));
         section.addChild(label);
 
         var row = new UIElement();
-        row.layout(layout -> layout.widthPercent(100).flexDirection(FlexDirection.ROW).gapAll(4));
+        row.layout(layout ->
+                layout.widthPercent(100).flexDirection(FlexDirection.ROW).gapAll(4));
 
         var durationField = new TextField();
         durationField.setCharValidator(DurationInput::isAllowedCharacter);
@@ -123,7 +127,8 @@ public final class CameraToolPanel extends UIElement {
 
         Runnable updateRunState = () -> {
             DurationUnit unit = unitSelector.getValue();
-            runButton.setActive(unit != null && DurationInput.parse(durationField.getRawText()).isPresent());
+            runButton.setActive(unit != null
+                    && DurationInput.parse(durationField.getRawText()).isPresent());
         };
         durationField.addEventListener(UIEvents.TICK, event -> updateRunState.run());
         unitSelector.setOnValueChanged(unit -> updateRunState.run());
@@ -144,7 +149,7 @@ public final class CameraToolPanel extends UIElement {
     private void runCommand(String command) {
         ClientCommandRunner.CommandResult result = ClientCommandRunner.execute(command);
         status.setText(result.message());
-        status.textStyle(style -> style.textColor(
-                result.success() ? ColorPattern.GREEN.color : ColorPattern.RED.color));
+        status.textStyle(
+                style -> style.textColor(result.success() ? ColorPattern.GREEN.color : ColorPattern.RED.color));
     }
 }

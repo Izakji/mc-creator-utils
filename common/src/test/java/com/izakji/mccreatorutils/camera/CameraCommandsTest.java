@@ -29,9 +29,7 @@ class CameraCommandsTest {
 
     @Test
     void rejectsDurationOutsideRange() {
-        assertThrows(IllegalArgumentException.class,
-                () -> CameraCommands.duration(0, DurationUnit.SECONDS));
-        assertThrows(IllegalArgumentException.class,
-                () -> CameraCommands.duration(1000, DurationUnit.SECONDS));
+        assertThrows(IllegalArgumentException.class, () -> CameraCommands.duration(0, DurationUnit.SECONDS));
+        assertThrows(IllegalArgumentException.class, () -> CameraCommands.duration(1000, DurationUnit.SECONDS));
     }
 }
