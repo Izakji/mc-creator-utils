@@ -106,7 +106,7 @@ public final class CreatorToolsUi {
         heading.setText(Component.translatable(tool.translationKey()));
         content.clearAllChildren();
         if (tool.id() == ToolId.CAMERA) {
-            content.addChild(new Label().setText(Component.translatable("tool.mccreatorutils.camera.placeholder")));
+            content.addChild(new CameraToolPanel());
         }
     }
 }
