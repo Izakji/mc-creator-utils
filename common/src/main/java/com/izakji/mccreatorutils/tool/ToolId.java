@@ -9,7 +9,11 @@ import java.util.Objects;
  */
 public enum ToolId {
     CAMERA("camera"),
-    WORLD_TIME("world_time");
+    WORLD_TIME("world_time"),
+    BIOMES("biomes"),
+    STRUCTURES("structures"),
+    ITEMS("items"),
+    MOBS("mobs");
 
     private final String id;
 

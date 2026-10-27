@@ -11,6 +11,7 @@ import com.izakji.mccreatorutils.camera.CamMode;
 import com.izakji.mccreatorutils.camera.DurationUnit;
 import com.izakji.mccreatorutils.time.TimePreset;
 import com.izakji.mccreatorutils.weather.WeatherUnit;
+import net.minecraft.resources.ResourceLocation;
 import org.junit.jupiter.api.Test;
 
 class CreatorToolSessionTest {
@@ -79,5 +80,41 @@ class CreatorToolSessionTest {
     @Test
     void singletonIsStable() {
         assertSame(CreatorToolSession.instance(), CreatorToolSession.instance());
+    }
+
+    @Test
+    void registryDefaultsAreEmpty() {
+        var session = new CreatorToolSession();
+        assertNull(session.biomeSelection());
+        assertNull(session.structureSelection());
+        assertNull(session.itemSelection());
+        assertNull(session.mobSelection());
+        assertEquals("1", session.itemCountRaw());
+    }
+
+    @Test
+    void storesRegistrySelections() {
+        var session = new CreatorToolSession();
+        var id = ResourceLocation.parse("minecraft:plains");
+        session.setBiomeSelection(id);
+        session.setStructureSelection(id);
+        session.setItemSelection(id);
+        session.setMobSelection(id);
+        session.setItemCountRaw("64");
+        assertEquals(id, session.biomeSelection());
+        assertEquals(id, session.structureSelection());
+        assertEquals(id, session.itemSelection());
+        assertEquals(id, session.mobSelection());
+        assertEquals("64", session.itemCountRaw());
+    }
+
+    @Test
+    void nullRegistryValuesNormalize() {
+        var session = new CreatorToolSession();
+        session.setBiomeSelection(ResourceLocation.parse("minecraft:plains"));
+        session.setBiomeSelection(null);
+        session.setItemCountRaw(null);
+        assertNull(session.biomeSelection());
+        assertEquals("1", session.itemCountRaw());
     }
 }

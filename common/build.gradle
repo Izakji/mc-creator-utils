@@ -41,3 +41,13 @@ dependencies {
 test {
     useJUnitPlatform()
 }
+
+// ModDevGradle adds the NeoForm Minecraft artifact to the main source set, but not to the
+// test source set. Common tests exercise loader-neutral Minecraft types such as ResourceLocation
+// and Component, so share the resolved main classpath with tests.
+sourceSets {
+    test {
+        compileClasspath += sourceSets.main.compileClasspath
+        runtimeClasspath += sourceSets.main.runtimeClasspath
+    }
+}

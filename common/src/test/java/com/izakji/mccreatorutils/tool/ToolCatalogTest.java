@@ -30,7 +30,13 @@ class ToolCatalogTest {
     @Test
     void catalogPreservesDeclarationOrder() {
         assertEquals(
-                List.of(ToolId.CAMERA, ToolId.WORLD_TIME),
+                List.of(
+                        ToolId.CAMERA,
+                        ToolId.WORLD_TIME,
+                        ToolId.BIOMES,
+                        ToolId.STRUCTURES,
+                        ToolId.ITEMS,
+                        ToolId.MOBS),
                 ToolCatalog.tools().stream().map(ToolDescriptor::id).toList());
     }
 
@@ -41,6 +47,14 @@ class ToolCatalogTest {
         assertEquals("world_time", worldTime.id().id());
         assertEquals("tool.mccreatorutils.world_time", worldTime.translationKey());
         assertFalse(worldTime.hasRequiredMod());
+    }
+
+    @Test
+    void registryToolsRequireNoMod() {
+        for (ToolDescriptor tool : List.of(
+                ToolCatalog.BIOMES, ToolCatalog.STRUCTURES, ToolCatalog.ITEMS, ToolCatalog.MOBS)) {
+            assertFalse(tool.hasRequiredMod());
+        }
     }
 
     @Test

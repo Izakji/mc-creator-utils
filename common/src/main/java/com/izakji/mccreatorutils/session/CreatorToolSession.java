@@ -5,6 +5,7 @@ import com.izakji.mccreatorutils.camera.DurationUnit;
 import com.izakji.mccreatorutils.time.TimePreset;
 import com.izakji.mccreatorutils.weather.WeatherUnit;
 import java.util.Objects;
+import net.minecraft.resources.ResourceLocation;
 
 /**
  * Holds the creator-tool control values for the current client session.
@@ -25,6 +26,11 @@ public final class CreatorToolSession {
     private WeatherUnit thunderUnit = WeatherUnit.SECONDS;
     private String thunderDurationRaw = "";
     private boolean freezeTime;
+    private ResourceLocation biomeSelection;
+    private ResourceLocation structureSelection;
+    private ResourceLocation itemSelection;
+    private String itemCountRaw = "1";
+    private ResourceLocation mobSelection;
 
     public CreatorToolSession() {}
 
@@ -94,5 +100,45 @@ public final class CreatorToolSession {
 
     public void setFreezeTime(boolean freezeTime) {
         this.freezeTime = freezeTime;
+    }
+
+    public ResourceLocation biomeSelection() {
+        return biomeSelection;
+    }
+
+    public void setBiomeSelection(ResourceLocation biomeSelection) {
+        this.biomeSelection = biomeSelection;
+    }
+
+    public ResourceLocation structureSelection() {
+        return structureSelection;
+    }
+
+    public void setStructureSelection(ResourceLocation structureSelection) {
+        this.structureSelection = structureSelection;
+    }
+
+    public ResourceLocation itemSelection() {
+        return itemSelection;
+    }
+
+    public void setItemSelection(ResourceLocation itemSelection) {
+        this.itemSelection = itemSelection;
+    }
+
+    public String itemCountRaw() {
+        return itemCountRaw;
+    }
+
+    public void setItemCountRaw(String itemCountRaw) {
+        this.itemCountRaw = itemCountRaw == null ? "1" : itemCountRaw;
+    }
+
+    public ResourceLocation mobSelection() {
+        return mobSelection;
+    }
+
+    public void setMobSelection(ResourceLocation mobSelection) {
+        this.mobSelection = mobSelection;
     }
 }
