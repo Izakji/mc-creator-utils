@@ -1,6 +1,7 @@
 package com.izakji.mccreatorutils.client;
 
 import com.lowdragmc.lowdraglib2.gui.holder.ModularUIScreen;
+import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.network.chat.Component;
 
 /**
@@ -11,5 +12,14 @@ import net.minecraft.network.chat.Component;
 public final class CreatorToolsScreen extends ModularUIScreen {
     public CreatorToolsScreen() {
         super(CreatorToolsUi.create(), Component.translatable("screen.mccreatorutils.creator_tools"));
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (McCreatorUtilsClient.OPEN_GUI.isActiveAndMatches(InputConstants.getKey(keyCode, scanCode))) {
+            onClose();
+            return true;
+        }
+        return super.keyPressed(keyCode, scanCode, modifiers);
     }
 }

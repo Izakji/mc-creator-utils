@@ -14,9 +14,11 @@ import com.lowdragmc.lowdraglib2.gui.ui.elements.Label;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.ScrollerView;
 import com.lowdragmc.lowdraglib2.gui.ui.styletemplate.Sprites;
 import com.lowdragmc.lowdraglib2.math.Size;
+import dev.vfyjxf.taffy.style.AlignItems;
 import dev.vfyjxf.taffy.style.FlexDirection;
 import java.util.EnumMap;
 import java.util.Map;
+import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 
 /**
@@ -78,12 +80,26 @@ public final class CreatorToolsUi {
                         .gapAll(4))
                 .style(style -> style.background(Sprites.RECT_DARK));
 
-        heading.layout(layout -> layout.widthPercent(100).height(12));
+        var headerRow = new UIElement();
+        headerRow.layout(layout -> layout.widthPercent(100)
+                .height(16)
+                .flexDirection(FlexDirection.ROW)
+                .alignItems(AlignItems.CENTER)
+                .gapAll(4));
+
+        heading.layout(layout -> layout.flex(1).height(12));
+        var closeButton = new Button();
+        closeButton.setText("X");
+        closeButton.layout(layout -> layout.width(16).height(16));
+        closeButton.style(style -> style.tooltips(Component.translatable("tooltip.mccreatorutils.close")));
+        closeButton.setOnClick(event -> Minecraft.getInstance().setScreen(null));
+        headerRow.addChildren(heading, closeButton);
+
         var divider = new UIElement()
                 .layout(layout -> layout.widthPercent(100).height(1))
                 .style(style -> style.background(ColorPattern.DARK_GRAY.rectTexture()));
         content.layout(layout -> layout.widthPercent(100).flex(1));
-        rightPane.addChildren(heading, divider, content);
+        rightPane.addChildren(headerRow, divider, content);
 
         root.addChildren(leftPane, rightPane);
 
@@ -106,6 +122,8 @@ public final class CreatorToolsUi {
         content.clearAllChildren();
         if (tool.id() == ToolId.CAMERA) {
             content.addChild(new CameraToolPanel());
+        } else if (tool.id() == ToolId.WORLD_TIME) {
+            content.addChild(new WorldTimeToolPanel());
         }
     }
 }

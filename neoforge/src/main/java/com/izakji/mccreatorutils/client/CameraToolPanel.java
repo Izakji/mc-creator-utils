@@ -4,6 +4,7 @@ import com.izakji.mccreatorutils.camera.CamMode;
 import com.izakji.mccreatorutils.camera.CameraCommands;
 import com.izakji.mccreatorutils.camera.DurationInput;
 import com.izakji.mccreatorutils.camera.DurationUnit;
+import com.izakji.mccreatorutils.session.CreatorToolSession;
 import com.izakji.mccreatorutils.tool.ToolCatalog;
 import com.lowdragmc.lowdraglib2.gui.ColorPattern;
 import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
@@ -24,7 +25,8 @@ import net.neoforged.fml.ModList;
  * @author Izakji
  */
 public final class CameraToolPanel extends UIElement {
-    private final Label status = new Label();
+    private final CreatorToolSession session = CreatorToolSession.instance();
+    private final CommandStatusLabel status = new CommandStatusLabel();
 
     public CameraToolPanel() {
         super();
@@ -75,16 +77,20 @@ public final class CameraToolPanel extends UIElement {
         modeSelector.setCandidateUIProvider(UIElementProvider.text(mode -> Component.translatable(
                 mode == null ? "tool.mccreatorutils.camera.mode.select" : mode.translationKey())));
         modeSelector.layout(layout -> layout.flex(1).height(14));
+        modeSelector.setSelected(session.cameraMode());
 
         var runButton = new Button();
         runButton.setText(Component.translatable("tool.mccreatorutils.camera.set_mode"));
         runButton.layout(layout -> layout.width(72).height(16));
-        runButton.setActive(false);
-        modeSelector.setOnValueChanged(mode -> runButton.setActive(mode != null));
+        runButton.setActive(modeSelector.getValue() != null);
+        modeSelector.setOnValueChanged(mode -> {
+            session.setCameraMode(mode);
+            runButton.setActive(mode != null);
+        });
         runButton.setOnClick(event -> {
             CamMode mode = modeSelector.getValue();
             if (mode != null) {
-                runCommand(CameraCommands.mode(mode));
+                status.runCommand(CameraCommands.mode(mode));
             }
         });
 
@@ -112,13 +118,14 @@ public final class CameraToolPanel extends UIElement {
         durationField.textFieldStyle(
                 style -> style.placeholder(Component.translatable("tool.mccreatorutils.camera.duration.placeholder")));
         durationField.layout(layout -> layout.flex(1).height(14));
+        durationField.setText(session.cameraDurationRaw());
 
         var unitSelector = new Selector<DurationUnit>();
         unitSelector.setCandidates(List.of(DurationUnit.values()));
         unitSelector.setCandidateUIProvider(UIElementProvider.text(
                 unit -> unit == null ? Component.empty() : Component.translatable(unit.translationKey())));
         unitSelector.layout(layout -> layout.width(58).height(14));
-        unitSelector.setSelected(DurationUnit.SECONDS);
+        unitSelector.setSelected(session.cameraDurationUnit());
 
         var runButton = new Button();
         runButton.setText(Component.translatable("tool.mccreatorutils.camera.set_duration"));
@@ -130,26 +137,29 @@ public final class CameraToolPanel extends UIElement {
             runButton.setActive(unit != null
                     && DurationInput.parse(durationField.getRawText()).isPresent());
         };
-        durationField.addEventListener(UIEvents.TICK, event -> updateRunState.run());
-        unitSelector.setOnValueChanged(unit -> updateRunState.run());
+        durationField.addEventListener(UIEvents.TICK, event -> {
+            session.setCameraDurationRaw(durationField.getRawText());
+            updateRunState.run();
+        });
+        unitSelector.setOnValueChanged(unit -> {
+            if (unit != null) {
+                session.setCameraDurationUnit(unit);
+            }
+            updateRunState.run();
+        });
         runButton.setOnClick(event -> {
+            session.setCameraDurationRaw(durationField.getRawText());
             DurationUnit unit = unitSelector.getValue();
             DurationInput.parse(durationField.getRawText()).ifPresent(value -> {
                 if (unit != null) {
-                    runCommand(CameraCommands.duration(value, unit));
+                    status.runCommand(CameraCommands.duration(value, unit));
                 }
             });
         });
+        updateRunState.run();
 
         row.addChildren(durationField, unitSelector);
         section.addChildren(row, runButton);
         return section;
-    }
-
-    private void runCommand(String command) {
-        ClientCommandRunner.CommandResult result = ClientCommandRunner.execute(command);
-        status.setText(result.message());
-        status.textStyle(
-                style -> style.textColor(result.success() ? ColorPattern.GREEN.color : ColorPattern.RED.color));
     }
 }
