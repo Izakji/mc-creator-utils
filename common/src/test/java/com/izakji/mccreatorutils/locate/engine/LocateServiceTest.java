@@ -148,6 +148,80 @@ class LocateServiceTest {
         }
     }
 
+    @Test
+    void timeoutWinsOverTaskInterrupt() throws Exception {
+        var clock = new AtomicLong(1_000);
+        var started = new CountDownLatch(1);
+        try (var service = new LocateService(1, 2, Duration.ofSeconds(30), clock::get)) {
+            var future = service.submit(
+                    key("minecraft:plains"),
+                    token -> {
+                        started.countDown();
+                        try {
+                            Thread.sleep(10_000);
+                        } catch (InterruptedException exception) {
+                            return LocateResult.failed(LocateFailure.ERROR, 0);
+                        }
+                        return LocateResult.notFound(0);
+                    },
+                    100);
+            assertTrue(started.await(1, TimeUnit.SECONDS));
+            service.tick(clock.get() + 101);
+            assertEquals(LocateFailure.TIMEOUT, future.get(1, TimeUnit.SECONDS).failure());
+        }
+    }
+
+    @Test
+    void cacheSweepsExpiredEntriesAndCapsSize() throws Exception {
+        var clock = new AtomicLong(1_000);
+        try (var service = new LocateService(1, 8, Duration.ofSeconds(30), clock::get)) {
+            for (int index = 0; index < 2; index++) {
+                service.submit(
+                                key("minecraft:biome_" + index),
+                                token -> LocateResult.found(BlockPos.ZERO, Holder.direct(null), 0),
+                                1_000)
+                        .get(1, TimeUnit.SECONDS);
+            }
+            assertEquals(2, service.cacheSize());
+
+            clock.addAndGet(31_000);
+            assertEquals(0, service.cacheSize());
+
+            for (int index = 0; index < 300; index++) {
+                service.submit(
+                                key("minecraft:biome_" + index),
+                                token -> LocateResult.found(BlockPos.ZERO, Holder.direct(null), 0),
+                                1_000)
+                        .get(1, TimeUnit.SECONDS);
+            }
+            assertEquals(256, service.cacheSize());
+        }
+    }
+
+    @Test
+    void reconfigureAppliesNewQueueLimit() throws Exception {
+        var started = new CountDownLatch(1);
+        var release = new CountDownLatch(1);
+        try (var service = service(1, 0)) {
+            var first = service.submit(
+                    key("minecraft:plains"),
+                    token -> {
+                        started.countDown();
+                        release.await();
+                        return LocateResult.notFound(0);
+                    },
+                    5_000);
+            assertTrue(started.await(1, TimeUnit.SECONDS));
+
+            service.reconfigure(1, 1, Duration.ofSeconds(30));
+            var second = service.submit(key("minecraft:forest"), token -> LocateResult.notFound(0), 5_000);
+            release.countDown();
+            first.get(1, TimeUnit.SECONDS);
+            assertEquals(
+                    LocateFailure.NOT_FOUND, second.get(1, TimeUnit.SECONDS).failure());
+        }
+    }
+
     private static LocateService service(int biomeThreads, int queued) {
         return new LocateService(biomeThreads, queued, Duration.ofSeconds(30), System::currentTimeMillis);
     }

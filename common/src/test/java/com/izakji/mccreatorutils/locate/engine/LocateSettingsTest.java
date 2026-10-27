@@ -16,7 +16,7 @@ class LocateSettingsTest {
         assertEquals(2, settings.biomeThreads());
         assertEquals(32, settings.maxQueuedSearches());
         assertEquals(60, settings.timeoutSeconds());
-        assertTrue(settings.structurePrefilter());
+        assertFalse(settings.structurePrefilter());
         assertEquals(1, settings.structurePrefilterMarginChunks());
         assertEquals(30, settings.resultCacheSeconds());
         assertFalse(settings.debugStats());

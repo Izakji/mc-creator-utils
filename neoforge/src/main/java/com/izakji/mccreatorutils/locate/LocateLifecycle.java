@@ -8,6 +8,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.OnDatapackSyncEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.level.LevelEvent;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
@@ -76,7 +77,31 @@ public final class LocateLifecycle {
         LocateService current = service;
         if (current != null && event.getLevel() instanceof ServerLevel level) {
             current.cancelDimension(level.dimension());
+            current.clearCache();
         }
+    }
+
+    @SubscribeEvent
+    static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
+        LocateCoordinator current = coordinator;
+        if (current != null) {
+            current.cancelPlayer(event.getEntity().getUUID());
+        }
+    }
+
+    public static void onConfigReloading(net.neoforged.fml.event.config.ModConfigEvent.Reloading event) {
+        if (!event.getConfig().getSpec().equals(LocateConfig.SPEC)) {
+            return;
+        }
+        LocateService current = service;
+        if (current == null) {
+            return;
+        }
+        LocateSettings settings = LocateConfig.settings();
+        current.reconfigure(
+                settings.biomeThreads(),
+                settings.maxQueuedSearches(),
+                Duration.ofSeconds(settings.resultCacheSeconds()));
     }
 
     @SubscribeEvent

@@ -25,7 +25,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.OptionalInt;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import net.minecraft.commands.CommandSourceStack;
@@ -53,6 +55,7 @@ import net.minecraft.world.level.levelgen.structure.placement.StructurePlacement
  * @author Izakji
  */
 public final class LocateCoordinator {
+    private final Map<UUID, Set<CompletableFuture<LocateResult>>> pending = new ConcurrentHashMap<>();
 
     public OptionalInt submitBiome(CommandSourceStack source, ResourceOrTagArgument.Result<Biome> target) {
         LocateService service = LocateLifecycle.service();
@@ -75,26 +78,28 @@ public final class LocateCoordinator {
                 new LocateRequestKey(level.dimension(), LocateType.BIOME, targetIds(targets), origin, 6400, false);
         LocateStats stats = new LocateStats();
         long started = System.nanoTime();
-        CompletableFuture<LocateResult> future = service.submit(
-                key,
-                token -> {
-                    BiomeBackend backend = BiomeBackendFactory.create(level);
-                    return BiomeSearch.findClosest(new BiomeSearchInput<>(
-                                    origin,
-                                    6400,
-                                    32,
-                                    64,
-                                    level.getMinBuildHeight(),
-                                    level.getMaxBuildHeight(),
-                                    targets,
-                                    backend.envelopes().forTargets(targets),
-                                    backend.sampler(),
-                                    stats,
-                                    token))
-                            .map(hit -> foundBiome(hit, started))
-                            .orElseGet(() -> LocateResult.notFound(elapsed(started)));
-                },
-                settings.timeoutSeconds() * 1000L);
+        CompletableFuture<LocateResult> future = track(
+                source.getPlayer(),
+                service.submit(
+                        key,
+                        token -> {
+                            BiomeBackend backend = BiomeBackendFactory.create(level);
+                            return BiomeSearch.findClosest(new BiomeSearchInput<>(
+                                            origin,
+                                            6400,
+                                            32,
+                                            64,
+                                            level.getMinBuildHeight(),
+                                            level.getMaxBuildHeight(),
+                                            targets,
+                                            backend.envelopes().forTargets(targets),
+                                            backend.sampler(),
+                                            stats,
+                                            token))
+                                    .map(hit -> foundBiome(hit, started))
+                                    .orElseGet(() -> LocateResult.notFound(elapsed(started)));
+                        },
+                        settings.timeoutSeconds() * 1000L));
         future.thenAccept(result ->
                 dispatch(source, level, () -> feedbackBiome(source, level, target, origin, result, stats, settings)));
         return OptionalInt.of(1);
@@ -143,34 +148,62 @@ public final class LocateCoordinator {
                 new LocateRequestKey(level.dimension(), LocateType.STRUCTURE, targetIds(holders), origin, 100, false);
         LocateStats stats = new LocateStats();
         long started = System.nanoTime();
-        CompletableFuture<LocateResult> future = service.submit(
-                key,
-                token -> {
-                    BiomeBackend backend = BiomeBackendFactory.create(level);
-                    StructureBiomeFilter filter = settings.structurePrefilter()
-                            ? new StructurePrefilter<>(
-                                    backend.envelopes(),
-                                    backend.sampler(),
-                                    holder -> holder.value().biomes().stream().collect(Collectors.toUnmodifiableSet()),
-                                    settings.structurePrefilterMarginChunks())
-                            : StructurePrefilter.disabled();
-                    return StructureSearch.findNearest(new StructureSearchInput(
-                                    origin,
-                                    100,
-                                    state.getLevelSeed(),
-                                    false,
-                                    groups,
-                                    concentricPositions,
-                                    new StructureProbeImpl(level, filter, stats),
-                                    stats,
-                                    token))
-                            .map(hit -> foundStructure(hit, started))
-                            .orElseGet(() -> LocateResult.notFound(elapsed(started)));
-                },
-                settings.timeoutSeconds() * 1000L);
+        CompletableFuture<LocateResult> future = track(
+                source.getPlayer(),
+                service.submit(
+                        key,
+                        token -> {
+                            BiomeBackend backend = BiomeBackendFactory.create(level);
+                            StructureBiomeFilter filter = settings.structurePrefilter()
+                                    ? new StructurePrefilter<>(
+                                            backend.envelopes(),
+                                            backend.sampler(),
+                                            holder -> holder.value().biomes().stream()
+                                                    .collect(Collectors.toUnmodifiableSet()),
+                                            settings.structurePrefilterMarginChunks())
+                                    : StructurePrefilter.disabled();
+                            return StructureSearch.findNearest(new StructureSearchInput(
+                                            origin,
+                                            100,
+                                            state.getLevelSeed(),
+                                            false,
+                                            groups,
+                                            concentricPositions,
+                                            new StructureProbeImpl(level, filter, stats),
+                                            stats,
+                                            token))
+                                    .map(hit -> foundStructure(hit, started))
+                                    .orElseGet(() -> LocateResult.notFound(elapsed(started)));
+                        },
+                        settings.timeoutSeconds() * 1000L));
         future.thenAccept(result -> dispatch(
                 source, level, () -> feedbackStructure(source, level, printable, origin, result, stats, settings)));
         return OptionalInt.of(1);
+    }
+
+    public void cancelPlayer(UUID playerId) {
+        Set<CompletableFuture<LocateResult>> futures = pending.remove(playerId);
+        if (futures == null) {
+            return;
+        }
+        for (CompletableFuture<LocateResult> future : futures) {
+            future.cancel(true);
+        }
+    }
+
+    private CompletableFuture<LocateResult> track(ServerPlayer player, CompletableFuture<LocateResult> future) {
+        if (player == null) {
+            return future;
+        }
+        UUID playerId = player.getUUID();
+        Set<CompletableFuture<LocateResult>> futures =
+                pending.computeIfAbsent(playerId, ignored -> ConcurrentHashMap.newKeySet());
+        futures.add(future);
+        future.whenComplete((result, throwable) -> {
+            futures.remove(future);
+            pending.computeIfPresent(playerId, (ignored, current) -> current.isEmpty() ? null : current);
+        });
+        return future;
     }
 
     private static LocateResult foundBiome(BiomeHit<Biome> hit, long started) {

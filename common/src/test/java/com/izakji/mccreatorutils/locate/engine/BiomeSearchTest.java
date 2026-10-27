@@ -11,6 +11,7 @@ import java.util.Set;
 import java.util.concurrent.CancellationException;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
+import net.minecraft.world.level.biome.Climate;
 import org.junit.jupiter.api.Test;
 
 class BiomeSearchTest {
@@ -43,12 +44,27 @@ class BiomeSearchTest {
 
         var input = input(
                 Set.of(target),
-                targets -> (qx, qz) ->
-                        Optional.of(BiomeEnvelope.of(List.of(point(0, 100, 0, 100, 0, 100, 0, 100, 0, 100)))),
+                coveringEnvelope(BiomeEnvelope.of(List.of(point(0, 100, 0, 100, 0, 100, 0, 100, 0, 100)))),
                 sampler);
 
         assertTrue(BiomeSearch.findClosest(input).isEmpty());
         assertEquals(0, sampler.resolveCalls());
+    }
+
+    @Test
+    void uncoveredSampleOutsideTargetEnvelopeFallsThroughToExactSearch() {
+        var target = Holder.<String>direct("target");
+        var sampler = new TestClimateSampler();
+        sampler.putValues(0, 0, 110, 110, 110, 110, 110);
+        sampler.putHit(0, 64, 0, target);
+
+        var input = input(
+                Set.of(target),
+                targets -> (qx, qz) ->
+                        Optional.of(BiomeEnvelope.of(List.of(point(0, 100, 0, 100, 0, 100, 0, 100, 0, 100)))),
+                sampler);
+
+        assertEquals(target, BiomeSearch.findClosest(input).orElseThrow().biome());
     }
 
     @Test
@@ -107,5 +123,31 @@ class BiomeSearchTest {
 
     private static BiomeEnvelopeProvider<String> enclosingEnvelope() {
         return targets -> (qx, qz) -> Optional.of(TestClimate.envelope(0, 200));
+    }
+
+    private static BiomeEnvelopeProvider<String> coveringEnvelope(BiomeEnvelope envelope) {
+        return targets -> new BiomeEnvelopeProvider.EnvelopeLookup<>() {
+            @Override
+            public Optional<BiomeEnvelope> at(int quartX, int quartZ) {
+                return Optional.of(envelope);
+            }
+
+            @Override
+            public boolean covers(Climate.TargetPoint point, int quartX, int quartZ) {
+                return true;
+            }
+
+            @Override
+            public boolean coversFive(
+                    long temperature,
+                    long humidity,
+                    long continentalness,
+                    long erosion,
+                    long weirdness,
+                    int quartX,
+                    int quartZ) {
+                return true;
+            }
+        };
     }
 }

@@ -17,9 +17,11 @@ import net.minecraft.world.level.biome.Climate;
  */
 public final class BiomeEnvelopeIndex<T> {
     private final Map<Holder<T>, BiomeEnvelope> envelopes;
+    private final CoverageIndex coverage;
 
-    private BiomeEnvelopeIndex(Map<Holder<T>, BiomeEnvelope> envelopes) {
+    private BiomeEnvelopeIndex(Map<Holder<T>, BiomeEnvelope> envelopes, CoverageIndex coverage) {
         this.envelopes = Map.copyOf(envelopes);
+        this.coverage = coverage;
     }
 
     public static <T> BiomeEnvelopeIndex<T> from(Climate.ParameterList<Holder<T>> parameters) {
@@ -28,17 +30,19 @@ public final class BiomeEnvelopeIndex<T> {
 
     public static <T> BiomeEnvelopeIndex<T> fromValues(List<Pair<Climate.ParameterPoint, Holder<T>>> values) {
         Map<Holder<T>, List<Climate.ParameterPoint>> pointsByTarget = new HashMap<>();
+        List<Climate.ParameterPoint> points = new ArrayList<>(values.size());
         for (Pair<Climate.ParameterPoint, Holder<T>> pair : values) {
             pointsByTarget
                     .computeIfAbsent(pair.getSecond(), ignored -> new ArrayList<>())
                     .add(pair.getFirst());
+            points.add(pair.getFirst());
         }
 
         Map<Holder<T>, BiomeEnvelope> built = new HashMap<>();
         for (Map.Entry<Holder<T>, List<Climate.ParameterPoint>> entry : pointsByTarget.entrySet()) {
             built.put(entry.getKey(), BiomeEnvelope.of(entry.getValue()));
         }
-        return new BiomeEnvelopeIndex<>(built);
+        return new BiomeEnvelopeIndex<>(built, CoverageIndex.fromPoints(points));
     }
 
     public Optional<BiomeEnvelope> envelopeFor(Holder<T> target) {
@@ -70,5 +74,13 @@ public final class BiomeEnvelopeIndex<T> {
             }
         }
         return union;
+    }
+
+    public boolean covers(Climate.TargetPoint point) {
+        return coverage.covers(point);
+    }
+
+    public boolean coversFive(long temperature, long humidity, long continentalness, long erosion, long weirdness) {
+        return coverage.coversFive(temperature, humidity, continentalness, erosion, weirdness);
     }
 }

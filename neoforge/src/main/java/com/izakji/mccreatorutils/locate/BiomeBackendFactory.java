@@ -42,7 +42,11 @@ public final class BiomeBackendFactory {
                                 sampler, (point, x, y, z) -> TerraBlenderCompat.resolve(parameters, point, x, y, z)));
             }
             return new BiomeBackend(
-                    base, new MinecraftClimateSampler(sampler, (point, x, y, z) -> multi.getNoiseBiome(point)));
+                    base,
+                    new MinecraftClimateSampler(
+                            sampler,
+                            (point, x, y, z) -> multi.getNoiseBiome(
+                                    QuartPos.fromBlock(x), QuartPos.fromBlock(y), QuartPos.fromBlock(z), sampler)));
         }
 
         return new BiomeBackend(

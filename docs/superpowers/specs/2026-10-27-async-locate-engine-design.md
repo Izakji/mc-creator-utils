@@ -339,11 +339,14 @@ B = [min temperature, max temperature]
 ```
 
 For each column `(x, z)`, sample only the five height-independent values. If any value is outside
-its interval in the selected envelope, no target parameter point can match at any Y. Skip the
-column.
+its interval in the selected envelope, the column is a pruning candidate. Vanilla resolves the
+nearest parameter point, not interval containment, so an outside sample can still resolve to the
+target. The engine therefore prunes a candidate only when a zero-offset non-target parameter point
+contains the full six-axis sample. Otherwise it falls through to the exact Y check. The default
+coverage answer is false, which disables pruning.
 
-This is a necessary-condition prune. It never removes a valid target. The intersection of the
-box with depth is intentionally left to the exact Y check.
+This gate makes the prune sound for nearest-neighbour resolution. The intersection of the target
+box with depth remains part of the exact Y check.
 
 For TerraBlender, use the region selected by `getUniqueness(qx, 0, qz)`; uniqueness is computed
 from X/Z only. Use the base envelope as a fallback when the region does not represent the target.
@@ -424,14 +427,16 @@ For a candidate chunk, sample all quart X/Z positions in the chunk plus
 For a one-chunk margin, the sampled area is a 3 by 3 chunk square. Each chunk contributes its
 4 by 4 quart grid, for 144 samples. Each sample uses only the five height-independent axes.
 
-If every sampled position is outside the structure target's envelope for its selected region, skip
-the candidate's structure-presence check. Otherwise proceed with the exact vanilla check.
+If every sampled position is outside the structure target's envelope for its selected region, and
+the coverage gate confirms that a zero-offset non-target parameter point contains the sampled five
+axes, skip the candidate's structure-presence check. If coverage is unavailable or false, proceed
+with the exact vanilla check.
 
-The sample is a sound necessary condition for standard structure generation when the structure's
-biome-check position lies inside the sampled area. Vanilla structures use positions inside their
-candidate chunk. The one-chunk margin covers normal modded variants and structures that use a
-small offset. The margin is configurable. A structure that checks biomes farther away can be
-handled by increasing the margin or disabling the prefilter.
+The prefilter does not sample depth. It is a best-effort speedup for the five height-independent
+axes; the exact structure check remains authoritative. It is disabled by default so exact
+structure results are preserved. A structure that checks biomes outside the sampled area, or whose
+target could be nearest only at a depth where no covering point dominates, can be handled by
+increasing the margin or leaving the prefilter disabled.
 
 This replaces BiomeSpy's single chunk-corner sample, which is not sound for structures that check a
 biome at the chunk center or another offset.
@@ -528,7 +533,7 @@ Server config, namespace `locate`:
 | `biomeThreads` | `2` | `1..4` | Maximum concurrent biome searches |
 | `maxQueuedSearches` | `32` | `0..256` | Requests waiting for a worker or the structure lane |
 | `timeoutSeconds` | `60` | `5..600` | Per-request deadline |
-| `structurePrefilter` | `true` | boolean | Enable the structure-biome prefilter |
+| `structurePrefilter` | `false` | boolean | Enable the best-effort structure-biome prefilter |
 | `structurePrefilterMarginChunks` | `1` | `0..3` | Spatial margin for structure biome sampling |
 | `resultCacheSeconds` | `30` | `0..300` | Successful and completed not-found result cache lifetime |
 | `debugStats` | `false` | boolean | Log per-request counters and timings |

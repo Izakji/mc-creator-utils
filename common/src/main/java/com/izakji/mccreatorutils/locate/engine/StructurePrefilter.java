@@ -73,6 +73,16 @@ public final class StructurePrefilter<T> implements StructureBiomeFilter {
                 if (inside) {
                     return true;
                 }
+                if (!lookup.coversFive(
+                        column.value(ClimateAxis.TEMPERATURE),
+                        column.value(ClimateAxis.HUMIDITY),
+                        column.value(ClimateAxis.CONTINENTALNESS),
+                        column.value(ClimateAxis.EROSION),
+                        column.value(ClimateAxis.WEIRDNESS),
+                        quartX,
+                        quartZ)) {
+                    return true;
+                }
             }
         }
 

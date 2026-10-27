@@ -27,9 +27,11 @@ import net.minecraft.world.level.Level;
  * @author Izakji
  */
 public final class LocateService implements AutoCloseable {
-    private final int biomeThreads;
-    private final int maxQueuedSearches;
-    private final Duration resultCacheTtl;
+    private static final int MAX_CACHE_ENTRIES = 256;
+
+    private volatile int biomeThreads;
+    private volatile int maxQueuedSearches;
+    private volatile Duration resultCacheTtl;
     private final LongSupplier clockMillis;
     private final ThreadPoolExecutor biomeExecutor;
     private final ThreadPoolExecutor structureExecutor;
@@ -74,9 +76,11 @@ public final class LocateService implements AutoCloseable {
                 return CompletableFuture.completedFuture(LocateResult.failed(LocateFailure.CANCELLED, 0));
             }
 
+            long now = clockMillis.getAsLong();
+            sweepCacheLocked(now);
             CacheEntry cached = cache.get(key);
             if (cached != null) {
-                if (cached.expiresAt() > clockMillis.getAsLong()) {
+                if (cached.expiresAt() > now) {
                     return CompletableFuture.completedFuture(cached.result());
                 }
                 cache.remove(key);
@@ -93,7 +97,6 @@ public final class LocateService implements AutoCloseable {
                 return CompletableFuture.completedFuture(LocateResult.failed(LocateFailure.QUEUE_FULL, 0));
             }
 
-            long now = clockMillis.getAsLong();
             SharedRequest request =
                     new SharedRequest(key, task, admission.queued(), now, now + Math.max(0L, timeoutMillis));
             active.put(key, request);
@@ -166,6 +169,30 @@ public final class LocateService implements AutoCloseable {
         }
     }
 
+    public void reconfigure(int biomeThreads, int maxQueuedSearches, Duration resultCacheTtl) {
+        Objects.requireNonNull(resultCacheTtl, "resultCacheTtl");
+        int threads;
+        synchronized (lock) {
+            if (closed) {
+                return;
+            }
+            threads = Math.max(1, biomeThreads);
+            this.biomeThreads = threads;
+            this.maxQueuedSearches = Math.max(0, maxQueuedSearches);
+            this.resultCacheTtl = resultCacheTtl;
+        }
+        biomeExecutor.setMaximumPoolSize(Math.max(biomeExecutor.getMaximumPoolSize(), threads));
+        biomeExecutor.setCorePoolSize(threads);
+        biomeExecutor.setMaximumPoolSize(threads);
+    }
+
+    int cacheSize() {
+        synchronized (lock) {
+            sweepCacheLocked(clockMillis.getAsLong());
+            return cache.size();
+        }
+    }
+
     @Override
     public void close() {
         synchronized (lock) {
@@ -173,6 +200,7 @@ public final class LocateService implements AutoCloseable {
                 return;
             }
             closed = true;
+            cache.clear();
         }
 
         cancelAll();
@@ -203,50 +231,91 @@ public final class LocateService implements AutoCloseable {
             result = Objects.requireNonNull(request.task.run(request.token), "locate result");
         } catch (CancellationException exception) {
             result = LocateResult.failed(LocateFailure.CANCELLED, elapsed(request));
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            result = LocateResult.failed(
+                    request.cancelled.get() ? LocateFailure.CANCELLED : LocateFailure.ERROR, elapsed(request));
         } catch (Throwable throwable) {
-            McCreatorUtils.LOGGER.error("Locate task failed for {}", request.key, throwable);
-            result = LocateResult.failed(LocateFailure.ERROR, elapsed(request));
+            if (request.cancelled.get()) {
+                result = LocateResult.failed(LocateFailure.CANCELLED, elapsed(request));
+            } else {
+                McCreatorUtils.LOGGER.error("Locate task failed for {}", request.key, throwable);
+                result = LocateResult.failed(LocateFailure.ERROR, elapsed(request));
+            }
         }
         finish(request, result);
     }
 
     private void cancel(SharedRequest request, LocateFailure failure) {
+        LocateResult result = LocateResult.failed(failure, elapsed(request));
+        boolean completed;
         synchronized (lock) {
             if (request.completed) {
                 return;
             }
             request.cancelled.set(true);
-            if (request.executorFuture != null) {
-                request.executorFuture.cancel(true);
-            }
+            completed = finishLocked(request, result);
         }
-        finish(request, LocateResult.failed(failure, elapsed(request)));
+        if (completed) {
+            Future<?> executorFuture = request.executorFuture;
+            if (executorFuture != null) {
+                executorFuture.cancel(true);
+            }
+            request.future.complete(result);
+        }
     }
 
     private void finish(SharedRequest request, LocateResult result) {
+        boolean completed;
         synchronized (lock) {
-            if (request.completed) {
-                return;
-            }
-            request.completed = true;
-            if (request.queued && !request.started) {
-                queued--;
-            }
-            if (request.key.type() == LocateType.BIOME) {
-                reservedBiome--;
-            } else {
-                reservedStructure--;
-            }
-            active.remove(request.key, request);
+            completed = finishLocked(request, result);
+        }
+        if (completed) {
+            request.future.complete(result);
+        }
+    }
 
-            if (result.success() || result.failure() == LocateFailure.NOT_FOUND) {
-                long ttl = resultCacheTtl.toMillis();
-                if (ttl > 0) {
-                    cache.put(request.key, new CacheEntry(result, clockMillis.getAsLong() + ttl));
-                }
+    private boolean finishLocked(SharedRequest request, LocateResult result) {
+        if (request.completed) {
+            return false;
+        }
+        request.completed = true;
+        if (request.queued && !request.started) {
+            queued--;
+        }
+        if (request.key.type() == LocateType.BIOME) {
+            reservedBiome--;
+        } else {
+            reservedStructure--;
+        }
+        active.remove(request.key, request);
+
+        if (result.success() || result.failure() == LocateFailure.NOT_FOUND) {
+            long ttl = resultCacheTtl.toMillis();
+            if (ttl > 0) {
+                long now = clockMillis.getAsLong();
+                cache.put(request.key, new CacheEntry(result, now + ttl));
+                sweepCacheLocked(now);
             }
         }
-        request.future.complete(result);
+        return true;
+    }
+
+    private void sweepCacheLocked(long now) {
+        cache.entrySet().removeIf(entry -> entry.getValue().expiresAt() <= now);
+        while (cache.size() > MAX_CACHE_ENTRIES) {
+            Map.Entry<LocateRequestKey, CacheEntry> oldest = null;
+            for (Map.Entry<LocateRequestKey, CacheEntry> entry : cache.entrySet()) {
+                if (oldest == null
+                        || entry.getValue().expiresAt() < oldest.getValue().expiresAt()) {
+                    oldest = entry;
+                }
+            }
+            if (oldest == null) {
+                return;
+            }
+            cache.remove(oldest.getKey());
+        }
     }
 
     private Admission admit(LocateType type) {

@@ -45,18 +45,17 @@ public final class BiomeSearch {
 
             ClimateSampler.Column column = input.sampler().column(x, z);
             ColumnCache cache = new ColumnCache(column);
+            boolean outsideTarget = false;
             if (envelopeResult.isPresent()) {
                 BiomeEnvelope envelope = envelopeResult.get();
-                boolean outside = false;
                 for (ClimateAxis axis : envelope.selectivityOrder()) {
                     if (!envelope.contains(axis, cache.value(axis))) {
-                        outside = true;
+                        outsideTarget = true;
                         break;
                     }
                 }
-                if (outside) {
+                if (outsideTarget) {
                     input.stats().envelopeRejects++;
-                    continue;
                 }
             }
 
@@ -68,6 +67,10 @@ public final class BiomeSearch {
                         cache.value(ClimateAxis.EROSION),
                         column.depth(y),
                         cache.value(ClimateAxis.WEIRDNESS));
+
+                if (outsideTarget && input.envelopes().covers(point, quartX, quartZ)) {
+                    continue;
+                }
 
                 input.stats().exactBiomeLookups++;
                 Holder<T> holder = input.sampler().resolve(point, x, y, z);

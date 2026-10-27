@@ -116,10 +116,37 @@ public final class TerraBlenderCompat {
                 envelopes.put(entry.getKey(), BiomeEnvelope.union(basePart, regionPart));
             }
 
-            return (quartX, quartZ) -> {
-                int uniqueness = extended.getUniqueness(quartX, 0, quartZ);
-                BiomeEnvelope envelope = envelopes.get(uniqueness);
-                return envelope == null ? Optional.empty() : Optional.of(envelope);
+            return new BiomeEnvelopeProvider.EnvelopeLookup<>() {
+                @Override
+                public Optional<BiomeEnvelope> at(int quartX, int quartZ) {
+                    int uniqueness = extended.getUniqueness(quartX, 0, quartZ);
+                    BiomeEnvelope envelope = envelopes.get(uniqueness);
+                    return envelope == null ? Optional.empty() : Optional.of(envelope);
+                }
+
+                @Override
+                public boolean covers(Climate.TargetPoint point, int quartX, int quartZ) {
+                    int uniqueness = extended.getUniqueness(quartX, 0, quartZ);
+                    BiomeEnvelopeIndex<Biome> regionIndex = regionIndexes.get(uniqueness);
+                    return base.covers(point) || (regionIndex != null && regionIndex.covers(point));
+                }
+
+                @Override
+                public boolean coversFive(
+                        long temperature,
+                        long humidity,
+                        long continentalness,
+                        long erosion,
+                        long weirdness,
+                        int quartX,
+                        int quartZ) {
+                    int uniqueness = extended.getUniqueness(quartX, 0, quartZ);
+                    BiomeEnvelopeIndex<Biome> regionIndex = regionIndexes.get(uniqueness);
+                    return base.coversFive(temperature, humidity, continentalness, erosion, weirdness)
+                            || (regionIndex != null
+                                    && regionIndex.coversFive(
+                                            temperature, humidity, continentalness, erosion, weirdness));
+                }
             };
         };
     }

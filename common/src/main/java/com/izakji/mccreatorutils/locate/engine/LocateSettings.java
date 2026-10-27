@@ -16,6 +16,6 @@ public record LocateSettings(
         boolean debugStats) {
 
     public static LocateSettings defaults() {
-        return new LocateSettings(true, 2, 32, 60, true, 1, 30, false);
+        return new LocateSettings(true, 2, 32, 60, false, 1, 30, false);
     }
 }

@@ -32,8 +32,9 @@ public final class LocateConfig {
                 .defineInRange("maxQueuedSearches", 32, 0, 256);
         TIMEOUT_SECONDS =
                 builder.comment("Per-request locate deadline in seconds.").defineInRange("timeoutSeconds", 60, 5, 600);
-        STRUCTURE_PREFILTER =
-                builder.comment("Enable structure-biome prefiltering.").define("structurePrefilter", true);
+        STRUCTURE_PREFILTER = builder.comment(
+                        "Enable the best-effort structure-biome prefilter. It samples only the five height-independent axes; leave disabled when exact structure results are required.")
+                .define("structurePrefilter", false);
         STRUCTURE_PREFILTER_MARGIN = builder.comment("Structure prefilter sampling margin in chunks.")
                 .defineInRange("structurePrefilterMarginChunks", 1, 0, 3);
         RESULT_CACHE_SECONDS = builder.comment("Successful or completed not-found result cache lifetime.")

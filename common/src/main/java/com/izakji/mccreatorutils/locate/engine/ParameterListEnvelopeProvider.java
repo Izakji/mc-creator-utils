@@ -3,6 +3,7 @@ package com.izakji.mccreatorutils.locate.engine;
 import java.util.Optional;
 import java.util.Set;
 import net.minecraft.core.Holder;
+import net.minecraft.world.level.biome.Climate;
 
 /**
  * Base parameter-list envelope provider.
@@ -23,6 +24,28 @@ public final class ParameterListEnvelopeProvider<T> implements BiomeEnvelopeProv
             return (quartX, quartZ) -> Optional.empty();
         }
         BiomeEnvelope value = envelope.get();
-        return (quartX, quartZ) -> Optional.of(value);
+        return new EnvelopeLookup<>() {
+            @Override
+            public Optional<BiomeEnvelope> at(int quartX, int quartZ) {
+                return Optional.of(value);
+            }
+
+            @Override
+            public boolean covers(Climate.TargetPoint point, int quartX, int quartZ) {
+                return index.covers(point);
+            }
+
+            @Override
+            public boolean coversFive(
+                    long temperature,
+                    long humidity,
+                    long continentalness,
+                    long erosion,
+                    long weirdness,
+                    int quartX,
+                    int quartZ) {
+                return index.coversFive(temperature, humidity, continentalness, erosion, weirdness);
+            }
+        };
     }
 }
