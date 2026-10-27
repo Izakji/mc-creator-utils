@@ -83,6 +83,13 @@ public final class RegistryPicker extends UIElement {
         entrySelector.setSelected(initialSelection, false);
     }
 
+    @Override
+    protected void onRemoved() {
+        modSelector.hide();
+        entrySelector.hide();
+        super.onRemoved();
+    }
+
     private static UIElement section(Component labelText, UIElement selector) {
         var section = new UIElement();
         section.layout(layout ->
