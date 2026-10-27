@@ -21,11 +21,16 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
 @EventBusSubscriber(modid = McCreatorUtils.MOD_ID)
 public final class LocateLifecycle {
     private static volatile LocateService service;
+    private static volatile LocateCoordinator coordinator;
 
     private LocateLifecycle() {}
 
     public static LocateService service() {
         return service;
+    }
+
+    public static LocateCoordinator coordinator() {
+        return coordinator;
     }
 
     @SubscribeEvent
@@ -41,6 +46,7 @@ public final class LocateLifecycle {
                 settings.maxQueuedSearches(),
                 Duration.ofSeconds(settings.resultCacheSeconds()),
                 System::currentTimeMillis);
+        coordinator = new LocateCoordinator();
         McCreatorUtils.LOGGER.info(
                 "Async locate service started with {} biome threads and {} queued searches",
                 settings.biomeThreads(),
@@ -51,6 +57,7 @@ public final class LocateLifecycle {
     static void onServerStopping(ServerStoppingEvent event) {
         LocateService current = service;
         service = null;
+        coordinator = null;
         if (current != null) {
             current.close();
         }
@@ -78,5 +85,6 @@ public final class LocateLifecycle {
         if (current != null) {
             current.clearCache();
         }
+        BiomeBackendFactory.clearCache();
     }
 }
