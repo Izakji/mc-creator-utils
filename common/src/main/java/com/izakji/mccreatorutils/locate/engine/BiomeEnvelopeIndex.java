@@ -60,4 +60,15 @@ public final class BiomeEnvelopeIndex<T> {
         }
         return Optional.of(union);
     }
+
+    public BiomeEnvelope unionForPresent(Set<Holder<T>> targets) {
+        BiomeEnvelope union = BiomeEnvelope.impossible();
+        for (Holder<T> target : targets) {
+            BiomeEnvelope envelope = envelopes.get(target);
+            if (envelope != null) {
+                union = BiomeEnvelope.union(union, envelope);
+            }
+        }
+        return union;
+    }
 }
