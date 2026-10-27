@@ -1,6 +1,7 @@
 package com.izakji.mccreatorutils.locate;
 
 import com.izakji.mccreatorutils.locate.engine.ClimateAxis;
+import com.izakji.mccreatorutils.locate.engine.ClimateCoordinates;
 import com.izakji.mccreatorutils.locate.engine.ClimateSampler;
 import net.minecraft.core.Holder;
 import net.minecraft.world.level.biome.Biome;
@@ -23,7 +24,9 @@ public final class MinecraftClimateSampler implements ClimateSampler<Biome> {
 
     @Override
     public Column column(int blockX, int blockZ) {
-        DensityFunction.SinglePointContext context = new DensityFunction.SinglePointContext(blockX, 0, blockZ);
+        int sampledX = ClimateCoordinates.alignToQuart(blockX);
+        int sampledZ = ClimateCoordinates.alignToQuart(blockZ);
+        DensityFunction.SinglePointContext context = new DensityFunction.SinglePointContext(sampledX, 0, sampledZ);
         long[] values = new long[ClimateAxis.values().length];
         boolean[] present = new boolean[ClimateAxis.values().length];
 
@@ -47,8 +50,8 @@ public final class MinecraftClimateSampler implements ClimateSampler<Biome> {
 
             @Override
             public long depth(int blockY) {
-                DensityFunction.SinglePointContext depthContext =
-                        new DensityFunction.SinglePointContext(blockX, blockY, blockZ);
+                DensityFunction.SinglePointContext depthContext = new DensityFunction.SinglePointContext(
+                        sampledX, ClimateCoordinates.alignToQuart(blockY), sampledZ);
                 return Climate.quantizeCoord((float) sampler.depth().compute(depthContext));
             }
         };
