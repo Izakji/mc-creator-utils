@@ -27,20 +27,18 @@ public final class LocateConfig {
         builder.push("locate");
         ENABLED = builder.comment("Enable asynchronous player /locate interception.")
                 .define("enabled", true);
-        BIOME_THREADS = builder.comment("Maximum concurrent biome searches.")
-                .defineInRange("biomeThreads", 2, 1, 4);
+        BIOME_THREADS = builder.comment("Maximum concurrent biome searches.").defineInRange("biomeThreads", 2, 1, 4);
         MAX_QUEUED_SEARCHES = builder.comment("Maximum searches waiting for a worker or structure lane.")
                 .defineInRange("maxQueuedSearches", 32, 0, 256);
-        TIMEOUT_SECONDS = builder.comment("Per-request locate deadline in seconds.")
-                .defineInRange("timeoutSeconds", 60, 5, 600);
-        STRUCTURE_PREFILTER = builder.comment("Enable structure-biome prefiltering.")
-                .define("structurePrefilter", true);
+        TIMEOUT_SECONDS =
+                builder.comment("Per-request locate deadline in seconds.").defineInRange("timeoutSeconds", 60, 5, 600);
+        STRUCTURE_PREFILTER =
+                builder.comment("Enable structure-biome prefiltering.").define("structurePrefilter", true);
         STRUCTURE_PREFILTER_MARGIN = builder.comment("Structure prefilter sampling margin in chunks.")
                 .defineInRange("structurePrefilterMarginChunks", 1, 0, 3);
         RESULT_CACHE_SECONDS = builder.comment("Successful or completed not-found result cache lifetime.")
                 .defineInRange("resultCacheSeconds", 30, 0, 300);
-        DEBUG_STATS = builder.comment("Log per-request locate counters.")
-                .define("debugStats", false);
+        DEBUG_STATS = builder.comment("Log per-request locate counters.").define("debugStats", false);
         builder.pop();
         SPEC = builder.build();
     }

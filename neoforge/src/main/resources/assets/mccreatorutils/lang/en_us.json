@@ -71,5 +71,8 @@
   "status.mccreatorutils.ran": "Ran: /%s",
   "status.mccreatorutils.no_player": "No player available.",
   "status.mccreatorutils.failed": "Command failed: /%s",
-  "notice.mccreatorutils.cmdcam_missing": "CMDCam is required for camera tools."
+  "notice.mccreatorutils.cmdcam_missing": "CMDCam is required for camera tools.",
+  "commands.mccreatorutils.locate.queue_full": "Too many locate searches are running. Try again shortly.",
+  "commands.mccreatorutils.locate.timeout": "Locate search timed out.",
+  "commands.mccreatorutils.locate.failed": "Locate search failed."
 }

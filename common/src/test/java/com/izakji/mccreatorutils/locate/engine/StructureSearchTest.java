@@ -11,11 +11,11 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicInteger;
+import net.minecraft.DetectedVersion;
+import net.minecraft.SharedConstants;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderSet;
-import net.minecraft.DetectedVersion;
-import net.minecraft.SharedConstants;
 import net.minecraft.server.Bootstrap;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.levelgen.structure.Structure;
@@ -112,8 +112,7 @@ class StructureSearchTest {
                 false,
                 List.of(new StructurePlacementGroup(placement, Set.of(structure))),
                 Map.of(placement, List.of(ring)),
-                (structures, chunk, p, skip) ->
-                        Optional.of(new StructureHit(new BlockPos(40, 32, 40), structure)),
+                (structures, chunk, p, skip) -> Optional.of(new StructureHit(new BlockPos(40, 32, 40), structure)),
                 new LocateStats(),
                 () -> false);
 
@@ -136,12 +135,13 @@ class StructureSearchTest {
                 groups,
                 Map.of(),
                 (structures, chunk, placement, skip) -> Optional.of(new StructureHit(
-                        placement == first ? new BlockPos(100, 0, 0) : new BlockPos(10, 0, 0),
-                        structure)),
+                        placement == first ? new BlockPos(100, 0, 0) : new BlockPos(10, 0, 0), structure)),
                 new LocateStats(),
                 () -> false);
 
-        assertEquals(new BlockPos(10, 0, 0), StructureSearch.findNearest(input).orElseThrow().position());
+        assertEquals(
+                new BlockPos(10, 0, 0),
+                StructureSearch.findNearest(input).orElseThrow().position());
     }
 
     private static List<ChunkPos> expectedRandomSpreadChunks(

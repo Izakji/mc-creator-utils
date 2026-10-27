@@ -20,8 +20,7 @@ public final class StructurePrefilter<T> implements StructureBiomeFilter {
     private final ClimateSampler<T> sampler;
     private final Function<Holder<Structure>, Set<Holder<T>>> biomes;
     private final int marginChunks;
-    private final Map<Holder<Structure>, BiomeEnvelopeProvider.EnvelopeLookup<T>> lookups =
-            new HashMap<>();
+    private final Map<Holder<Structure>, BiomeEnvelopeProvider.EnvelopeLookup<T>> lookups = new HashMap<>();
 
     public StructurePrefilter(
             BiomeEnvelopeProvider<T> provider,
@@ -45,8 +44,8 @@ public final class StructurePrefilter<T> implements StructureBiomeFilter {
             return true;
         }
 
-        BiomeEnvelopeProvider.EnvelopeLookup<T> lookup = lookups.computeIfAbsent(
-                structure, ignored -> provider.forTargets(targetBiomes));
+        BiomeEnvelopeProvider.EnvelopeLookup<T> lookup =
+                lookups.computeIfAbsent(structure, ignored -> provider.forTargets(targetBiomes));
         int marginBlocks = marginChunks * 16;
         int minQuartX = QuartPos.fromBlock(chunk.getMinBlockX() - marginBlocks);
         int maxQuartX = QuartPos.fromBlock(chunk.getMinBlockX() + 15 + marginBlocks);

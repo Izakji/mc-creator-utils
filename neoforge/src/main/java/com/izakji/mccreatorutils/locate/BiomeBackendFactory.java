@@ -24,8 +24,7 @@ import net.neoforged.fml.ModList;
 public final class BiomeBackendFactory {
     private static final Map<Climate.ParameterList<Holder<Biome>>, BiomeEnvelopeIndex<Biome>> BASE_CACHE =
             new IdentityHashMap<>();
-    private static final BiomeEnvelopeProvider<Biome> EMPTY_PROVIDER =
-            targets -> (quartX, quartZ) -> Optional.empty();
+    private static final BiomeEnvelopeProvider<Biome> EMPTY_PROVIDER = targets -> (quartX, quartZ) -> Optional.empty();
 
     private BiomeBackendFactory() {}
 
@@ -40,12 +39,10 @@ public final class BiomeBackendFactory {
                 return new BiomeBackend(
                         TerraBlenderCompat.provider(parameters, level),
                         new MinecraftClimateSampler(
-                                sampler,
-                                (point, x, y, z) -> TerraBlenderCompat.resolve(parameters, point, x, y, z)));
+                                sampler, (point, x, y, z) -> TerraBlenderCompat.resolve(parameters, point, x, y, z)));
             }
             return new BiomeBackend(
-                    base,
-                    new MinecraftClimateSampler(sampler, (point, x, y, z) -> multi.getNoiseBiome(point)));
+                    base, new MinecraftClimateSampler(sampler, (point, x, y, z) -> multi.getNoiseBiome(point)));
         }
 
         return new BiomeBackend(
@@ -53,10 +50,7 @@ public final class BiomeBackendFactory {
                 new MinecraftClimateSampler(
                         sampler,
                         (point, x, y, z) -> source.getNoiseBiome(
-                                QuartPos.fromBlock(x),
-                                QuartPos.fromBlock(y),
-                                QuartPos.fromBlock(z),
-                                sampler)));
+                                QuartPos.fromBlock(x), QuartPos.fromBlock(y), QuartPos.fromBlock(z), sampler)));
     }
 
     public static void clearCache() {
@@ -68,11 +62,9 @@ public final class BiomeBackendFactory {
         }
     }
 
-    private static BiomeEnvelopeProvider<Biome> baseProvider(
-            Climate.ParameterList<Holder<Biome>> parameters) {
+    private static BiomeEnvelopeProvider<Biome> baseProvider(Climate.ParameterList<Holder<Biome>> parameters) {
         synchronized (BASE_CACHE) {
-            BiomeEnvelopeIndex<Biome> index = BASE_CACHE.computeIfAbsent(
-                    parameters, BiomeEnvelopeIndex::from);
+            BiomeEnvelopeIndex<Biome> index = BASE_CACHE.computeIfAbsent(parameters, BiomeEnvelopeIndex::from);
             return new ParameterListEnvelopeProvider<>(index);
         }
     }

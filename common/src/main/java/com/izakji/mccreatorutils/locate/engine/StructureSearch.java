@@ -2,7 +2,6 @@ package com.izakji.mccreatorutils.locate.engine;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
@@ -29,25 +28,18 @@ public final class StructureSearch {
             if (placement instanceof ConcentricRingsStructurePlacement concentric) {
                 StructureHit bestConcentric = null;
                 double bestCandidateDistance = Double.MAX_VALUE;
-                for (ChunkPos chunk : input.concentricPositions()
-                        .getOrDefault(concentric, List.of())) {
+                for (ChunkPos chunk : input.concentricPositions().getOrDefault(concentric, List.of())) {
                     input.cancellationToken().throwIfCancelled();
                     BlockPos candidate = new BlockPos(
-                            SectionPos.sectionToBlockCoord(chunk.x, 8),
-                            32,
-                            SectionPos.sectionToBlockCoord(chunk.z, 8));
+                            SectionPos.sectionToBlockCoord(chunk.x, 8), 32, SectionPos.sectionToBlockCoord(chunk.z, 8));
                     double candidateDistance = input.origin().distSqr(candidate);
                     if (bestConcentric != null && candidateDistance >= bestCandidateDistance) {
                         continue;
                     }
 
                     input.stats().candidates++;
-                    Optional<StructureHit> hit = input.probe()
-                            .probe(
-                                    group.structures(),
-                                    chunk,
-                                    placement,
-                                    input.skipKnownStructures());
+                    Optional<StructureHit> hit =
+                            input.probe().probe(group.structures(), chunk, placement, input.skipKnownStructures());
                     if (hit.isPresent()) {
                         bestConcentric = hit.get();
                         bestCandidateDistance = candidateDistance;
@@ -73,12 +65,7 @@ public final class StructureSearch {
             for (StructurePlacementGroup group : randomGroups) {
                 input.cancellationToken().throwIfCancelled();
                 Optional<StructureHit> hit = probeRandom(
-                        input,
-                        group,
-                        (RandomSpreadStructurePlacement) group.placement(),
-                        centerX,
-                        centerZ,
-                        ring);
+                        input, group, (RandomSpreadStructurePlacement) group.placement(), centerX, centerZ, ring);
                 if (hit.isPresent()) {
                     foundInRing = true;
                     double distance = input.origin().distSqr(hit.get().position());
@@ -117,12 +104,8 @@ public final class StructureSearch {
                 int regionZ = centerZ + spacing * l;
                 ChunkPos chunk = placement.getPotentialStructureChunk(input.seed(), regionX, regionZ);
                 input.stats().candidates++;
-                Optional<StructureHit> hit = input.probe()
-                        .probe(
-                                group.structures(),
-                                chunk,
-                                placement,
-                                input.skipKnownStructures());
+                Optional<StructureHit> hit =
+                        input.probe().probe(group.structures(), chunk, placement, input.skipKnownStructures());
                 if (hit.isPresent()) {
                     return hit;
                 }

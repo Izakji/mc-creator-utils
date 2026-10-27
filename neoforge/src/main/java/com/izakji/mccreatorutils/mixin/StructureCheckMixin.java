@@ -38,9 +38,7 @@ public abstract class StructureCheckMixin {
 
     @Inject(method = "onStructureLoad", at = @At("HEAD"), cancellable = true)
     private void mccreatorutils$syncOnStructureLoad(
-            ChunkPos chunkPos,
-            Map<Structure, StructureStart> structureStarts,
-            CallbackInfo ci) {
+            ChunkPos chunkPos, Map<Structure, StructureStart> structureStarts, CallbackInfo ci) {
         if (!Thread.holdsLock(this)) {
             synchronized (this) {
                 ((StructureCheck) (Object) this).onStructureLoad(chunkPos, structureStarts);
@@ -50,8 +48,7 @@ public abstract class StructureCheckMixin {
     }
 
     @Inject(method = "incrementReference", at = @At("HEAD"), cancellable = true)
-    private void mccreatorutils$syncIncrementReference(
-            ChunkPos chunkPos, Structure structure, CallbackInfo ci) {
+    private void mccreatorutils$syncIncrementReference(ChunkPos chunkPos, Structure structure, CallbackInfo ci) {
         if (!Thread.holdsLock(this)) {
             synchronized (this) {
                 ((StructureCheck) (Object) this).incrementReference(chunkPos, structure);

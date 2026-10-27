@@ -26,8 +26,7 @@ public final class MixinPlugin implements IMixinConfigPlugin {
         if (modList == null) {
             return true;
         }
-        return modList.getModFileById("asynclocator") == null
-                && modList.getModFileById("biomespy") == null;
+        return modList.getModFileById("asynclocator") == null && modList.getModFileById("biomespy") == null;
     }
 
     @Override
@@ -47,16 +46,8 @@ public final class MixinPlugin implements IMixinConfigPlugin {
     }
 
     @Override
-    public void preApply(
-            String targetClassName,
-            ClassNode targetClass,
-            String mixinClassName,
-            IMixinInfo mixinInfo) {}
+    public void preApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {}
 
     @Override
-    public void postApply(
-            String targetClassName,
-            ClassNode targetClass,
-            String mixinClassName,
-            IMixinInfo mixinInfo) {}
+    public void postApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {}
 }

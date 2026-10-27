@@ -25,14 +25,11 @@ public final class BiomeSearch {
 
         int spiralRadius = Math.floorDiv(input.radius(), input.horizontalStep());
         int[] heights = Mth.outFromOrigin(
-                        input.origin().getY(),
-                        input.minBuildHeight() + 1,
-                        input.maxBuildHeight(),
-                        input.verticalStep())
+                        input.origin().getY(), input.minBuildHeight() + 1, input.maxBuildHeight(), input.verticalStep())
                 .toArray();
 
-        for (BlockPos.MutableBlockPos offset : BlockPos.spiralAround(
-                BlockPos.ZERO, spiralRadius, Direction.EAST, Direction.SOUTH)) {
+        for (BlockPos.MutableBlockPos offset :
+                BlockPos.spiralAround(BlockPos.ZERO, spiralRadius, Direction.EAST, Direction.SOUTH)) {
             input.cancellationToken().throwIfCancelled();
             input.stats().columns++;
 

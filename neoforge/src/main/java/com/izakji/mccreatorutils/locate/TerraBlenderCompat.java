@@ -10,7 +10,6 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import net.minecraft.core.Holder;
 import net.minecraft.core.QuartPos;
 import net.minecraft.core.Registry;
@@ -37,8 +36,7 @@ public final class TerraBlenderCompat {
 
     private TerraBlenderCompat() {}
 
-    public static boolean isAvailable(
-            Climate.ParameterList<Holder<Biome>> parameters, ServerLevel level) {
+    public static boolean isAvailable(Climate.ParameterList<Holder<Biome>> parameters, ServerLevel level) {
         if (!(parameters instanceof IExtendedParameterList<?> extended) || !extended.isInitialized()) {
             return false;
         }
@@ -63,10 +61,7 @@ public final class TerraBlenderCompat {
             int blockZ) {
         return ((IExtendedParameterList<Holder<Biome>>) parameters)
                 .findValuePositional(
-                        point,
-                        QuartPos.fromBlock(blockX),
-                        QuartPos.fromBlock(blockY),
-                        QuartPos.fromBlock(blockZ));
+                        point, QuartPos.fromBlock(blockX), QuartPos.fromBlock(blockY), QuartPos.fromBlock(blockZ));
     }
 
     public static void clearCache() {
@@ -76,9 +71,7 @@ public final class TerraBlenderCompat {
     }
 
     private static BiomeEnvelopeProvider<Biome> build(
-            Climate.ParameterList<Holder<Biome>> parameters,
-            ServerLevel level,
-            RegionType regionType) {
+            Climate.ParameterList<Holder<Biome>> parameters, ServerLevel level, RegionType regionType) {
         BiomeEnvelopeIndex<Biome> base = BiomeEnvelopeIndex.from(parameters);
         Registry<Biome> biomeRegistry = level.registryAccess().registryOrThrow(Registries.BIOME);
         Map<Integer, BiomeEnvelopeIndex<Biome>> regionIndexes = new HashMap<>();
@@ -91,13 +84,15 @@ public final class TerraBlenderCompat {
             }
 
             List<Pair<Climate.ParameterPoint, Holder<Biome>>> values = new ArrayList<>();
-            region.addBiomes(biomeRegistry, pair -> biomeRegistry.getHolder(pair.getSecond())
-                    .ifPresent(holder -> values.add(Pair.of(pair.getFirst(), holder))));
+            region.addBiomes(
+                    biomeRegistry,
+                    pair -> biomeRegistry
+                            .getHolder(pair.getSecond())
+                            .ifPresent(holder -> values.add(Pair.of(pair.getFirst(), holder))));
             regionIndexes.put(index, BiomeEnvelopeIndex.fromValues(values));
         }
 
-        IExtendedParameterList<Holder<Biome>> extended =
-                (IExtendedParameterList<Holder<Biome>>) parameters;
+        IExtendedParameterList<Holder<Biome>> extended = (IExtendedParameterList<Holder<Biome>>) parameters;
         return targets -> {
             if (targets.isEmpty()) {
                 return (quartX, quartZ) -> Optional.empty();

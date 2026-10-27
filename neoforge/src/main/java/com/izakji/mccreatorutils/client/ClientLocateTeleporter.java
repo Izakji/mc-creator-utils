@@ -3,6 +3,7 @@ package com.izakji.mccreatorutils.client;
 import com.izakji.mccreatorutils.McCreatorUtils;
 import com.izakji.mccreatorutils.locate.LocateCommands;
 import com.izakji.mccreatorutils.locate.LocateFeedback;
+import java.util.Set;
 import java.util.function.Consumer;
 import net.minecraft.Util;
 import net.minecraft.network.chat.Component;
@@ -20,12 +21,12 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
  */
 @EventBusSubscriber(modid = McCreatorUtils.MOD_ID, value = Dist.CLIENT)
 public final class ClientLocateTeleporter {
-    private static final long TIMEOUT_MILLIS = 15_000L;
+    private static final long TIMEOUT_MILLIS = 120_000L;
 
     private record Pending(
             Component targetName,
             String successKey,
-            String failureKey,
+            Set<String> failureKeys,
             long expiresAt,
             Consumer<ClientCommandRunner.CommandResult> callback) {}
 
@@ -43,7 +44,11 @@ public final class ClientLocateTeleporter {
                 LocateCommands.biome(biome),
                 targetName,
                 "commands.locate.biome.success",
-                "commands.locate.biome.not_found",
+                Set.of(
+                        "commands.locate.biome.not_found",
+                        "commands.mccreatorutils.locate.queue_full",
+                        "commands.mccreatorutils.locate.timeout",
+                        "commands.mccreatorutils.locate.failed"),
                 callback);
     }
 
@@ -53,7 +58,11 @@ public final class ClientLocateTeleporter {
                 LocateCommands.structure(structure),
                 targetName,
                 "commands.locate.structure.success",
-                "commands.locate.structure.not_found",
+                Set.of(
+                        "commands.locate.structure.not_found",
+                        "commands.mccreatorutils.locate.queue_full",
+                        "commands.mccreatorutils.locate.timeout",
+                        "commands.mccreatorutils.locate.failed"),
                 callback);
     }
 
@@ -61,7 +70,7 @@ public final class ClientLocateTeleporter {
             String locateCommand,
             Component targetName,
             String successKey,
-            String failureKey,
+            Set<String> failureKeys,
             Consumer<ClientCommandRunner.CommandResult> callback) {
         if (pending != null) {
             callback.accept(
@@ -69,7 +78,7 @@ public final class ClientLocateTeleporter {
             return;
         }
 
-        Pending request = new Pending(targetName, successKey, failureKey, Util.getMillis() + TIMEOUT_MILLIS, callback);
+        Pending request = new Pending(targetName, successKey, failureKeys, Util.getMillis() + TIMEOUT_MILLIS, callback);
         pending = request;
         ClientCommandRunner.CommandResult dispatch = ClientCommandRunner.execute(locateCommand);
         if (!dispatch.success()) {
@@ -112,7 +121,7 @@ public final class ClientLocateTeleporter {
             return;
         }
 
-        if (LocateFeedback.containsTranslation(message, request.failureKey())) {
+        if (request.failureKeys().stream().anyMatch(key -> LocateFeedback.containsTranslation(message, key))) {
             fail(request);
         }
     }

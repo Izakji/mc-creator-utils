@@ -37,9 +37,9 @@ import net.minecraft.core.HolderSet;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.commands.LocateCommand;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.server.commands.LocateCommand;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.chunk.ChunkGeneratorStructureState;
@@ -54,8 +54,7 @@ import net.minecraft.world.level.levelgen.structure.placement.StructurePlacement
  */
 public final class LocateCoordinator {
 
-    public OptionalInt submitBiome(
-            CommandSourceStack source, ResourceOrTagArgument.Result<Biome> target) {
+    public OptionalInt submitBiome(CommandSourceStack source, ResourceOrTagArgument.Result<Biome> target) {
         LocateService service = LocateLifecycle.service();
         LocateSettings settings = LocateConfig.settings();
         if (service == null || !settings.enabled()) {
@@ -63,27 +62,17 @@ public final class LocateCoordinator {
         }
 
         ServerLevel level = source.getLevel();
-        Set<Holder<Biome>> targets = level.getChunkSource()
-                .getGenerator()
-                .getBiomeSource()
-                .possibleBiomes()
-                .stream()
+        Set<Holder<Biome>> targets = level.getChunkSource().getGenerator().getBiomeSource().possibleBiomes().stream()
                 .filter(target)
                 .collect(Collectors.toUnmodifiableSet());
         if (targets.isEmpty()) {
-            source.sendFailure(Component.translatableEscape(
-                    "commands.locate.biome.not_found", target.asPrintable()));
+            source.sendFailure(Component.translatableEscape("commands.locate.biome.not_found", target.asPrintable()));
             return OptionalInt.of(1);
         }
 
         BlockPos origin = BlockPos.containing(source.getPosition());
-        LocateRequestKey key = new LocateRequestKey(
-                level.dimension(),
-                LocateType.BIOME,
-                targetIds(targets),
-                origin,
-                6400,
-                false);
+        LocateRequestKey key =
+                new LocateRequestKey(level.dimension(), LocateType.BIOME, targetIds(targets), origin, 6400, false);
         LocateStats stats = new LocateStats();
         long started = System.nanoTime();
         CompletableFuture<LocateResult> future = service.submit(
@@ -106,8 +95,8 @@ public final class LocateCoordinator {
                             .orElseGet(() -> LocateResult.notFound(elapsed(started)));
                 },
                 settings.timeoutSeconds() * 1000L);
-        future.thenAccept(result -> dispatch(source, level, () -> feedbackBiome(
-                source, level, target, origin, result, stats, settings)));
+        future.thenAccept(result ->
+                dispatch(source, level, () -> feedbackBiome(source, level, target, origin, result, stats, settings)));
         return OptionalInt.of(1);
     }
 
@@ -124,8 +113,8 @@ public final class LocateCoordinator {
         ServerLevel level = source.getLevel();
         List<Holder<Structure>> holders = targets.stream().toList();
         if (holders.isEmpty()) {
-            source.sendFailure(Component.translatableEscape(
-                    "commands.locate.structure.not_found", printable.asPrintable()));
+            source.sendFailure(
+                    Component.translatableEscape("commands.locate.structure.not_found", printable.asPrintable()));
             return OptionalInt.of(1);
         }
 
@@ -134,7 +123,8 @@ public final class LocateCoordinator {
         LinkedHashMap<StructurePlacement, Set<Holder<Structure>>> placementMap = new LinkedHashMap<>();
         for (Holder<Structure> holder : holders) {
             for (StructurePlacement placement : state.getPlacementsForStructure(holder)) {
-                placementMap.computeIfAbsent(placement, ignored -> new java.util.LinkedHashSet<>())
+                placementMap
+                        .computeIfAbsent(placement, ignored -> new java.util.LinkedHashSet<>())
                         .add(holder);
             }
         }
@@ -149,13 +139,8 @@ public final class LocateCoordinator {
             }
         }
 
-        LocateRequestKey key = new LocateRequestKey(
-                level.dimension(),
-                LocateType.STRUCTURE,
-                targetIds(holders),
-                origin,
-                100,
-                false);
+        LocateRequestKey key =
+                new LocateRequestKey(level.dimension(), LocateType.STRUCTURE, targetIds(holders), origin, 100, false);
         LocateStats stats = new LocateStats();
         long started = System.nanoTime();
         CompletableFuture<LocateResult> future = service.submit(
@@ -166,8 +151,7 @@ public final class LocateCoordinator {
                             ? new StructurePrefilter<>(
                                     backend.envelopes(),
                                     backend.sampler(),
-                                    holder -> holder.value().biomes().stream()
-                                            .collect(Collectors.toUnmodifiableSet()),
+                                    holder -> holder.value().biomes().stream().collect(Collectors.toUnmodifiableSet()),
                                     settings.structurePrefilterMarginChunks())
                             : StructurePrefilter.disabled();
                     return StructureSearch.findNearest(new StructureSearchInput(
@@ -184,8 +168,8 @@ public final class LocateCoordinator {
                             .orElseGet(() -> LocateResult.notFound(elapsed(started)));
                 },
                 settings.timeoutSeconds() * 1000L);
-        future.thenAccept(result -> dispatch(source, level, () -> feedbackStructure(
-                source, level, printable, origin, result, stats, settings)));
+        future.thenAccept(result -> dispatch(
+                source, level, () -> feedbackStructure(source, level, printable, origin, result, stats, settings)));
         return OptionalInt.of(1);
     }
 
@@ -197,8 +181,7 @@ public final class LocateCoordinator {
         return LocateResult.found(hit.position(), hit.structure(), elapsed(started));
     }
 
-    private static void dispatch(
-            CommandSourceStack source, ServerLevel level, Runnable feedback) {
+    private static void dispatch(CommandSourceStack source, ServerLevel level, Runnable feedback) {
         MinecraftServer server = source.getServer();
         if (!server.isRunning()) {
             return;
@@ -265,11 +248,7 @@ public final class LocateCoordinator {
         failure(source, result, target.asPrintable(), "commands.locate.structure.not_found");
     }
 
-    private static void failure(
-            CommandSourceStack source,
-            LocateResult result,
-            String target,
-            String notFoundKey) {
+    private static void failure(CommandSourceStack source, LocateResult result, String target, String notFoundKey) {
         LocateFailure failure = result.failure();
         if (failure == null || failure == LocateFailure.CANCELLED) {
             return;

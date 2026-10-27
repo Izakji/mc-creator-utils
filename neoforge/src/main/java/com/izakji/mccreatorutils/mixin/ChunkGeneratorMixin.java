@@ -18,9 +18,7 @@ public abstract class ChunkGeneratorMixin {
 
     @Inject(method = "tryAddReference", at = @At("HEAD"), cancellable = true)
     private static void mccreatorutils$claimReferenceAtomically(
-            StructureManager structureManager,
-            StructureStart structureStart,
-            CallbackInfoReturnable<Boolean> cir) {
+            StructureManager structureManager, StructureStart structureStart, CallbackInfoReturnable<Boolean> cir) {
         synchronized (structureStart) {
             if (structureStart.canBeReferenced()) {
                 structureManager.addReference(structureStart);

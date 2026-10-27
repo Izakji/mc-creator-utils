@@ -13,8 +13,7 @@ class BiomeEnvelopeTest {
     @Test
     void boundsAndFixedAxesAreValid() {
         var envelope = BiomeEnvelope.of(List.of(
-                point(0, 100, 0, 100, 0, 100, 0, 100, 0, 100),
-                point(20, 30, 40, 50, 60, 70, 80, 90, 100, 200)));
+                point(0, 100, 0, 100, 0, 100, 0, 100, 0, 100), point(20, 30, 40, 50, 60, 70, 80, 90, 100, 200)));
 
         assertTrue(envelope.contains(20, 40, 60, 80, 100));
         assertFalse(envelope.contains(201, 100, 100, 100, 100));

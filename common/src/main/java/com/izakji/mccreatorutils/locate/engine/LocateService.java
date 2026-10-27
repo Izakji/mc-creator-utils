@@ -42,11 +42,7 @@ public final class LocateService implements AutoCloseable {
     private int queued;
     private boolean closed;
 
-    public LocateService(
-            int biomeThreads,
-            int maxQueuedSearches,
-            Duration resultCacheTtl,
-            LongSupplier clockMillis) {
+    public LocateService(int biomeThreads, int maxQueuedSearches, Duration resultCacheTtl, LongSupplier clockMillis) {
         this.biomeThreads = Math.max(1, biomeThreads);
         this.maxQueuedSearches = Math.max(0, maxQueuedSearches);
         this.resultCacheTtl = Objects.requireNonNull(resultCacheTtl, "resultCacheTtl");
@@ -69,15 +65,13 @@ public final class LocateService implements AutoCloseable {
                 new ThreadPoolExecutor.AbortPolicy());
     }
 
-    public CompletableFuture<LocateResult> submit(
-            LocateRequestKey key, LocateTask task, long timeoutMillis) {
+    public CompletableFuture<LocateResult> submit(LocateRequestKey key, LocateTask task, long timeoutMillis) {
         Objects.requireNonNull(key, "key");
         Objects.requireNonNull(task, "task");
 
         synchronized (lock) {
             if (closed) {
-                return CompletableFuture.completedFuture(
-                        LocateResult.failed(LocateFailure.CANCELLED, 0));
+                return CompletableFuture.completedFuture(LocateResult.failed(LocateFailure.CANCELLED, 0));
             }
 
             CacheEntry cached = cache.get(key);
@@ -96,13 +90,12 @@ public final class LocateService implements AutoCloseable {
 
             Admission admission = admit(key.type());
             if (admission == null) {
-                return CompletableFuture.completedFuture(
-                        LocateResult.failed(LocateFailure.QUEUE_FULL, 0));
+                return CompletableFuture.completedFuture(LocateResult.failed(LocateFailure.QUEUE_FULL, 0));
             }
 
             long now = clockMillis.getAsLong();
-            SharedRequest request = new SharedRequest(
-                    key, task, admission.queued(), now, now + Math.max(0L, timeoutMillis));
+            SharedRequest request =
+                    new SharedRequest(key, task, admission.queued(), now, now + Math.max(0L, timeoutMillis));
             active.put(key, request);
             CompletableFuture<LocateResult> caller = callerFuture(request);
             try {
@@ -110,8 +103,7 @@ public final class LocateService implements AutoCloseable {
             } catch (RejectedExecutionException exception) {
                 active.remove(key, request);
                 finish(request, LocateResult.failed(LocateFailure.CANCELLED, 0));
-                return CompletableFuture.completedFuture(
-                        LocateResult.failed(LocateFailure.CANCELLED, 0));
+                return CompletableFuture.completedFuture(LocateResult.failed(LocateFailure.CANCELLED, 0));
             }
             return caller;
         }
@@ -250,9 +242,7 @@ public final class LocateService implements AutoCloseable {
             if (result.success() || result.failure() == LocateFailure.NOT_FOUND) {
                 long ttl = resultCacheTtl.toMillis();
                 if (ttl > 0) {
-                    cache.put(
-                            request.key,
-                            new CacheEntry(result, clockMillis.getAsLong() + ttl));
+                    cache.put(request.key, new CacheEntry(result, clockMillis.getAsLong() + ttl));
                 }
             }
         }
@@ -356,12 +346,7 @@ public final class LocateService implements AutoCloseable {
         private int callers = 1;
         private int cancelledCallers;
 
-        private SharedRequest(
-                LocateRequestKey key,
-                LocateTask task,
-                boolean queued,
-                long startMillis,
-                long deadline) {
+        private SharedRequest(LocateRequestKey key, LocateTask task, boolean queued, long startMillis, long deadline) {
             this.key = key;
             this.task = task;
             this.queued = queued;

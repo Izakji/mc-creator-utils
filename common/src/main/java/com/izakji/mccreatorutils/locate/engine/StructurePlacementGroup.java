@@ -10,5 +10,4 @@ import net.minecraft.world.level.levelgen.structure.placement.StructurePlacement
  *
  * @author Izakji
  */
-public record StructurePlacementGroup(
-        StructurePlacement placement, Set<Holder<Structure>> structures) {}
+public record StructurePlacementGroup(StructurePlacement placement, Set<Holder<Structure>> structures) {}

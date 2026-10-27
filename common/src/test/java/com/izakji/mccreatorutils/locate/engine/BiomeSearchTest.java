@@ -43,8 +43,8 @@ class BiomeSearchTest {
 
         var input = input(
                 Set.of(target),
-                targets -> (qx, qz) -> Optional.of(BiomeEnvelope.of(List.of(
-                        point(0, 100, 0, 100, 0, 100, 0, 100, 0, 100)))),
+                targets -> (qx, qz) ->
+                        Optional.of(BiomeEnvelope.of(List.of(point(0, 100, 0, 100, 0, 100, 0, 100, 0, 100)))),
                 sampler);
 
         assertTrue(BiomeSearch.findClosest(input).isEmpty());
@@ -76,18 +76,13 @@ class BiomeSearchTest {
     void cancellationStopsSearch() {
         var sampler = new TestClimateSampler();
         var input = input(
-                Set.of(Holder.<String>direct("target")),
-                targets -> (qx, qz) -> Optional.empty(),
-                sampler,
-                () -> true);
+                Set.of(Holder.<String>direct("target")), targets -> (qx, qz) -> Optional.empty(), sampler, () -> true);
 
         assertThrows(CancellationException.class, () -> BiomeSearch.findClosest(input));
     }
 
     private static BiomeSearchInput<String> input(
-            Set<Holder<String>> targets,
-            BiomeEnvelopeProvider<String> provider,
-            TestClimateSampler sampler) {
+            Set<Holder<String>> targets, BiomeEnvelopeProvider<String> provider, TestClimateSampler sampler) {
         return input(targets, provider, sampler, () -> false);
     }
 

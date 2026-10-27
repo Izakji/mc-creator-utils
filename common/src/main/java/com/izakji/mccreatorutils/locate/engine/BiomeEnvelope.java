@@ -36,12 +36,8 @@ public final class BiomeEnvelope {
             return IMPOSSIBLE;
         }
 
-        long[] minimums = {
-            Long.MAX_VALUE, Long.MAX_VALUE, Long.MAX_VALUE, Long.MAX_VALUE, Long.MAX_VALUE
-        };
-        long[] maximums = {
-            Long.MIN_VALUE, Long.MIN_VALUE, Long.MIN_VALUE, Long.MIN_VALUE, Long.MIN_VALUE
-        };
+        long[] minimums = {Long.MAX_VALUE, Long.MAX_VALUE, Long.MAX_VALUE, Long.MAX_VALUE, Long.MAX_VALUE};
+        long[] maximums = {Long.MIN_VALUE, Long.MIN_VALUE, Long.MIN_VALUE, Long.MIN_VALUE, Long.MIN_VALUE};
 
         for (Climate.ParameterPoint point : points) {
             add(minimums, maximums, ClimateAxis.TEMPERATURE, point.temperature());
@@ -84,8 +80,7 @@ public final class BiomeEnvelope {
         return value >= minimums[index] && value <= maximums[index];
     }
 
-    public boolean contains(
-            long temperature, long humidity, long continentalness, long erosion, long weirdness) {
+    public boolean contains(long temperature, long humidity, long continentalness, long erosion, long weirdness) {
         if (impossible) {
             return false;
         }
@@ -113,8 +108,7 @@ public final class BiomeEnvelope {
         return maximums[index] - minimums[index];
     }
 
-    private static void add(
-            long[] minimums, long[] maximums, ClimateAxis axis, Climate.Parameter parameter) {
+    private static void add(long[] minimums, long[] maximums, ClimateAxis axis, Climate.Parameter parameter) {
         int index = axis.ordinal();
         minimums[index] = Math.min(minimums[index], parameter.min());
         maximums[index] = Math.max(maximums[index], parameter.max());

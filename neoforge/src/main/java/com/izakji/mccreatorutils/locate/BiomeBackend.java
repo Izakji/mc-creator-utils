@@ -9,5 +9,4 @@ import net.minecraft.world.level.biome.Biome;
  *
  * @author Izakji
  */
-public record BiomeBackend(
-        BiomeEnvelopeProvider<Biome> envelopes, ClimateSampler<Biome> sampler) {}
+public record BiomeBackend(BiomeEnvelopeProvider<Biome> envelopes, ClimateSampler<Biome> sampler) {}

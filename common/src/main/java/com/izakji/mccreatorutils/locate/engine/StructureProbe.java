@@ -2,7 +2,6 @@ package com.izakji.mccreatorutils.locate.engine;
 
 import java.util.Optional;
 import java.util.Set;
-import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.levelgen.structure.Structure;

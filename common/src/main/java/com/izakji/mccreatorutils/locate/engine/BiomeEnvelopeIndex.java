@@ -26,11 +26,11 @@ public final class BiomeEnvelopeIndex<T> {
         return fromValues(parameters.values());
     }
 
-    public static <T> BiomeEnvelopeIndex<T> fromValues(
-            List<Pair<Climate.ParameterPoint, Holder<T>>> values) {
+    public static <T> BiomeEnvelopeIndex<T> fromValues(List<Pair<Climate.ParameterPoint, Holder<T>>> values) {
         Map<Holder<T>, List<Climate.ParameterPoint>> pointsByTarget = new HashMap<>();
         for (Pair<Climate.ParameterPoint, Holder<T>> pair : values) {
-            pointsByTarget.computeIfAbsent(pair.getSecond(), ignored -> new ArrayList<>())
+            pointsByTarget
+                    .computeIfAbsent(pair.getSecond(), ignored -> new ArrayList<>())
                     .add(pair.getFirst());
         }
 

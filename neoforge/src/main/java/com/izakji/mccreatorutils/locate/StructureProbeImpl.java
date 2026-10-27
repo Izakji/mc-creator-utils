@@ -6,7 +6,6 @@ import com.izakji.mccreatorutils.locate.engine.StructureHit;
 import com.izakji.mccreatorutils.locate.engine.StructureProbe;
 import java.util.Optional;
 import java.util.Set;
-import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.SectionPos;
 import net.minecraft.server.level.ServerLevel;
@@ -57,13 +56,10 @@ public final class StructureProbeImpl implements StructureProbe {
             }
 
             stats.chunkLoads++;
-            ChunkAccess chunkAccess =
-                    level.getChunk(chunk.x, chunk.z, ChunkStatus.STRUCTURE_STARTS);
+            ChunkAccess chunkAccess = level.getChunk(chunk.x, chunk.z, ChunkStatus.STRUCTURE_STARTS);
             StructureStart start = level.structureManager()
-                    .getStartForStructure(
-                            SectionPos.bottomOf(chunkAccess), holder.value(), chunkAccess);
-            if (start != null && start.isValid()
-                    && (!skipKnownStructures || addReference(start))) {
+                    .getStartForStructure(SectionPos.bottomOf(chunkAccess), holder.value(), chunkAccess);
+            if (start != null && start.isValid() && (!skipKnownStructures || addReference(start))) {
                 return Optional.of(new StructureHit(placement.getLocatePos(start.getChunkPos()), holder));
             }
         }
