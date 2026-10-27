@@ -10,9 +10,7 @@ class GiveCommandsTest {
 
     @Test
     void buildsExactCommands() {
-        assertEquals(
-                "give @s minecraft:stone 64",
-                GiveCommands.give(ResourceLocation.parse("minecraft:stone"), 64));
+        assertEquals("give @s minecraft:stone 64", GiveCommands.give(ResourceLocation.parse("minecraft:stone"), 64));
         assertEquals("clear", GiveCommands.clearInventory());
         assertEquals("kill @e[type=item]", GiveCommands.clearWorldItems());
     }
@@ -21,8 +19,7 @@ class GiveCommandsTest {
     void rejectsInvalidInputs() {
         assertThrows(NullPointerException.class, () -> GiveCommands.give(null, 1));
         assertThrows(
-                IllegalArgumentException.class,
-                () -> GiveCommands.give(ResourceLocation.parse("minecraft:stone"), 0));
+                IllegalArgumentException.class, () -> GiveCommands.give(ResourceLocation.parse("minecraft:stone"), 0));
         assertThrows(
                 IllegalArgumentException.class,
                 () -> GiveCommands.give(ResourceLocation.parse("minecraft:stone"), 513));

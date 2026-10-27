@@ -10,9 +10,7 @@ class MobCommandsTest {
 
     @Test
     void buildsMobCommands() {
-        assertEquals(
-                "summon minecraft:zombie",
-                MobCommands.summon(ResourceLocation.parse("minecraft:zombie")));
+        assertEquals("summon minecraft:zombie", MobCommands.summon(ResourceLocation.parse("minecraft:zombie")));
         assertEquals("kill @e[type=!minecraft:player]", MobCommands.killAllExceptPlayers());
     }
 

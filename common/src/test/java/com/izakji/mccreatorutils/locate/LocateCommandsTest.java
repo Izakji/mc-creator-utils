@@ -10,9 +10,7 @@ class LocateCommandsTest {
 
     @Test
     void buildsLocateCommands() {
-        assertEquals(
-                "locate biome minecraft:plains",
-                LocateCommands.biome(ResourceLocation.parse("minecraft:plains")));
+        assertEquals("locate biome minecraft:plains", LocateCommands.biome(ResourceLocation.parse("minecraft:plains")));
         assertEquals(
                 "locate structure minecraft:village_plains",
                 LocateCommands.structure(ResourceLocation.parse("minecraft:village_plains")));

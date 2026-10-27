@@ -124,6 +124,14 @@ public final class CreatorToolsUi {
             content.addChild(new CameraToolPanel());
         } else if (tool.id() == ToolId.WORLD_TIME) {
             content.addChild(new WorldTimeToolPanel());
+        } else if (tool.id() == ToolId.BIOMES) {
+            content.addChild(new BiomesToolPanel());
+        } else if (tool.id() == ToolId.STRUCTURES) {
+            content.addChild(new StructuresToolPanel());
+        } else if (tool.id() == ToolId.ITEMS) {
+            content.addChild(new ItemsToolPanel());
+        } else if (tool.id() == ToolId.MOBS) {
+            content.addChild(new MobsToolPanel());
         }
     }
 }

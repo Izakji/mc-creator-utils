@@ -22,14 +22,10 @@ class RegistryGroupingTest {
                 List.of("minecraft", "mod_a", "mod_b"),
                 groups.stream().map(RegistryGroup::namespace).toList());
         assertEquals(
-                List.of(
-                        ResourceLocation.parse("minecraft:forest"),
-                        ResourceLocation.parse("minecraft:plains")),
+                List.of(ResourceLocation.parse("minecraft:forest"), ResourceLocation.parse("minecraft:plains")),
                 groups.get(0).entries());
         assertEquals(
-                List.of(
-                        ResourceLocation.parse("mod_a:alpha"),
-                        ResourceLocation.parse("mod_a:zulu")),
+                List.of(ResourceLocation.parse("mod_a:alpha"), ResourceLocation.parse("mod_a:zulu")),
                 groups.get(1).entries());
     }
 

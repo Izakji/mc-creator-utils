@@ -23,7 +23,9 @@ public final class RegistryGrouping {
     public static List<RegistryGroup> group(Collection<ResourceLocation> ids) {
         Map<String, List<ResourceLocation>> byNamespace = new TreeMap<>(NAMESPACE_ORDER);
         for (ResourceLocation id : ids) {
-            byNamespace.computeIfAbsent(id.getNamespace(), key -> new ArrayList<>()).add(id);
+            byNamespace
+                    .computeIfAbsent(id.getNamespace(), key -> new ArrayList<>())
+                    .add(id);
         }
 
         List<RegistryGroup> groups = new ArrayList<>(byNamespace.size());

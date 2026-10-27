@@ -30,10 +30,10 @@ public final class RegistryCatalog {
     private RegistryCatalog() {}
 
     public static List<RegistryGroup> groups(RegistryKind kind) {
-        List<RegistryGroup> groups = RegistryGrouping.group(ids(kind));
-        groups.sort(Comparator.comparing((RegistryGroup group) -> !group.namespace().equals("minecraft"))
-                .thenComparing(
-                        group -> modName(group.namespace()).getString(), String.CASE_INSENSITIVE_ORDER));
+        List<RegistryGroup> groups = new ArrayList<>(RegistryGrouping.group(ids(kind)));
+        groups.sort(
+                Comparator.comparing((RegistryGroup group) -> !group.namespace().equals("minecraft"))
+                        .thenComparing(group -> modName(group.namespace()).getString(), String.CASE_INSENSITIVE_ORDER));
         return List.copyOf(groups);
     }
 
@@ -47,15 +47,16 @@ public final class RegistryCatalog {
                 EntityType<?> type = BuiltInRegistries.ENTITY_TYPE.get(id);
                 yield type == null ? Component.literal(prettyPath(id.getPath())) : type.getDescription();
             }
-            case BIOME -> Component.translatableWithFallback(
-                    "biome." + id.getNamespace() + "." + id.getPath(), prettyPath(id.getPath()));
+            case BIOME ->
+                Component.translatableWithFallback(
+                        "biome." + id.getNamespace() + "." + id.getPath(), prettyPath(id.getPath()));
             case STRUCTURE -> Component.literal(prettyPath(id.getPath()));
         };
     }
 
     public static Component modName(String namespace) {
         if ("minecraft".equals(namespace)) {
-            return Component.literal("Minecraft");
+            return Component.translatable("tool.mccreatorutils.registry.minecraft");
         }
         return ModList.get()
                 .getModContainerById(namespace)
@@ -87,11 +88,21 @@ public final class RegistryCatalog {
 
     private static <T> Collection<ResourceLocation> dynamicIds(
             net.minecraft.resources.ResourceKey<? extends net.minecraft.core.Registry<T>> registryKey) {
-        var level = Minecraft.getInstance().level;
-        if (level == null) {
-            return List.of();
+        var server = Minecraft.getInstance().getSingleplayerServer();
+        if (server != null) {
+            var registry = server.registryAccess().registry(registryKey);
+            if (registry.isPresent()) {
+                return registry.get().keySet();
+            }
         }
-        return level.registryAccess().registryOrThrow(registryKey).keySet();
+        var level = Minecraft.getInstance().level;
+        if (level != null) {
+            var registry = level.registryAccess().registry(registryKey);
+            if (registry.isPresent()) {
+                return registry.get().keySet();
+            }
+        }
+        return List.of();
     }
 
     private static String prettyPath(String path) {

@@ -20,15 +20,16 @@ public final class RegistryPicker extends UIElement {
     private final Selector<RegistryGroup> modSelector = new Selector<>();
     private final Selector<ResourceLocation> entrySelector = new Selector<>();
     private final Consumer<ResourceLocation> onSelectionChanged;
+    private final boolean hasGroups;
 
     public RegistryPicker(
             RegistryKind kind, ResourceLocation initialSelection, Consumer<ResourceLocation> onSelectionChanged) {
         this.onSelectionChanged = onSelectionChanged;
-        this.layout(layout -> layout.widthPercent(100)
-                .flexDirection(FlexDirection.COLUMN)
-                .gapAll(3));
+        this.layout(layout ->
+                layout.widthPercent(100).flexDirection(FlexDirection.COLUMN).gapAll(3));
 
         List<RegistryGroup> groups = RegistryCatalog.groups(kind);
+        this.hasGroups = !groups.isEmpty();
 
         modSelector.setCandidates(groups);
         modSelector.setCandidateUIProvider(UIElementProvider.text(group -> group == null
@@ -59,6 +60,10 @@ public final class RegistryPicker extends UIElement {
 
     public ResourceLocation selectedEntry() {
         return entrySelector.getValue();
+    }
+
+    public boolean hasGroups() {
+        return hasGroups;
     }
 
     private void restore(ResourceLocation initialSelection, List<RegistryGroup> groups) {

@@ -30,13 +30,7 @@ class ToolCatalogTest {
     @Test
     void catalogPreservesDeclarationOrder() {
         assertEquals(
-                List.of(
-                        ToolId.CAMERA,
-                        ToolId.WORLD_TIME,
-                        ToolId.BIOMES,
-                        ToolId.STRUCTURES,
-                        ToolId.ITEMS,
-                        ToolId.MOBS),
+                List.of(ToolId.CAMERA, ToolId.WORLD_TIME, ToolId.BIOMES, ToolId.STRUCTURES, ToolId.ITEMS, ToolId.MOBS),
                 ToolCatalog.tools().stream().map(ToolDescriptor::id).toList());
     }
 
@@ -51,8 +45,8 @@ class ToolCatalogTest {
 
     @Test
     void registryToolsRequireNoMod() {
-        for (ToolDescriptor tool : List.of(
-                ToolCatalog.BIOMES, ToolCatalog.STRUCTURES, ToolCatalog.ITEMS, ToolCatalog.MOBS)) {
+        for (ToolDescriptor tool :
+                List.of(ToolCatalog.BIOMES, ToolCatalog.STRUCTURES, ToolCatalog.ITEMS, ToolCatalog.MOBS)) {
             assertFalse(tool.hasRequiredMod());
         }
     }

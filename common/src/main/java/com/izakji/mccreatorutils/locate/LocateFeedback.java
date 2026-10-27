@@ -19,7 +19,8 @@ public final class LocateFeedback {
         if (message == null || key == null) {
             return false;
         }
-        if (message.getContents() instanceof TranslatableContents contents && contents.getKey().equals(key)) {
+        if (message.getContents() instanceof TranslatableContents contents
+                && contents.getKey().equals(key)) {
             return true;
         }
         for (Component sibling : message.getSiblings()) {

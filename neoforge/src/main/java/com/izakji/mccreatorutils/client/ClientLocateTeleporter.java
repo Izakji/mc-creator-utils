@@ -38,9 +38,7 @@ public final class ClientLocateTeleporter {
     }
 
     public static void requestBiome(
-            ResourceLocation biome,
-            Component targetName,
-            Consumer<ClientCommandRunner.CommandResult> callback) {
+            ResourceLocation biome, Component targetName, Consumer<ClientCommandRunner.CommandResult> callback) {
         request(
                 LocateCommands.biome(biome),
                 targetName,
@@ -50,9 +48,7 @@ public final class ClientLocateTeleporter {
     }
 
     public static void requestStructure(
-            ResourceLocation structure,
-            Component targetName,
-            Consumer<ClientCommandRunner.CommandResult> callback) {
+            ResourceLocation structure, Component targetName, Consumer<ClientCommandRunner.CommandResult> callback) {
         request(
                 LocateCommands.structure(structure),
                 targetName,
@@ -68,13 +64,12 @@ public final class ClientLocateTeleporter {
             String failureKey,
             Consumer<ClientCommandRunner.CommandResult> callback) {
         if (pending != null) {
-            callback.accept(new ClientCommandRunner.CommandResult(
-                    false, Component.translatable("status.mccreatorutils.busy")));
+            callback.accept(
+                    new ClientCommandRunner.CommandResult(false, Component.translatable("status.mccreatorutils.busy")));
             return;
         }
 
-        Pending request = new Pending(
-                targetName, successKey, failureKey, Util.getMillis() + TIMEOUT_MILLIS, callback);
+        Pending request = new Pending(targetName, successKey, failureKey, Util.getMillis() + TIMEOUT_MILLIS, callback);
         pending = request;
         ClientCommandRunner.CommandResult dispatch = ClientCommandRunner.execute(locateCommand);
         if (!dispatch.success()) {
@@ -110,8 +105,7 @@ public final class ClientLocateTeleporter {
                 request.callback()
                         .accept(new ClientCommandRunner.CommandResult(
                                 true,
-                                Component.translatable(
-                                        "status.mccreatorutils.teleported", request.targetName())));
+                                Component.translatable("status.mccreatorutils.teleported", request.targetName())));
             } else {
                 request.callback().accept(result);
             }

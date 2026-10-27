@@ -7,6 +7,7 @@ import com.izakji.mccreatorutils.session.CreatorToolSession;
 import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Button;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Label;
+import com.lowdragmc.lowdraglib2.gui.ui.event.UIEvents;
 import dev.vfyjxf.taffy.style.FlexDirection;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -44,6 +45,7 @@ public final class BiomesToolPanel extends UIElement {
         addChild(teleportButton);
 
         addChild(status);
+        addEventListener(UIEvents.TICK, event -> updateTeleportButton());
         updateTeleportButton();
     }
 

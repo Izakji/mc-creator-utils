@@ -54,7 +54,8 @@ public final class ItemsToolPanel extends UIElement {
         countField.setText(session.itemCountRaw());
         countField.setTextResponder(session::setItemCountRaw);
         var countRow = new UIElement();
-        countRow.layout(layout -> layout.widthPercent(100).flexDirection(FlexDirection.ROW).gapAll(4));
+        countRow.layout(layout ->
+                layout.widthPercent(100).flexDirection(FlexDirection.ROW).gapAll(4));
         countRow.addChild(countField);
         addChild(countRow);
         countField.addEventListener(UIEvents.TICK, event -> {
@@ -75,7 +76,8 @@ public final class ItemsToolPanel extends UIElement {
         addChild(giveButton);
 
         var clearRow = new UIElement();
-        clearRow.layout(layout -> layout.widthPercent(100).flexDirection(FlexDirection.ROW).gapAll(4));
+        clearRow.layout(layout ->
+                layout.widthPercent(100).flexDirection(FlexDirection.ROW).gapAll(4));
         var clearInventory = new Button();
         clearInventory.setText(Component.translatable("tool.mccreatorutils.items.clear_inventory"));
         clearInventory.layout(layout -> layout.flex(1).height(16));
@@ -94,6 +96,7 @@ public final class ItemsToolPanel extends UIElement {
     private void updateState() {
         boolean hasItem = picker.selectedEntry() != null;
         countField.setActive(hasItem);
-        giveButton.setActive(hasItem && ItemCountInput.parse(countField.getRawText()).isPresent());
+        giveButton.setActive(
+                hasItem && ItemCountInput.parse(countField.getRawText()).isPresent());
     }
 }

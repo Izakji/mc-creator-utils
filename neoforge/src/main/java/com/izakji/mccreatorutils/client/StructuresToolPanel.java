@@ -4,9 +4,11 @@ import com.izakji.mccreatorutils.client.registry.RegistryCatalog;
 import com.izakji.mccreatorutils.client.registry.RegistryKind;
 import com.izakji.mccreatorutils.client.registry.RegistryPicker;
 import com.izakji.mccreatorutils.session.CreatorToolSession;
+import com.lowdragmc.lowdraglib2.gui.ColorPattern;
 import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Button;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Label;
+import com.lowdragmc.lowdraglib2.gui.ui.event.UIEvents;
 import dev.vfyjxf.taffy.style.FlexDirection;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -37,6 +39,12 @@ public final class StructuresToolPanel extends UIElement {
             updateTeleportButton();
         });
         addChild(picker);
+        if (!picker.hasGroups()) {
+            var notice = new Label();
+            notice.setText(Component.translatable("tool.mccreatorutils.structures.unavailable"));
+            notice.textStyle(style -> style.textColor(ColorPattern.YELLOW.color));
+            addChild(notice);
+        }
 
         teleportButton.setText(Component.translatable("tool.mccreatorutils.structures.teleport"));
         teleportButton.layout(layout -> layout.widthPercent(100).height(16));
@@ -44,6 +52,7 @@ public final class StructuresToolPanel extends UIElement {
         addChild(teleportButton);
 
         addChild(status);
+        addEventListener(UIEvents.TICK, event -> updateTeleportButton());
         updateTeleportButton();
     }
 

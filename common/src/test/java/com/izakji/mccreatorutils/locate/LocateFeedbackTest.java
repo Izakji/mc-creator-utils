@@ -13,8 +13,7 @@ import org.junit.jupiter.api.Test;
 class LocateFeedbackTest {
 
     private static Component clickable(ClickEvent.Action action, String command) {
-        return Component.literal("[coords]")
-                .withStyle(style -> style.withClickEvent(new ClickEvent(action, command)));
+        return Component.literal("[coords]").withStyle(style -> style.withClickEvent(new ClickEvent(action, command)));
     }
 
     @Test
