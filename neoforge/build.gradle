@@ -61,6 +61,10 @@ repositories {
         name = 'FirstDark Snapshots'
         url = uri('https://maven.firstdark.dev/snapshots')
     }
+    maven {
+        name = 'MinecraftForge'
+        url = uri('https://maven.minecraftforge.net/')
+    }
 }
 
 configurations {
@@ -70,6 +74,7 @@ configurations {
 
 dependencies {
     implementation "com.lowdragmc.ldlib2:ldlib2-neoforge-${minecraft_version}:${ldlib2_version}:all"
+    compileOnly "com.github.glitchfiend:TerraBlender-neoforge:${terrablender_version}"
 
     commonJava project(path: ':common', configuration: 'commonJava')
     commonResources project(path: ':common', configuration: 'commonResources')

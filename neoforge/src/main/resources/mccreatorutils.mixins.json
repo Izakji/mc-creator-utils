@@ -1,0 +1,11 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.izakji.mccreatorutils.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "plugin": "com.izakji.mccreatorutils.mixin.MixinPlugin",
+  "mixins": [],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

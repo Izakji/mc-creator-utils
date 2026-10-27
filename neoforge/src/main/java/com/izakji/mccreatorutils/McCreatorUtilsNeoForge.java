@@ -1,7 +1,10 @@
 package com.izakji.mccreatorutils;
 
+import com.izakji.mccreatorutils.locate.LocateConfig;
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.config.ModConfig;
 
 /**
  * NeoForge entrypoint for Creator Utils.
@@ -10,7 +13,7 @@ import net.neoforged.fml.common.Mod;
  */
 @Mod(McCreatorUtils.MOD_ID)
 public final class McCreatorUtilsNeoForge {
-    public McCreatorUtilsNeoForge(IEventBus modEventBus) {
-        // Common-side initialization is intentionally empty for this milestone.
+    public McCreatorUtilsNeoForge(IEventBus modEventBus, ModContainer modContainer) {
+        modContainer.registerConfig(ModConfig.Type.SERVER, LocateConfig.SPEC);
     }
 }
