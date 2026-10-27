@@ -36,4 +36,8 @@ public final class WeatherDurationInput {
     public static boolean isValid(String raw) {
         return parse(raw).isPresent();
     }
+
+    public static boolean isValidOrEmpty(String raw) {
+        return raw == null || raw.isEmpty() || isValid(raw);
+    }
 }

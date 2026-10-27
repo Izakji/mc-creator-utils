@@ -16,11 +16,11 @@ class WeatherCommandsTest {
 
     @Test
     void convertsThunderDurationToSeconds() {
-        assertEquals("weather thunder 20", WeatherCommands.thunder(20, WeatherUnit.SECONDS));
-        assertEquals("weather thunder 120", WeatherCommands.thunder(2, WeatherUnit.MINUTES));
-        assertEquals("weather thunder 3600", WeatherCommands.thunder(1, WeatherUnit.HOURS));
-        assertEquals("weather thunder 86400", WeatherCommands.thunder(1, WeatherUnit.DAYS));
-        assertEquals("weather thunder 8553600", WeatherCommands.thunder(99, WeatherUnit.DAYS));
+        assertEquals("weather thunder 20s", WeatherCommands.thunder(20, WeatherUnit.SECONDS));
+        assertEquals("weather thunder 120s", WeatherCommands.thunder(2, WeatherUnit.MINUTES));
+        assertEquals("weather thunder 3600s", WeatherCommands.thunder(1, WeatherUnit.HOURS));
+        assertEquals("weather thunder 86400s", WeatherCommands.thunder(1, WeatherUnit.DAYS));
+        assertEquals("weather thunder 8553600s", WeatherCommands.thunder(99, WeatherUnit.DAYS));
     }
 
     @Test

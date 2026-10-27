@@ -186,7 +186,7 @@ public final class WorldTimeToolPanel extends UIElement {
 
         var durationField = new TextField();
         durationField.setCharValidator(WeatherDurationInput::isAllowedCharacter);
-        durationField.setTextValidator(WeatherDurationInput::isValid);
+        durationField.setTextValidator(WeatherDurationInput::isValidOrEmpty);
         durationField.textFieldStyle(style ->
                 style.placeholder(Component.translatable("tool.mccreatorutils.world_time.thunder.placeholder")));
         durationField.layout(layout -> layout.flex(1).height(14));

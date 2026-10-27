@@ -33,4 +33,15 @@ class WeatherDurationInputTest {
         assertFalse(WeatherDurationInput.isAllowedCharacter('-'));
         assertFalse(WeatherDurationInput.isAllowedCharacter(' '));
     }
+
+    @Test
+    void emptyIsValidForTheOptionalDuration() {
+        assertTrue(WeatherDurationInput.isValidOrEmpty(null));
+        assertTrue(WeatherDurationInput.isValidOrEmpty(""));
+        assertTrue(WeatherDurationInput.isValidOrEmpty("1"));
+        assertTrue(WeatherDurationInput.isValidOrEmpty("99"));
+        assertFalse(WeatherDurationInput.isValidOrEmpty("0"));
+        assertFalse(WeatherDurationInput.isValidOrEmpty("100"));
+        assertFalse(WeatherDurationInput.isValidOrEmpty("a"));
+    }
 }

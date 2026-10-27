@@ -27,6 +27,6 @@ public final class WeatherCommands {
         if (value < WeatherDurationInput.MIN_VALUE || value > WeatherDurationInput.MAX_VALUE) {
             throw new IllegalArgumentException("Thunder duration must be between 1 and 99");
         }
-        return "weather thunder " + (value * unit.multiplier());
+        return "weather thunder " + (value * unit.multiplier()) + "s";
     }
 }
