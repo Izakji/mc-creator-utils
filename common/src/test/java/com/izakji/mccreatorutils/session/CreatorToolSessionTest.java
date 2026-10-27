@@ -87,6 +87,7 @@ class CreatorToolSessionTest {
         var session = new CreatorToolSession();
         assertNull(session.biomeSelection());
         assertNull(session.structureSelection());
+        assertNull(session.dimensionSelection());
         assertNull(session.itemSelection());
         assertNull(session.mobSelection());
         assertEquals("1", session.itemCountRaw());
@@ -98,11 +99,13 @@ class CreatorToolSessionTest {
         var id = ResourceLocation.parse("minecraft:plains");
         session.setBiomeSelection(id);
         session.setStructureSelection(id);
+        session.setDimensionSelection(id);
         session.setItemSelection(id);
         session.setMobSelection(id);
         session.setItemCountRaw("64");
         assertEquals(id, session.biomeSelection());
         assertEquals(id, session.structureSelection());
+        assertEquals(id, session.dimensionSelection());
         assertEquals(id, session.itemSelection());
         assertEquals(id, session.mobSelection());
         assertEquals("64", session.itemCountRaw());

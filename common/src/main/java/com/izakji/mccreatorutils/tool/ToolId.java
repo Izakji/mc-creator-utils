@@ -12,6 +12,7 @@ public enum ToolId {
     WORLD_TIME("world_time"),
     BIOMES("biomes"),
     STRUCTURES("structures"),
+    DIMENSIONS("dimensions"),
     ITEMS("items"),
     MOBS("mobs");
 

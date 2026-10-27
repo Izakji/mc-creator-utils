@@ -19,11 +19,15 @@ public final class ToolCatalog {
     public static final ToolDescriptor STRUCTURES =
             new ToolDescriptor(ToolId.STRUCTURES, "tool.mccreatorutils.structures", "");
 
+    public static final ToolDescriptor DIMENSIONS =
+            new ToolDescriptor(ToolId.DIMENSIONS, "tool.mccreatorutils.dimensions", "");
+
     public static final ToolDescriptor ITEMS = new ToolDescriptor(ToolId.ITEMS, "tool.mccreatorutils.items", "");
 
     public static final ToolDescriptor MOBS = new ToolDescriptor(ToolId.MOBS, "tool.mccreatorutils.mobs", "");
 
-    private static final List<ToolDescriptor> TOOLS = List.of(CAMERA, WORLD_TIME, BIOMES, STRUCTURES, ITEMS, MOBS);
+    private static final List<ToolDescriptor> TOOLS =
+            List.of(CAMERA, WORLD_TIME, BIOMES, STRUCTURES, DIMENSIONS, ITEMS, MOBS);
 
     private ToolCatalog() {}
 

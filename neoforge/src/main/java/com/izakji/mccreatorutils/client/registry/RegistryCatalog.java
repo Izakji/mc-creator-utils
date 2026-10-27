@@ -51,6 +51,9 @@ public final class RegistryCatalog {
                 Component.translatableWithFallback(
                         "biome." + id.getNamespace() + "." + id.getPath(), prettyPath(id.getPath()));
             case STRUCTURE -> Component.literal(prettyPath(id.getPath()));
+            case DIMENSION ->
+                Component.translatableWithFallback(
+                        "dimension." + id.getNamespace() + "." + id.getPath(), prettyPath(id.getPath()));
         };
     }
 
@@ -83,7 +86,36 @@ public final class RegistryCatalog {
             }
             case BIOME -> dynamicIds(Registries.BIOME);
             case STRUCTURE -> dynamicIds(Registries.STRUCTURE);
+            case DIMENSION -> dimensionIds();
         };
+    }
+
+    private static Collection<ResourceLocation> dimensionIds() {
+        Minecraft minecraft = Minecraft.getInstance();
+        var connection = minecraft.getConnection();
+        if (connection != null) {
+            Set<ResourceLocation> ids = new HashSet<>();
+            for (var key : connection.levels()) {
+                ids.add(key.location());
+            }
+            if (!ids.isEmpty()) {
+                return ids;
+            }
+        }
+
+        var server = minecraft.getSingleplayerServer();
+        if (server != null) {
+            Set<ResourceLocation> ids = new HashSet<>();
+            for (var key : server.levelKeys()) {
+                ids.add(key.location());
+            }
+            if (!ids.isEmpty()) {
+                return ids;
+            }
+        }
+
+        var level = minecraft.level;
+        return level == null ? List.of() : List.of(level.dimension().location());
     }
 
     private static <T> Collection<ResourceLocation> dynamicIds(

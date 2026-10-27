@@ -28,6 +28,7 @@ public final class CreatorToolSession {
     private boolean freezeTime;
     private ResourceLocation biomeSelection;
     private ResourceLocation structureSelection;
+    private ResourceLocation dimensionSelection;
     private ResourceLocation itemSelection;
     private String itemCountRaw = "1";
     private ResourceLocation mobSelection;
@@ -116,6 +117,14 @@ public final class CreatorToolSession {
 
     public void setStructureSelection(ResourceLocation structureSelection) {
         this.structureSelection = structureSelection;
+    }
+
+    public ResourceLocation dimensionSelection() {
+        return dimensionSelection;
+    }
+
+    public void setDimensionSelection(ResourceLocation dimensionSelection) {
+        this.dimensionSelection = dimensionSelection;
     }
 
     public ResourceLocation itemSelection() {

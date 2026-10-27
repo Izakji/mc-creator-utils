@@ -128,6 +128,8 @@ public final class CreatorToolsUi {
             content.addChild(new BiomesToolPanel());
         } else if (tool.id() == ToolId.STRUCTURES) {
             content.addChild(new StructuresToolPanel());
+        } else if (tool.id() == ToolId.DIMENSIONS) {
+            content.addChild(new DimensionsToolPanel());
         } else if (tool.id() == ToolId.ITEMS) {
             content.addChild(new ItemsToolPanel());
         } else if (tool.id() == ToolId.MOBS) {

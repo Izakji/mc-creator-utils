@@ -30,8 +30,24 @@ class ToolCatalogTest {
     @Test
     void catalogPreservesDeclarationOrder() {
         assertEquals(
-                List.of(ToolId.CAMERA, ToolId.WORLD_TIME, ToolId.BIOMES, ToolId.STRUCTURES, ToolId.ITEMS, ToolId.MOBS),
+                List.of(
+                        ToolId.CAMERA,
+                        ToolId.WORLD_TIME,
+                        ToolId.BIOMES,
+                        ToolId.STRUCTURES,
+                        ToolId.DIMENSIONS,
+                        ToolId.ITEMS,
+                        ToolId.MOBS),
                 ToolCatalog.tools().stream().map(ToolDescriptor::id).toList());
+    }
+
+    @Test
+    void dimensionsDescriptorHasNoRequiredMod() {
+        var dimensions = ToolCatalog.DIMENSIONS;
+        assertEquals(ToolId.DIMENSIONS, dimensions.id());
+        assertEquals("dimensions", dimensions.id().id());
+        assertEquals("tool.mccreatorutils.dimensions", dimensions.translationKey());
+        assertFalse(dimensions.hasRequiredMod());
     }
 
     @Test
@@ -45,8 +61,12 @@ class ToolCatalogTest {
 
     @Test
     void registryToolsRequireNoMod() {
-        for (ToolDescriptor tool :
-                List.of(ToolCatalog.BIOMES, ToolCatalog.STRUCTURES, ToolCatalog.ITEMS, ToolCatalog.MOBS)) {
+        for (ToolDescriptor tool : List.of(
+                ToolCatalog.BIOMES,
+                ToolCatalog.STRUCTURES,
+                ToolCatalog.DIMENSIONS,
+                ToolCatalog.ITEMS,
+                ToolCatalog.MOBS)) {
             assertFalse(tool.hasRequiredMod());
         }
     }

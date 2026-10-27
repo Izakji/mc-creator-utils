@@ -8,6 +8,7 @@ package com.izakji.mccreatorutils.client.registry;
 public enum RegistryKind {
     BIOME,
     STRUCTURE,
+    DIMENSION,
     ITEM,
     MOB
 }
