@@ -107,6 +107,7 @@ public final class WorldTimeToolPanel extends UIElement {
                 style -> style.placeholder(Component.translatable("tool.mccreatorutils.world_time.ticks.placeholder")));
         tickField.layout(layout -> layout.flex(1).height(14));
         tickField.setText(session.timeTicksRaw());
+        tickField.setTextResponder(session::setTimeTicksRaw);
 
         var setButton = new Button();
         setButton.setText(Component.translatable("tool.mccreatorutils.world_time.set_ticks"));
@@ -190,6 +191,7 @@ public final class WorldTimeToolPanel extends UIElement {
                 style.placeholder(Component.translatable("tool.mccreatorutils.world_time.thunder.placeholder")));
         durationField.layout(layout -> layout.flex(1).height(14));
         durationField.setText(session.thunderDurationRaw());
+        durationField.setTextResponder(session::setThunderDurationRaw);
 
         var unitSelector = new Selector<WeatherUnit>();
         unitSelector.setCandidates(List.of(WeatherUnit.values()));

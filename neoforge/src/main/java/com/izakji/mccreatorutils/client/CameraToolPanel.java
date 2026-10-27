@@ -119,6 +119,7 @@ public final class CameraToolPanel extends UIElement {
                 style -> style.placeholder(Component.translatable("tool.mccreatorutils.camera.duration.placeholder")));
         durationField.layout(layout -> layout.flex(1).height(14));
         durationField.setText(session.cameraDurationRaw());
+        durationField.setTextResponder(session::setCameraDurationRaw);
 
         var unitSelector = new Selector<DurationUnit>();
         unitSelector.setCandidates(List.of(DurationUnit.values()));
