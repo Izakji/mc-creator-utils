@@ -16,8 +16,21 @@ public final class CommandStatusLabel extends Label {
     }
 
     public void runCommand(String command) {
-        ClientCommandRunner.CommandResult result = ClientCommandRunner.execute(command);
+        showResult(ClientCommandRunner.execute(command));
+    }
+
+    public void showInfo(Component message) {
+        setText(message);
+        textStyle(style -> style.textColor(ColorPattern.YELLOW.color));
+    }
+
+    public void showResult(ClientCommandRunner.CommandResult result) {
         setText(result.message());
         textStyle(style -> style.textColor(result.success() ? ColorPattern.GREEN.color : ColorPattern.RED.color));
+    }
+
+    public void showError(Component message) {
+        setText(message);
+        textStyle(style -> style.textColor(ColorPattern.RED.color));
     }
 }
