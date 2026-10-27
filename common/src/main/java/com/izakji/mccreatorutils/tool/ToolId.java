@@ -8,7 +8,8 @@ import java.util.Objects;
  * @author Izakji
  */
 public enum ToolId {
-    CAMERA("camera");
+    CAMERA("camera"),
+    WORLD_TIME("world_time");
 
     private final String id;
 

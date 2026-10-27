@@ -11,7 +11,10 @@ public final class ToolCatalog {
     public static final ToolDescriptor CAMERA =
             new ToolDescriptor(ToolId.CAMERA, "tool.mccreatorutils.camera", "cmdcam");
 
-    private static final List<ToolDescriptor> TOOLS = List.of(CAMERA);
+    public static final ToolDescriptor WORLD_TIME =
+            new ToolDescriptor(ToolId.WORLD_TIME, "tool.mccreatorutils.world_time", "");
+
+    private static final List<ToolDescriptor> TOOLS = List.of(CAMERA, WORLD_TIME);
 
     private ToolCatalog() {}
 
