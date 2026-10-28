@@ -7,11 +7,9 @@ import com.izakji.mccreatorutils.session.CreatorToolSession;
 import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Button;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Label;
-import com.lowdragmc.lowdraglib2.gui.ui.elements.Selector;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Switch;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.TextField;
 import com.lowdragmc.lowdraglib2.gui.ui.event.UIEvents;
-import com.lowdragmc.lowdraglib2.gui.ui.utils.UIElementProvider;
 import dev.vfyjxf.taffy.style.AlignItems;
 import dev.vfyjxf.taffy.style.FlexDirection;
 import java.util.List;
@@ -24,11 +22,11 @@ import net.minecraft.network.chat.Component;
  */
 public final class PlayerToolPanel extends UIElement {
     private final CreatorToolSession session = CreatorToolSession.instance();
-    private final CommandStatusLabel status = new CommandStatusLabel();
+    private final CommandConsole console = new CommandConsole();
     private final Switch invincibleToggle = new Switch();
     private final Switch waterBreathingToggle = new Switch();
     private final TextField xpAmountField = new TextField();
-    private final Selector<XpType> xpTypeSelector = new Selector<>();
+    private final SearchableSelector<XpType> xpTypeSelector = new SearchableSelector<>();
     private final Button addXpButton = new Button();
 
     public PlayerToolPanel() {
@@ -45,7 +43,7 @@ public final class PlayerToolPanel extends UIElement {
         addChild(buildClearEffectsButton());
         addChild(buildWaterBreathingRow());
         addChild(buildXpSection());
-        addChild(status);
+        addChild(console);
     }
 
     private UIElement buildInvincibleRow() {
@@ -53,7 +51,7 @@ public final class PlayerToolPanel extends UIElement {
         invincibleToggle.setOn(session.invincible(), false);
         invincibleToggle.setOnSwitchChanged(value -> {
             session.setInvincible(value);
-            status.runCommand(value ? PlayerCommands.giveInvincible() : PlayerCommands.clearInvincible());
+            console.runCommand(value ? PlayerCommands.giveInvincible() : PlayerCommands.clearInvincible());
         });
         return row;
     }
@@ -63,7 +61,7 @@ public final class PlayerToolPanel extends UIElement {
         waterBreathingToggle.setOn(session.waterBreathing(), false);
         waterBreathingToggle.setOnSwitchChanged(value -> {
             session.setWaterBreathing(value);
-            status.runCommand(value ? PlayerCommands.giveWaterBreathing() : PlayerCommands.clearWaterBreathing());
+            console.runCommand(value ? PlayerCommands.giveWaterBreathing() : PlayerCommands.clearWaterBreathing());
         });
         return row;
     }
@@ -77,7 +75,7 @@ public final class PlayerToolPanel extends UIElement {
             session.setWaterBreathing(false);
             invincibleToggle.setOn(false, false);
             waterBreathingToggle.setOn(false, false);
-            status.runCommand(PlayerCommands.clearEffects());
+            console.runCommand(PlayerCommands.clearEffects());
         });
         return clearButton;
     }
@@ -92,8 +90,10 @@ public final class PlayerToolPanel extends UIElement {
         section.addChild(label);
 
         var row = new UIElement();
-        row.layout(layout ->
-                layout.widthPercent(100).flexDirection(FlexDirection.ROW).gapAll(4));
+        row.layout(layout -> layout.widthPercent(100)
+                .height(28)
+                .flexDirection(FlexDirection.ROW)
+                .gapAll(4));
 
         xpAmountField.setCharValidator(XpAmountInput::isAllowedCharacter);
         xpAmountField.setTextValidator(raw -> raw.isEmpty() || XpAmountInput.isValid(raw));
@@ -103,10 +103,10 @@ public final class PlayerToolPanel extends UIElement {
         xpAmountField.setText(session.xpAmountRaw());
         xpAmountField.setTextResponder(session::setXpAmountRaw);
 
-        xpTypeSelector.setCandidates(List.of(XpType.values()));
-        xpTypeSelector.setCandidateUIProvider(UIElementProvider.text(
-                type -> type == null ? Component.empty() : Component.translatable(type.translationKey())));
-        xpTypeSelector.layout(layout -> layout.width(62).height(14));
+        xpTypeSelector.setCandidates(
+                List.of(XpType.values()),
+                type -> type == null ? Component.empty() : Component.translatable(type.translationKey()));
+        xpTypeSelector.layout(layout -> layout.width(62).height(27));
         xpTypeSelector.setSelected(session.xpType());
 
         addXpButton.setText(Component.translatable("tool.mccreatorutils.player.add_xp"));
@@ -130,7 +130,7 @@ public final class PlayerToolPanel extends UIElement {
             XpAmountInput.parse(xpAmountField.getRawText()).ifPresent(amount -> {
                 XpType type = xpTypeSelector.getValue();
                 if (type != null) {
-                    status.runCommand(PlayerCommands.addXp(amount, type));
+                    console.runCommand(PlayerCommands.addXp(amount, type));
                 }
             });
         });

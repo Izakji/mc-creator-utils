@@ -5,6 +5,7 @@ import com.izakji.mccreatorutils.client.registry.RegistryPicker;
 import com.izakji.mccreatorutils.items.GiveCommands;
 import com.izakji.mccreatorutils.items.ItemCountInput;
 import com.izakji.mccreatorutils.session.CreatorToolSession;
+import com.izakji.mccreatorutils.tool.ToolId;
 import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Button;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Label;
@@ -24,7 +25,7 @@ public final class ItemsToolPanel extends UIElement {
     private final CommandStatusLabel status = new CommandStatusLabel();
     private final TextField countField = new TextField();
     private final Button giveButton = new Button();
-    private final ModelPreview preview = new ModelPreview(ModelPreview.Kind.ITEM);
+    private final ModelPreview preview = new ModelPreview(ModelPreview.Kind.ITEM, ToolId.ITEMS);
     private final RegistryPicker picker;
 
     public ItemsToolPanel() {

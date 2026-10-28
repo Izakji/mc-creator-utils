@@ -4,6 +4,7 @@ import com.izakji.mccreatorutils.client.registry.RegistryKind;
 import com.izakji.mccreatorutils.client.registry.RegistryPicker;
 import com.izakji.mccreatorutils.mobs.MobCommands;
 import com.izakji.mccreatorutils.session.CreatorToolSession;
+import com.izakji.mccreatorutils.tool.ToolId;
 import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Button;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Label;
@@ -20,7 +21,7 @@ public final class MobsToolPanel extends UIElement {
     private final CreatorToolSession session = CreatorToolSession.instance();
     private final CommandStatusLabel status = new CommandStatusLabel();
     private final Button summonButton = new Button();
-    private final ModelPreview preview = new ModelPreview(ModelPreview.Kind.MOB);
+    private final ModelPreview preview = new ModelPreview(ModelPreview.Kind.MOB, ToolId.MOBS);
     private final RegistryPicker picker;
 
     public MobsToolPanel() {

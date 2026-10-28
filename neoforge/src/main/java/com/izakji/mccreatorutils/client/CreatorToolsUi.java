@@ -35,10 +35,14 @@ public final class CreatorToolsUi {
     private CreatorToolsUi() {}
 
     public static ModularUI create() {
-        return new CreatorToolsUi().build();
+        return create(ToolCatalog.tools().get(0).id());
     }
 
-    private ModularUI build() {
+    public static ModularUI create(ToolId initialTool) {
+        return new CreatorToolsUi().build(initialTool);
+    }
+
+    private ModularUI build(ToolId initialTool) {
         var root = new UIElement()
                 .layout(layout -> layout.width(360)
                         .height(300)
@@ -107,7 +111,11 @@ public final class CreatorToolsUi {
                 Math.max(1, Math.min(360, screenSize.getWidth() - 20)),
                 Math.max(1, Math.min(300, screenSize.getHeight() - 20)));
 
-        selectTool(ToolCatalog.tools().get(0));
+        ToolDescriptor initial = ToolCatalog.tools().stream()
+                .filter(tool -> tool.id() == initialTool)
+                .findFirst()
+                .orElseGet(() -> ToolCatalog.tools().get(0));
+        selectTool(initial);
         return ModularUI.of(UI.of(root, dynamicSize));
     }
 
