@@ -39,17 +39,20 @@ public final class RegistryPicker extends UIElement {
 
         groups = RegistryCatalog.groups(kind);
         this.hasGroups = !groups.isEmpty();
+        boolean searchable = kind == RegistryKind.BIOME || kind == RegistryKind.ITEM || kind == RegistryKind.MOB;
 
-        searchField.setAnyString();
-        searchField.textFieldStyle(
-                style -> style.placeholder(Component.translatable("tool.mccreatorutils.search.placeholder")));
-        searchField.layout(layout -> layout.widthPercent(100).height(11));
-        searchField.setTextResponder(ignored -> applySearch());
-        searchField.addEventListener(UIEvents.TICK, event -> {
-            if (!searchField.getRawText().equals(lastQuery)) {
-                applySearch();
-            }
-        });
+        if (searchable) {
+            searchField.setAnyString();
+            searchField.textFieldStyle(
+                    style -> style.placeholder(Component.translatable("tool.mccreatorutils.search.placeholder")));
+            searchField.layout(layout -> layout.widthPercent(100).height(11));
+            searchField.setTextResponder(ignored -> applySearch());
+            searchField.addEventListener(UIEvents.TICK, event -> {
+                if (!searchField.getRawText().equals(lastQuery)) {
+                    applySearch();
+                }
+            });
+        }
 
         modSelector.setCandidates(groups);
         modSelector.setCandidateUIProvider(UIElementProvider.text(group -> group == null
@@ -74,8 +77,10 @@ public final class RegistryPicker extends UIElement {
         });
         entrySelector.setOnValueChanged(this.onSelectionChanged);
 
+        if (searchable) {
+            addChild(searchField);
+        }
         addChildren(
-                searchField,
                 section(Component.translatable("tool.mccreatorutils.registry.mod"), modSelector),
                 section(Component.translatable("tool.mccreatorutils.registry.entry"), entrySelector));
     }

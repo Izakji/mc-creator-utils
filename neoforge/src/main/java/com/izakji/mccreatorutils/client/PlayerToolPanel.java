@@ -7,9 +7,11 @@ import com.izakji.mccreatorutils.session.CreatorToolSession;
 import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Button;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Label;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.Selector;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Switch;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.TextField;
 import com.lowdragmc.lowdraglib2.gui.ui.event.UIEvents;
+import com.lowdragmc.lowdraglib2.gui.ui.utils.UIElementProvider;
 import dev.vfyjxf.taffy.style.AlignItems;
 import dev.vfyjxf.taffy.style.FlexDirection;
 import java.util.List;
@@ -26,7 +28,7 @@ public final class PlayerToolPanel extends UIElement {
     private final Switch invincibleToggle = new Switch();
     private final Switch waterBreathingToggle = new Switch();
     private final TextField xpAmountField = new TextField();
-    private final SearchableSelector<XpType> xpTypeSelector = new SearchableSelector<>();
+    private final Selector<XpType> xpTypeSelector = new Selector<>();
     private final Button addXpButton = new Button();
 
     public PlayerToolPanel() {
@@ -103,10 +105,10 @@ public final class PlayerToolPanel extends UIElement {
         xpAmountField.setText(session.xpAmountRaw());
         xpAmountField.setTextResponder(session::setXpAmountRaw);
 
-        xpTypeSelector.setCandidates(
-                List.of(XpType.values()),
-                type -> type == null ? Component.empty() : Component.translatable(type.translationKey()));
-        xpTypeSelector.layout(layout -> layout.width(62).height(27));
+        xpTypeSelector.setCandidates(List.of(XpType.values()));
+        xpTypeSelector.setCandidateUIProvider(UIElementProvider.text(
+                type -> type == null ? Component.empty() : Component.translatable(type.translationKey())));
+        xpTypeSelector.layout(layout -> layout.width(62).height(14));
         xpTypeSelector.setSelected(session.xpType());
 
         addXpButton.setText(Component.translatable("tool.mccreatorutils.player.add_xp"));

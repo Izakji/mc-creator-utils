@@ -10,9 +10,11 @@ import com.izakji.mccreatorutils.weather.WeatherUnit;
 import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Button;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Label;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.Selector;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Switch;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.TextField;
 import com.lowdragmc.lowdraglib2.gui.ui.event.UIEvents;
+import com.lowdragmc.lowdraglib2.gui.ui.utils.UIElementProvider;
 import dev.vfyjxf.taffy.style.AlignItems;
 import dev.vfyjxf.taffy.style.FlexDirection;
 import java.util.List;
@@ -55,17 +57,14 @@ public final class WorldTimeToolPanel extends UIElement {
         section.addChild(label);
 
         var row = new UIElement();
-        row.layout(layout -> layout.widthPercent(100)
-                .height(28)
-                .flexDirection(FlexDirection.ROW)
-                .gapAll(4));
+        row.layout(layout ->
+                layout.widthPercent(100).flexDirection(FlexDirection.ROW).gapAll(4));
 
-        var presetSelector = new SearchableSelector<TimePreset>();
-        presetSelector.setCandidates(
-                List.of(TimePreset.values()),
-                preset -> Component.translatable(
-                        preset == null ? "tool.mccreatorutils.world_time.preset.select" : preset.translationKey()));
-        presetSelector.layout(layout -> layout.flex(1).height(27));
+        var presetSelector = new Selector<TimePreset>();
+        presetSelector.setCandidates(List.of(TimePreset.values()));
+        presetSelector.setCandidateUIProvider(UIElementProvider.text(preset -> Component.translatable(
+                preset == null ? "tool.mccreatorutils.world_time.preset.select" : preset.translationKey())));
+        presetSelector.layout(layout -> layout.flex(1).height(14));
         presetSelector.setSelected(session.timePreset());
         presetSelector.setOnValueChanged(preset -> {
             if (preset != null) {
@@ -182,10 +181,8 @@ public final class WorldTimeToolPanel extends UIElement {
         section.addChild(actionRow);
 
         var thunderRow = new UIElement();
-        thunderRow.layout(layout -> layout.widthPercent(100)
-                .height(28)
-                .flexDirection(FlexDirection.ROW)
-                .gapAll(4));
+        thunderRow.layout(layout ->
+                layout.widthPercent(100).flexDirection(FlexDirection.ROW).gapAll(4));
 
         var durationField = new TextField();
         durationField.setCharValidator(WeatherDurationInput::isAllowedCharacter);
@@ -196,11 +193,11 @@ public final class WorldTimeToolPanel extends UIElement {
         durationField.setText(session.thunderDurationRaw());
         durationField.setTextResponder(session::setThunderDurationRaw);
 
-        var unitSelector = new SearchableSelector<WeatherUnit>();
-        unitSelector.setCandidates(
-                List.of(WeatherUnit.values()),
-                unit -> unit == null ? Component.empty() : Component.translatable(unit.translationKey()));
-        unitSelector.layout(layout -> layout.width(58).height(27));
+        var unitSelector = new Selector<WeatherUnit>();
+        unitSelector.setCandidates(List.of(WeatherUnit.values()));
+        unitSelector.setCandidateUIProvider(UIElementProvider.text(
+                unit -> unit == null ? Component.empty() : Component.translatable(unit.translationKey())));
+        unitSelector.layout(layout -> layout.width(58).height(14));
         unitSelector.setSelected(session.thunderUnit());
         unitSelector.setOnValueChanged(unit -> {
             if (unit != null) {

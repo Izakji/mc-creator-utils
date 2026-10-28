@@ -1,7 +1,5 @@
 package com.izakji.mccreatorutils.client;
 
-import com.izakji.mccreatorutils.tool.ToolCatalog;
-import com.izakji.mccreatorutils.tool.ToolId;
 import com.lowdragmc.lowdraglib2.gui.holder.ModularUIScreen;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.network.chat.Component;
@@ -13,11 +11,7 @@ import net.minecraft.network.chat.Component;
  */
 public final class CreatorToolsScreen extends ModularUIScreen {
     public CreatorToolsScreen() {
-        this(ToolCatalog.tools().get(0).id());
-    }
-
-    public CreatorToolsScreen(ToolId initialTool) {
-        super(CreatorToolsUi.create(initialTool), Component.translatable("screen.mccreatorutils.creator_tools"));
+        super(CreatorToolsUi.create(), Component.translatable("screen.mccreatorutils.creator_tools"));
     }
 
     @Override

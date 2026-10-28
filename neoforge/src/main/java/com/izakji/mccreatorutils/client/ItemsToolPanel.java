@@ -5,7 +5,6 @@ import com.izakji.mccreatorutils.client.registry.RegistryPicker;
 import com.izakji.mccreatorutils.items.GiveCommands;
 import com.izakji.mccreatorutils.items.ItemCountInput;
 import com.izakji.mccreatorutils.session.CreatorToolSession;
-import com.izakji.mccreatorutils.tool.ToolId;
 import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Button;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Label;
@@ -25,30 +24,38 @@ public final class ItemsToolPanel extends UIElement {
     private final CommandStatusLabel status = new CommandStatusLabel();
     private final TextField countField = new TextField();
     private final Button giveButton = new Button();
-    private final ModelPreview preview = new ModelPreview(ModelPreview.Kind.ITEM, ToolId.ITEMS);
+    private final ModelPreview preview = new ModelPreview(ModelPreview.Kind.ITEM);
     private final RegistryPicker picker;
 
     public ItemsToolPanel() {
         this.layout(layout -> layout.widthPercent(100)
                 .heightPercent(100)
+                .flexDirection(FlexDirection.ROW)
+                .gapAll(5));
+
+        var controls = new UIElement();
+        controls.layout(layout -> layout.flex(1)
+                .heightPercent(100)
                 .flexDirection(FlexDirection.COLUMN)
                 .gapAll(5));
+        preview.layout(layout -> layout.width(170).heightPercent(100));
+        addChildren(controls, preview);
 
         var description = new Label();
         description.setText(Component.translatable("tool.mccreatorutils.items.description"));
-        addChild(description);
+        controls.addChild(description);
 
         picker = new RegistryPicker(RegistryKind.ITEM, session.itemSelection(), entry -> {
             session.setItemSelection(entry);
             preview.setSelection(entry);
             updateState();
         });
-        addChild(picker);
+        controls.addChild(picker);
         preview.setSelection(session.itemSelection());
 
         var countLabel = new Label();
         countLabel.setText(Component.translatable("tool.mccreatorutils.items.count"));
-        addChild(countLabel);
+        controls.addChild(countLabel);
 
         countField.setCharValidator(ItemCountInput::isAllowedCharacter);
         countField.setTextValidator(ItemCountInput::isValid);
@@ -61,7 +68,7 @@ public final class ItemsToolPanel extends UIElement {
         countRow.layout(layout ->
                 layout.widthPercent(100).flexDirection(FlexDirection.ROW).gapAll(4));
         countRow.addChild(countField);
-        addChild(countRow);
+        controls.addChild(countRow);
         countField.addEventListener(UIEvents.TICK, event -> {
             session.setItemCountRaw(countField.getRawText());
             updateState();
@@ -77,7 +84,7 @@ public final class ItemsToolPanel extends UIElement {
                 }
             });
         });
-        addChild(giveButton);
+        controls.addChild(giveButton);
 
         var clearRow = new UIElement();
         clearRow.layout(layout ->
@@ -91,10 +98,9 @@ public final class ItemsToolPanel extends UIElement {
         clearWorldItems.layout(layout -> layout.flex(1).height(16));
         clearWorldItems.setOnClick(event -> status.runCommand(GiveCommands.clearWorldItems()));
         clearRow.addChildren(clearInventory, clearWorldItems);
-        addChild(clearRow);
+        controls.addChild(clearRow);
 
-        addChild(status);
-        addChild(preview);
+        controls.addChild(status);
         updateState();
     }
 

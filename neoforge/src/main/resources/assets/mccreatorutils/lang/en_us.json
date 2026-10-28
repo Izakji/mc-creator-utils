@@ -2,8 +2,6 @@
   "key.categories.mccreatorutils": "Creator Utils",
   "key.mccreatorutils.open_gui": "Open Creator Utils",
   "screen.mccreatorutils.creator_tools": "Creator Utils",
-  "screen.mccreatorutils.model_preview": "Model Preview",
-  "screen.mccreatorutils.model_preview.help": "Drag to rotate - Scroll to zoom",
   "tool.mccreatorutils.camera": "Camera",
   "tool.mccreatorutils.camera.placeholder": "Camera controls are being prepared.",
   "tool.mccreatorutils.camera.description": "Automates CMDCam scene commands.",

@@ -21,8 +21,8 @@ import net.minecraft.network.chat.Component;
  */
 public final class CommandConsole extends UIElement {
     private static final int MAX_LINES = 80;
-    private static final float FONT_SIZE = 0.7f;
-    private static final float LINE_HEIGHT = 10.0f;
+    private static final float FONT_SIZE = 9.0f;
+    private static final float LINE_HEIGHT = 14.0f;
 
     private final ScrollerView scroller = new ScrollerView();
     private final UIElement lines = new UIElement();
@@ -30,7 +30,7 @@ public final class CommandConsole extends UIElement {
     private int maxLineWidth = 226;
 
     public CommandConsole() {
-        layout(layout -> layout.widthPercent(100).height(64));
+        layout(layout -> layout.widthPercent(100).height(112));
         style(style -> style.background(Sprites.RECT_DARK));
         scroller.layout(layout -> layout.widthPercent(100).flex(1));
         scroller.scrollerStyle(style -> style.mode(ScrollerMode.BOTH)
@@ -56,7 +56,7 @@ public final class CommandConsole extends UIElement {
                 .textShadow(false)
                 .textWrap(TextWrap.NONE)
                 .adaptiveWidth(false));
-        int width = Math.max(226, Minecraft.getInstance().font.width(text) + 8);
+        int width = Math.max(226, Math.round(Minecraft.getInstance().font.width(text) * (FONT_SIZE / 9.0f)) + 8);
         line.layout(layout -> layout.width(width).height(LINE_HEIGHT));
         lines.addChild(line);
         lineLabels.add(line);
