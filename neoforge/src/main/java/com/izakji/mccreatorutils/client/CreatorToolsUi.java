@@ -41,7 +41,7 @@ public final class CreatorToolsUi {
     private ModularUI build() {
         var root = new UIElement()
                 .layout(layout -> layout.width(360)
-                        .height(240)
+                        .height(300)
                         .flexDirection(FlexDirection.ROW)
                         .paddingAll(6)
                         .gapAll(6))
@@ -105,7 +105,7 @@ public final class CreatorToolsUi {
 
         UI.DynamicSizeProvider dynamicSize = screenSize -> Size.of(
                 Math.max(1, Math.min(360, screenSize.getWidth() - 20)),
-                Math.max(1, Math.min(240, screenSize.getHeight() - 20)));
+                Math.max(1, Math.min(300, screenSize.getHeight() - 20)));
 
         selectTool(ToolCatalog.tools().get(0));
         return ModularUI.of(UI.of(root, dynamicSize));
@@ -134,6 +134,8 @@ public final class CreatorToolsUi {
             content.addChild(new ItemsToolPanel());
         } else if (tool.id() == ToolId.MOBS) {
             content.addChild(new MobsToolPanel());
+        } else if (tool.id() == ToolId.PLAYER) {
+            content.addChild(new PlayerToolPanel());
         }
     }
 }

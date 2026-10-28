@@ -37,8 +37,18 @@ class ToolCatalogTest {
                         ToolId.STRUCTURES,
                         ToolId.DIMENSIONS,
                         ToolId.ITEMS,
-                        ToolId.MOBS),
+                        ToolId.MOBS,
+                        ToolId.PLAYER),
                 ToolCatalog.tools().stream().map(ToolDescriptor::id).toList());
+    }
+
+    @Test
+    void playerDescriptorHasNoRequiredMod() {
+        var player = ToolCatalog.PLAYER;
+        assertEquals(ToolId.PLAYER, player.id());
+        assertEquals("player", player.id().id());
+        assertEquals("tool.mccreatorutils.player", player.translationKey());
+        assertFalse(player.hasRequiredMod());
     }
 
     @Test

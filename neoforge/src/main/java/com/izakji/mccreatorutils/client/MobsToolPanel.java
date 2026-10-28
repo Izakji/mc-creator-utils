@@ -20,6 +20,7 @@ public final class MobsToolPanel extends UIElement {
     private final CreatorToolSession session = CreatorToolSession.instance();
     private final CommandStatusLabel status = new CommandStatusLabel();
     private final Button summonButton = new Button();
+    private final ModelPreview preview = new ModelPreview(ModelPreview.Kind.MOB);
     private final RegistryPicker picker;
 
     public MobsToolPanel() {
@@ -34,9 +35,11 @@ public final class MobsToolPanel extends UIElement {
 
         picker = new RegistryPicker(RegistryKind.MOB, session.mobSelection(), entry -> {
             session.setMobSelection(entry);
+            preview.setSelection(entry);
             updateSummonButton();
         });
         addChild(picker);
+        preview.setSelection(session.mobSelection());
 
         summonButton.setText(Component.translatable("tool.mccreatorutils.mobs.summon"));
         summonButton.layout(layout -> layout.widthPercent(100).height(16));
@@ -55,6 +58,7 @@ public final class MobsToolPanel extends UIElement {
         addChild(killButton);
 
         addChild(status);
+        addChild(preview);
         updateSummonButton();
     }
 

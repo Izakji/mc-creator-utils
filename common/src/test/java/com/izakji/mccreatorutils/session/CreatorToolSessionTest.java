@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.izakji.mccreatorutils.camera.CamMode;
 import com.izakji.mccreatorutils.camera.DurationUnit;
+import com.izakji.mccreatorutils.player.XpType;
 import com.izakji.mccreatorutils.time.TimePreset;
 import com.izakji.mccreatorutils.weather.WeatherUnit;
 import net.minecraft.resources.ResourceLocation;
@@ -55,6 +56,30 @@ class CreatorToolSessionTest {
         assertEquals("2", session.thunderDurationRaw());
         assertEquals(WeatherUnit.HOURS, session.thunderUnit());
         assertTrue(session.freezeTime());
+    }
+
+    @Test
+    void storesPlayerToolSelections() {
+        var session = new CreatorToolSession();
+        session.setInvincible(true);
+        session.setWaterBreathing(true);
+        session.setXpAmountRaw("250");
+        session.setXpType(XpType.POINTS);
+
+        assertTrue(session.invincible());
+        assertTrue(session.waterBreathing());
+        assertEquals("250", session.xpAmountRaw());
+        assertEquals(XpType.POINTS, session.xpType());
+    }
+
+    @Test
+    void playerToolDefaultsAreOffAndLevels() {
+        var session = new CreatorToolSession();
+
+        assertFalse(session.invincible());
+        assertFalse(session.waterBreathing());
+        assertEquals("", session.xpAmountRaw());
+        assertEquals(XpType.LEVELS, session.xpType());
     }
 
     @Test

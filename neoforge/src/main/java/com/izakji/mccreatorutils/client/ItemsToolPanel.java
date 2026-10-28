@@ -24,6 +24,7 @@ public final class ItemsToolPanel extends UIElement {
     private final CommandStatusLabel status = new CommandStatusLabel();
     private final TextField countField = new TextField();
     private final Button giveButton = new Button();
+    private final ModelPreview preview = new ModelPreview(ModelPreview.Kind.ITEM);
     private final RegistryPicker picker;
 
     public ItemsToolPanel() {
@@ -38,9 +39,11 @@ public final class ItemsToolPanel extends UIElement {
 
         picker = new RegistryPicker(RegistryKind.ITEM, session.itemSelection(), entry -> {
             session.setItemSelection(entry);
+            preview.setSelection(entry);
             updateState();
         });
         addChild(picker);
+        preview.setSelection(session.itemSelection());
 
         var countLabel = new Label();
         countLabel.setText(Component.translatable("tool.mccreatorutils.items.count"));
@@ -90,6 +93,7 @@ public final class ItemsToolPanel extends UIElement {
         addChild(clearRow);
 
         addChild(status);
+        addChild(preview);
         updateState();
     }
 

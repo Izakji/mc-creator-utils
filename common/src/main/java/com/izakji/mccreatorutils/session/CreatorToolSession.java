@@ -2,6 +2,7 @@ package com.izakji.mccreatorutils.session;
 
 import com.izakji.mccreatorutils.camera.CamMode;
 import com.izakji.mccreatorutils.camera.DurationUnit;
+import com.izakji.mccreatorutils.player.XpType;
 import com.izakji.mccreatorutils.time.TimePreset;
 import com.izakji.mccreatorutils.weather.WeatherUnit;
 import java.util.Objects;
@@ -32,6 +33,10 @@ public final class CreatorToolSession {
     private ResourceLocation itemSelection;
     private String itemCountRaw = "1";
     private ResourceLocation mobSelection;
+    private boolean invincible;
+    private boolean waterBreathing;
+    private String xpAmountRaw = "";
+    private XpType xpType = XpType.LEVELS;
 
     public CreatorToolSession() {}
 
@@ -149,5 +154,37 @@ public final class CreatorToolSession {
 
     public void setMobSelection(ResourceLocation mobSelection) {
         this.mobSelection = mobSelection;
+    }
+
+    public boolean invincible() {
+        return invincible;
+    }
+
+    public void setInvincible(boolean invincible) {
+        this.invincible = invincible;
+    }
+
+    public boolean waterBreathing() {
+        return waterBreathing;
+    }
+
+    public void setWaterBreathing(boolean waterBreathing) {
+        this.waterBreathing = waterBreathing;
+    }
+
+    public String xpAmountRaw() {
+        return xpAmountRaw;
+    }
+
+    public void setXpAmountRaw(String xpAmountRaw) {
+        this.xpAmountRaw = xpAmountRaw == null ? "" : xpAmountRaw;
+    }
+
+    public XpType xpType() {
+        return xpType;
+    }
+
+    public void setXpType(XpType xpType) {
+        this.xpType = Objects.requireNonNull(xpType, "xpType");
     }
 }

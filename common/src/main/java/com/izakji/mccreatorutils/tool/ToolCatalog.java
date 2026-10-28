@@ -26,8 +26,10 @@ public final class ToolCatalog {
 
     public static final ToolDescriptor MOBS = new ToolDescriptor(ToolId.MOBS, "tool.mccreatorutils.mobs", "");
 
+    public static final ToolDescriptor PLAYER = new ToolDescriptor(ToolId.PLAYER, "tool.mccreatorutils.player", "");
+
     private static final List<ToolDescriptor> TOOLS =
-            List.of(CAMERA, WORLD_TIME, BIOMES, STRUCTURES, DIMENSIONS, ITEMS, MOBS);
+            List.of(CAMERA, WORLD_TIME, BIOMES, STRUCTURES, DIMENSIONS, ITEMS, MOBS, PLAYER);
 
     private ToolCatalog() {}
 

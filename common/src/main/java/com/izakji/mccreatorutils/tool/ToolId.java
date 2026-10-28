@@ -14,7 +14,8 @@ public enum ToolId {
     STRUCTURES("structures"),
     DIMENSIONS("dimensions"),
     ITEMS("items"),
-    MOBS("mobs");
+    MOBS("mobs"),
+    PLAYER("player");
 
     private final String id;
 
