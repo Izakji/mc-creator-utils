@@ -33,6 +33,7 @@ public final class CreatorToolSession {
     private ResourceLocation itemSelection;
     private String itemCountRaw = "1";
     private ResourceLocation mobSelection;
+    private String exploreModId;
     private boolean invincible;
     private boolean waterBreathing;
     private String xpAmountRaw = "";
@@ -154,6 +155,14 @@ public final class CreatorToolSession {
 
     public void setMobSelection(ResourceLocation mobSelection) {
         this.mobSelection = mobSelection;
+    }
+
+    public String exploreModId() {
+        return exploreModId;
+    }
+
+    public void setExploreModId(String exploreModId) {
+        this.exploreModId = exploreModId == null || exploreModId.isBlank() ? null : exploreModId;
     }
 
     public boolean invincible() {

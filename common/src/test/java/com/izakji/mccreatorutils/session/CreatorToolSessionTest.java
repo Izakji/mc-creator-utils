@@ -145,4 +145,14 @@ class CreatorToolSessionTest {
         assertNull(session.biomeSelection());
         assertEquals("1", session.itemCountRaw());
     }
+
+    @Test
+    void storesExploreModIdForTheSession() {
+        var session = new CreatorToolSession();
+        assertNull(session.exploreModId());
+        session.setExploreModId("example");
+        assertEquals("example", session.exploreModId());
+        session.setExploreModId(" ");
+        assertNull(session.exploreModId());
+    }
 }
