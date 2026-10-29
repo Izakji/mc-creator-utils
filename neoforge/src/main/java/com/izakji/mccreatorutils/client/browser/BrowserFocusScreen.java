@@ -1,5 +1,6 @@
 package com.izakji.mccreatorutils.client.browser;
 
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
@@ -16,5 +17,10 @@ public final class BrowserFocusScreen extends Screen {
     @Override
     public boolean isPauseScreen() {
         return false;
+    }
+
+    @Override
+    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        BrowserWorkspaceRenderer.render(graphics, BrowserWorkspace.instance(), false);
     }
 }
