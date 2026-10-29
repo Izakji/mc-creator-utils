@@ -1,5 +1,6 @@
 package com.izakji.mccreatorutils.client;
 
+import com.izakji.mccreatorutils.client.explore.ExploreModsToolPanel;
 import com.izakji.mccreatorutils.tool.ToolCatalog;
 import com.izakji.mccreatorutils.tool.ToolDescriptor;
 import com.izakji.mccreatorutils.tool.ToolId;
@@ -136,6 +137,8 @@ public final class CreatorToolsUi {
             content.addChild(new MobsToolPanel());
         } else if (tool.id() == ToolId.PLAYER) {
             content.addChild(new PlayerToolPanel());
+        } else if (tool.id() == ToolId.EXPLORE_MODS) {
+            content.addChild(new ExploreModsToolPanel());
         }
     }
 }
