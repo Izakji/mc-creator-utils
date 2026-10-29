@@ -180,7 +180,7 @@ public final class BrowserFocusScreen extends Screen {
 
         if (in(layout.addressBar(), mouseX, mouseY)) {
             clearContentFocus();
-            addressBar.setFocused(true);
+            focusAddressBar();
             return true;
         }
 
@@ -218,7 +218,8 @@ public final class BrowserFocusScreen extends Screen {
             }
             BrowserOpenResult result = workspace.openNewTab();
             if (result == BrowserOpenResult.OPENED) {
-                addressBar.setFocused(true);
+                addressBar.setValue(workspace.activeUrl());
+                focusAddressBar();
             }
             return;
         }
@@ -257,6 +258,14 @@ public final class BrowserFocusScreen extends Screen {
         }
     }
 
+    private void focusAddressBar() {
+        if (addressBar == null) {
+            return;
+        }
+        setFocused(addressBar);
+        addressBar.setFocused(true);
+    }
+
     private void clearContentFocus() {
         if (contentFocused) {
             BrowserTabHandle active = workspace.activeTab();
@@ -276,7 +285,7 @@ public final class BrowserFocusScreen extends Screen {
         BrowserTabHandle active = workspace.activeTab();
         if (normalized.isEmpty()) {
             error = Component.translatable("screen.mccreatorutils.browser.invalid_url");
-            addressBar.setFocused(true);
+            focusAddressBar();
             return;
         }
         if (active == null) {
@@ -439,6 +448,11 @@ public final class BrowserFocusScreen extends Screen {
 
     @Override
     public void onClose() {
+        if (workspace.fullscreen()) {
+            workspace.toggleFullscreen();
+            layout = BrowserLayout.of(workspace.windowBounds());
+            positionAddressBar();
+        }
         clearContentFocus();
         BrowserTabHandle active = workspace.activeTab();
         if (active != null) {

@@ -1,6 +1,8 @@
 package com.izakji.mccreatorutils.browser;
 
+import java.net.URI;
 import java.util.List;
+import java.util.Objects;
 import java.util.OptionalInt;
 
 /**
@@ -32,11 +34,42 @@ public final class BrowserTabRules {
      */
     public static OptionalInt findOpenTab(List<String> urls, String normalizedUrl) {
         for (int index = 0; index < urls.size(); index++) {
-            if (urls.get(index).equals(normalizedUrl)) {
+            if (samePage(urls.get(index), normalizedUrl)) {
                 return OptionalInt.of(index);
             }
         }
         return OptionalInt.empty();
+    }
+
+    private static boolean samePage(String left, String right) {
+        if (left == null || right == null) {
+            return left == null && right == null;
+        }
+        String normalizedLeft = BrowserUrlInput.normalize(left).orElse(left);
+        String normalizedRight = BrowserUrlInput.normalize(right).orElse(right);
+        if (normalizedLeft.equals(normalizedRight)) {
+            return true;
+        }
+        try {
+            URI leftUri = URI.create(normalizedLeft);
+            URI rightUri = URI.create(normalizedRight);
+            return equalsIgnoreCase(leftUri.getScheme(), rightUri.getScheme())
+                    && equalsIgnoreCase(leftUri.getHost(), rightUri.getHost())
+                    && leftUri.getPort() == rightUri.getPort()
+                    && Objects.equals(rootPath(leftUri.getRawPath()), rootPath(rightUri.getRawPath()))
+                    && Objects.equals(leftUri.getRawQuery(), rightUri.getRawQuery())
+                    && Objects.equals(leftUri.getRawFragment(), rightUri.getRawFragment());
+        } catch (IllegalArgumentException malformed) {
+            return false;
+        }
+    }
+
+    private static boolean equalsIgnoreCase(String left, String right) {
+        return left == null ? right == null : right != null && left.equalsIgnoreCase(right);
+    }
+
+    private static String rootPath(String path) {
+        return path == null || path.isEmpty() ? "/" : path;
     }
 
     /**

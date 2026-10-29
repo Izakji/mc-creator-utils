@@ -20,6 +20,15 @@ class BrowserTabRulesTest {
     }
 
     @Test
+    void treatsRootTrailingSlashAsSamePage() {
+        assertEquals(
+                OptionalInt.of(0), BrowserTabRules.findOpenTab(List.of("https://a.example/"), "https://a.example"));
+        assertEquals(
+                OptionalInt.empty(),
+                BrowserTabRules.findOpenTab(List.of("https://a.example/foo/"), "https://a.example/foo"));
+    }
+
+    @Test
     void choosesNearestActiveIndexAfterRemoval() {
         assertEquals(0, BrowserTabRules.nextActiveIndex(0, 0, 3));
         assertEquals(1, BrowserTabRules.nextActiveIndex(2, 0, 3));

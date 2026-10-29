@@ -249,6 +249,12 @@ public final class BrowserWorkspace {
      */
     public BrowserGeometry windowBounds() {
         ensureWindowBounds();
+        Minecraft minecraft = Minecraft.getInstance();
+        windowBounds = windowBounds.clampTo(
+                minecraft.getWindow().getGuiScaledWidth(),
+                minecraft.getWindow().getGuiScaledHeight(),
+                BrowserLayout.MIN_WINDOW_WIDTH,
+                BrowserLayout.MIN_WINDOW_HEIGHT);
         return windowBounds;
     }
 
