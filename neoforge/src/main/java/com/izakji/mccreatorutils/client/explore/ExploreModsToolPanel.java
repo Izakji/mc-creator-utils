@@ -4,6 +4,7 @@ import com.izakji.mccreatorutils.client.ComboSelector;
 import com.izakji.mccreatorutils.client.CommandStatusLabel;
 import com.izakji.mccreatorutils.client.CreatorToolsScreen;
 import com.izakji.mccreatorutils.explore.InstalledMod;
+import com.izakji.mccreatorutils.explore.ModLabels;
 import com.izakji.mccreatorutils.explore.ModPlatform;
 import com.izakji.mccreatorutils.explore.ResolvedModPage;
 import com.lowdragmc.lowdraglib2.gui.ColorPattern;
@@ -45,8 +46,7 @@ public final class ExploreModsToolPanel extends UIElement {
             addChild(notice);
         }
 
-        modSelector = new ComboSelector<>(
-                InstalledModCatalog.load(), mod -> Component.literal(mod.displayName() + " (" + mod.modId() + ")"));
+        modSelector = new ComboSelector<>(InstalledModCatalog.load(), mod -> Component.literal(ModLabels.label(mod)));
         modSelector.setOnValueChanged(selected -> {
             status.setText(Component.empty());
             updateOpenButton();
