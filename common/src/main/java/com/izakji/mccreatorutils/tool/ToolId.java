@@ -15,7 +15,8 @@ public enum ToolId {
     DIMENSIONS("dimensions"),
     ITEMS("items"),
     MOBS("mobs"),
-    PLAYER("player");
+    PLAYER("player"),
+    EXPLORE_MODS("explore_mods");
 
     private final String id;
 

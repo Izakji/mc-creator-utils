@@ -72,6 +72,7 @@
   "tool.mccreatorutils.player.add_xp": "Add XP",
   "tool.mccreatorutils.player.xp.type.levels": "Levels",
   "tool.mccreatorutils.player.xp.type.points": "Points",
+  "tool.mccreatorutils.explore_mods": "Explore Mods",
   "tool.mccreatorutils.registry.mod": "Mod",
   "tool.mccreatorutils.registry.mod.select": "Select mod",
   "tool.mccreatorutils.registry.entry": "Entry",

@@ -38,8 +38,19 @@ class ToolCatalogTest {
                         ToolId.DIMENSIONS,
                         ToolId.ITEMS,
                         ToolId.MOBS,
-                        ToolId.PLAYER),
+                        ToolId.PLAYER,
+                        ToolId.EXPLORE_MODS),
                 ToolCatalog.tools().stream().map(ToolDescriptor::id).toList());
+    }
+
+    @Test
+    void exploreModsDescriptorRequiresRinku() {
+        var explore = ToolCatalog.EXPLORE_MODS;
+        assertEquals(ToolId.EXPLORE_MODS, explore.id());
+        assertEquals("explore_mods", explore.id().id());
+        assertEquals("tool.mccreatorutils.explore_mods", explore.translationKey());
+        assertEquals("rinku", explore.requiredModId());
+        assertTrue(explore.hasRequiredMod());
     }
 
     @Test

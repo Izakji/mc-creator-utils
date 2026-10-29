@@ -28,8 +28,11 @@ public final class ToolCatalog {
 
     public static final ToolDescriptor PLAYER = new ToolDescriptor(ToolId.PLAYER, "tool.mccreatorutils.player", "");
 
+    public static final ToolDescriptor EXPLORE_MODS =
+            new ToolDescriptor(ToolId.EXPLORE_MODS, "tool.mccreatorutils.explore_mods", "rinku");
+
     private static final List<ToolDescriptor> TOOLS =
-            List.of(CAMERA, WORLD_TIME, BIOMES, STRUCTURES, DIMENSIONS, ITEMS, MOBS, PLAYER);
+            List.of(CAMERA, WORLD_TIME, BIOMES, STRUCTURES, DIMENSIONS, ITEMS, MOBS, PLAYER, EXPLORE_MODS);
 
     private ToolCatalog() {}
 
