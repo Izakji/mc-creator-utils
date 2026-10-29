@@ -31,14 +31,14 @@ public final class BrowserWorkspaceRenderer {
     private static final int TAB_GAP = 2;
     private static final int TAB_START = 2;
     private static final int PLUS_WIDTH = 16;
-    private static final int TAB_CLOSE_SIZE = 8;
     static final int TITLE_BUTTON_WIDTH = 18;
     private static final int TITLE_ICON_SIZE = 16;
-    private static final int TITLE_ICON_CONTENT_SIZE = 12;
     private static final ResourceLocation CLOSE_ICON =
             ResourceLocation.fromNamespaceAndPath(McCreatorUtils.MOD_ID, "textures/gui/close.png");
-    private static final ResourceLocation FULLSCREEN_ICON =
-            ResourceLocation.fromNamespaceAndPath(McCreatorUtils.MOD_ID, "textures/gui/fullscreen.png");
+    private static final ResourceLocation MAXIMIZE_ICON =
+            ResourceLocation.fromNamespaceAndPath(McCreatorUtils.MOD_ID, "textures/gui/maximize.png");
+    private static final ResourceLocation RESTORE_ICON =
+            ResourceLocation.fromNamespaceAndPath(McCreatorUtils.MOD_ID, "textures/gui/minimize.png");
 
     private BrowserWorkspaceRenderer() {}
 
@@ -86,13 +86,13 @@ public final class BrowserWorkspaceRenderer {
         int iconY = layout.titleBar().y();
         int iconRight = layout.titleBar().right();
         graphics.blit(
-                FULLSCREEN_ICON,
-                iconRight - TITLE_BUTTON_WIDTH * 2 + 3,
-                iconY + 2,
+                workspace.fullscreen() ? RESTORE_ICON : MAXIMIZE_ICON,
+                iconRight - TITLE_BUTTON_WIDTH * 2 + 1,
+                iconY,
                 0.0F,
                 0.0F,
-                TITLE_ICON_CONTENT_SIZE,
-                TITLE_ICON_CONTENT_SIZE,
+                TITLE_ICON_SIZE,
+                TITLE_ICON_SIZE,
                 TITLE_ICON_SIZE,
                 TITLE_ICON_SIZE);
         graphics.blit(
@@ -143,16 +143,8 @@ public final class BrowserWorkspaceRenderer {
                     layout.tabStrip().y() + 5,
                     index == workspace.activeTabIndex() ? TEXT : MUTED_TEXT,
                     false);
-            graphics.blit(
-                    CLOSE_ICON,
-                    right - 12,
-                    layout.tabStrip().y() + 4,
-                    0.0F,
-                    0.0F,
-                    TAB_CLOSE_SIZE,
-                    TAB_CLOSE_SIZE,
-                    TITLE_ICON_SIZE,
-                    TITLE_ICON_SIZE);
+            graphics.drawString(
+                    minecraft.font, "X", right - 10, layout.tabStrip().y() + 5, MUTED_TEXT, false);
             x = right + TAB_GAP;
         }
         graphics.drawString(
