@@ -153,10 +153,6 @@ public final class BrowserFocusScreen extends Screen {
                 return true;
             }
             if (mouseX >= titleRight - TITLE_BUTTON_WIDTH * 2) {
-                onClose();
-                return true;
-            }
-            if (mouseX >= titleRight - TITLE_BUTTON_WIDTH * 3) {
                 workspace.toggleFullscreen();
                 layout = BrowserLayout.of(workspace.windowBounds());
                 positionAddressBar();

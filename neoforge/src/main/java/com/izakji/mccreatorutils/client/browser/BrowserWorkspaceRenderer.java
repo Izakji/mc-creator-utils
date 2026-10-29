@@ -34,10 +34,9 @@ public final class BrowserWorkspaceRenderer {
     private static final int TAB_CLOSE_SIZE = 8;
     static final int TITLE_BUTTON_WIDTH = 18;
     private static final int TITLE_ICON_SIZE = 16;
+    private static final int TITLE_ICON_CONTENT_SIZE = 12;
     private static final ResourceLocation CLOSE_ICON =
             ResourceLocation.fromNamespaceAndPath(McCreatorUtils.MOD_ID, "textures/gui/close.png");
-    private static final ResourceLocation MINIMIZE_ICON =
-            ResourceLocation.fromNamespaceAndPath(McCreatorUtils.MOD_ID, "textures/gui/minimize.png");
     private static final ResourceLocation FULLSCREEN_ICON =
             ResourceLocation.fromNamespaceAndPath(McCreatorUtils.MOD_ID, "textures/gui/fullscreen.png");
 
@@ -79,7 +78,7 @@ public final class BrowserWorkspaceRenderer {
                 : tabLabel(workspace.activeUrl());
         graphics.drawString(
                 minecraft.font,
-                truncate(minecraft, title, layout.titleBar().width() - 64),
+                truncate(minecraft, title, layout.titleBar().width() - 48),
                 layout.titleBar().x() + 5,
                 layout.titleBar().y() + 4,
                 TEXT,
@@ -88,22 +87,12 @@ public final class BrowserWorkspaceRenderer {
         int iconRight = layout.titleBar().right();
         graphics.blit(
                 FULLSCREEN_ICON,
-                iconRight - TITLE_BUTTON_WIDTH * 3 + 1,
-                iconY,
+                iconRight - TITLE_BUTTON_WIDTH * 2 + 3,
+                iconY + 2,
                 0.0F,
                 0.0F,
-                TITLE_ICON_SIZE,
-                TITLE_ICON_SIZE,
-                TITLE_ICON_SIZE,
-                TITLE_ICON_SIZE);
-        graphics.blit(
-                MINIMIZE_ICON,
-                iconRight - TITLE_BUTTON_WIDTH * 2 + 1,
-                iconY,
-                0.0F,
-                0.0F,
-                TITLE_ICON_SIZE,
-                TITLE_ICON_SIZE,
+                TITLE_ICON_CONTENT_SIZE,
+                TITLE_ICON_CONTENT_SIZE,
                 TITLE_ICON_SIZE,
                 TITLE_ICON_SIZE);
         graphics.blit(
