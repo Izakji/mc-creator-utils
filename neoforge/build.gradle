@@ -65,19 +65,49 @@ repositories {
         name = 'MinecraftForge'
         url = uri('https://maven.minecraftforge.net/')
     }
+    maven {
+        name = 'Keksuccino'
+        url = uri('https://keksuccino.github.io/maven/')
+    }
 }
 
 configurations {
     commonJava { canBeResolved = true }
     commonResources { canBeResolved = true }
+    rinkuDist {
+        canBeConsumed = false
+        canBeResolved = true
+        transitive = false
+    }
 }
 
 dependencies {
     implementation "com.lowdragmc.ldlib2:ldlib2-neoforge-${minecraft_version}:${ldlib2_version}:all"
     compileOnly "com.github.glitchfiend:TerraBlender-neoforge:${terrablender_version}"
+    implementation "de.keksuccino:rinku-neoforge:${rinku_version}"
+    rinkuDist "de.keksuccino:rinku-neoforge:${rinku_version}"
 
     commonJava project(path: ':common', configuration: 'commonJava')
     commonResources project(path: ':common', configuration: 'commonResources')
+}
+
+def rinkuModJar = layout.buildDirectory.file('rinku/rinku-mod.jar')
+def extractRinkuMod = tasks.register('extractRinkuMod', Copy) {
+    inputs.files(configurations.rinkuDist)
+    from({ zipTree(configurations.rinkuDist.singleFile) }) {
+        include 'META-INF/jarjar/*-mod.jar'
+        eachFile { details -> details.path = 'rinku-mod.jar' }
+        includeEmptyDirs = false
+    }
+    into(layout.buildDirectory.dir('rinku'))
+}
+
+dependencies {
+    compileOnly files(rinkuModJar)
+}
+
+tasks.named('compileJava', JavaCompile) {
+    dependsOn extractRinkuMod
 }
 
 tasks.named('compileJava', JavaCompile) {

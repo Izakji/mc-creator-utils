@@ -94,6 +94,13 @@ config="mccreatorutils.mixins.json"
     side="CLIENT"
 
 [[dependencies.${mod_id}]]
+    modId="rinku"
+    type="optional"
+    versionRange="[3.0.4,)"
+    ordering="NONE"
+    side="CLIENT"
+
+[[dependencies.${mod_id}]]
     modId="cmdcam"
     type="optional"
     versionRange="[2.0.0,)"
