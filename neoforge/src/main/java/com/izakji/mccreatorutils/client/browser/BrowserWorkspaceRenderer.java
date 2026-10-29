@@ -39,6 +39,8 @@ public final class BrowserWorkspaceRenderer {
             ResourceLocation.fromNamespaceAndPath(McCreatorUtils.MOD_ID, "textures/gui/maximize.png");
     private static final ResourceLocation RESTORE_ICON =
             ResourceLocation.fromNamespaceAndPath(McCreatorUtils.MOD_ID, "textures/gui/minimize.png");
+    private static final ResourceLocation RELOAD_ICON =
+            ResourceLocation.fromNamespaceAndPath(McCreatorUtils.MOD_ID, "textures/gui/reload.png");
 
     private BrowserWorkspaceRenderer() {}
 
@@ -167,8 +169,16 @@ public final class BrowserWorkspaceRenderer {
                 minecraft.font, "<", layout.navBar().x() + 6, layout.navBar().y() + 6, TEXT, false);
         graphics.drawString(
                 minecraft.font, ">", layout.navBar().x() + 26, layout.navBar().y() + 6, TEXT, false);
-        graphics.drawString(
-                minecraft.font, "R", layout.navBar().x() + 46, layout.navBar().y() + 6, TEXT, false);
+        graphics.blit(
+                RELOAD_ICON,
+                layout.navBar().x() + 42,
+                layout.navBar().y() + 2,
+                0.0F,
+                0.0F,
+                TITLE_ICON_SIZE,
+                TITLE_ICON_SIZE,
+                TITLE_ICON_SIZE,
+                TITLE_ICON_SIZE);
     }
 
     private static void drawAddress(
