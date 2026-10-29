@@ -28,7 +28,13 @@ public final class RinkuBrowserTab implements BrowserTabHandle {
             return initialUrl;
         }
         String current = browser.getURL();
-        return current == null || current.isBlank() ? initialUrl : current;
+        if (current == null || current.isBlank()) {
+            return initialUrl;
+        }
+        if (current.equals("about:blank") && browser.isLoading() && !initialUrl.equals("about:blank")) {
+            return initialUrl;
+        }
+        return current;
     }
 
     @Override

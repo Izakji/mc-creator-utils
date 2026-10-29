@@ -32,11 +32,17 @@ public final class McCreatorUtilsClient {
             InputConstants.Type.KEYSYM,
             GLFW.GLFW_KEY_B,
             "key.categories.mccreatorutils");
+    public static final KeyMapping TOGGLE_BROWSER = new KeyMapping(
+            "key.mccreatorutils.toggle_browser",
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_RIGHT_BRACKET,
+            "key.categories.mccreatorutils");
 
     @SubscribeEvent
     static void registerKeyMappings(RegisterKeyMappingsEvent event) {
         event.register(OPEN_GUI);
         event.register(FOCUS_BROWSER);
+        event.register(TOGGLE_BROWSER);
     }
 
     @SubscribeEvent
@@ -45,6 +51,11 @@ public final class McCreatorUtilsClient {
         while (OPEN_GUI.consumeClick()) {
             if (minecraft.player != null && minecraft.screen == null) {
                 minecraft.setScreen(new CreatorToolsScreen());
+            }
+        }
+        while (TOGGLE_BROWSER.consumeClick()) {
+            if (minecraft.screen == null) {
+                BrowserWorkspace.instance().toggleBrowser();
             }
         }
         while (FOCUS_BROWSER.consumeClick()) {

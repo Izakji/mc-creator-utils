@@ -2,6 +2,7 @@ package com.izakji.mccreatorutils.client.browser;
 
 import com.izakji.mccreatorutils.browser.BrowserGeometry;
 import com.izakji.mccreatorutils.browser.BrowserLayout;
+import com.izakji.mccreatorutils.browser.BrowserSession;
 import com.izakji.mccreatorutils.browser.BrowserTabRules;
 import com.izakji.mccreatorutils.browser.BrowserUrlInput;
 import com.izakji.mccreatorutils.client.CreatorToolsScreen;
@@ -25,6 +26,7 @@ public final class BrowserWorkspace {
     private static final int FULLSCREEN_MARGIN = 8;
 
     private final java.util.ArrayList<BrowserTabHandle> tabs = new java.util.ArrayList<>();
+    private final BrowserSession savedSession = new BrowserSession();
     private BrowserEngine engine;
     private int activeTabIndex = -1;
     private BrowserGeometry windowBounds;
@@ -74,6 +76,9 @@ public final class BrowserWorkspace {
         }
         if (!isAvailable()) {
             return BrowserOpenResult.UNAVAILABLE;
+        }
+        if (tabs.isEmpty() && savedSession.hasPages()) {
+            restoreSavedSession();
         }
         return openUrl(normalized.get(), true);
     }
@@ -127,6 +132,30 @@ public final class BrowserWorkspace {
     }
 
     /**
+     * Toggles the floating browser window without disk persistence.
+     *
+     * @return true when the browser is visible after the toggle
+     */
+    public boolean toggleBrowser() {
+        if (!isAvailable()) {
+            return false;
+        }
+        if (hasWindow()) {
+            closeWindow();
+            return false;
+        }
+        if (savedSession.hasPages()) {
+            if (!restoreSavedSession()) {
+                return false;
+            }
+        } else if (openNewTab() != BrowserOpenResult.OPENED) {
+            return false;
+        }
+        focus();
+        return hasWindow();
+    }
+
+    /**
      * Opens focus mode when the floating window exists.
      */
     public void focus() {
@@ -152,6 +181,7 @@ public final class BrowserWorkspace {
         BrowserTabHandle removed = tabs.remove(index);
         SafeClose.run(removed::close);
         if (tabs.isEmpty()) {
+            savedSession.clear();
             closeWindow();
             return;
         }
@@ -187,9 +217,12 @@ public final class BrowserWorkspace {
     }
 
     /**
-     * Closes every tab and hides the workspace.
+     * Closes every tab, snapshots the open pages, and hides the workspace.
      */
     public void closeWindow() {
+        if (!tabs.isEmpty()) {
+            savedSession.save(tabs.stream().map(BrowserTabHandle::url).toList(), activeTabIndex);
+        }
         for (BrowserTabHandle tab : List.copyOf(tabs)) {
             SafeClose.run(tab::close);
         }
@@ -311,6 +344,37 @@ public final class BrowserWorkspace {
      */
     public void onLogout() {
         closeWindow();
+    }
+
+    private boolean restoreSavedSession() {
+        if (!isAvailable() || !tabs.isEmpty() || !savedSession.hasPages()) {
+            return false;
+        }
+        BrowserEngine currentEngine = ensureEngine();
+        if (currentEngine == null) {
+            return false;
+        }
+        List<BrowserTabHandle> restored = new java.util.ArrayList<>();
+        for (String url : savedSession.urls()) {
+            if (restored.size() >= BrowserTabRules.MAX_TABS) {
+                break;
+            }
+            try {
+                restored.add(currentEngine.create(url));
+            } catch (RuntimeException | LinkageError failure) {
+                // Keep restoring the remaining pages; a failed tab must not lose the session.
+            }
+        }
+        if (restored.isEmpty()) {
+            return false;
+        }
+        tabs.addAll(restored);
+        int savedIndex = savedSession.activeIndex();
+        activeTabIndex = savedIndex >= 0 && savedIndex < restored.size() ? savedIndex : restored.size() - 1;
+        windowVisible = true;
+        ensureWindowBounds();
+        resizeActiveTab();
+        return true;
     }
 
     private BrowserEngine ensureEngine() {

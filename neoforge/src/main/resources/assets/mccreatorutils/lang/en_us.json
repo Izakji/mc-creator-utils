@@ -2,6 +2,7 @@
   "key.categories.mccreatorutils": "Creator Utils",
   "key.mccreatorutils.open_gui": "Open Creator Utils",
   "key.mccreatorutils.focus_browser": "Focus Browser",
+  "key.mccreatorutils.toggle_browser": "Toggle Browser",
   "screen.mccreatorutils.creator_tools": "Creator Utils",
   "tool.mccreatorutils.camera": "Camera",
   "tool.mccreatorutils.camera.placeholder": "Camera controls are being prepared.",
