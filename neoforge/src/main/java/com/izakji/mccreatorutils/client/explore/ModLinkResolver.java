@@ -34,7 +34,7 @@ public final class ModLinkResolver {
     private static final ExecutorService EXECUTOR = Executors.newFixedThreadPool(2, daemonFactory());
     private static final HttpClient HTTP = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(5))
-            .followRedirects(HttpClient.Redirect.NORMAL)
+            .followRedirects(HttpClient.Redirect.NEVER)
             .build();
 
     private ModLinkResolver() {}

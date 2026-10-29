@@ -1,5 +1,6 @@
 package com.izakji.mccreatorutils.client.explore;
 
+import com.izakji.mccreatorutils.util.SafeClose;
 import de.keksuccino.rinku.Rinku;
 import de.keksuccino.rinku.RinkuBrowser;
 import de.keksuccino.rinku.RinkuBrowserTextureBlitter;
@@ -69,7 +70,10 @@ public final class ModBrowserScreen extends Screen {
     private void createBrowser() {
         try {
             if (!Rinku.isInitialized()) {
-                failure = Component.translatable("screen.mccreatorutils.mod_browser.not_ready");
+                failure = Component.translatable(
+                        Rinku.isInitializationAllowed()
+                                ? "screen.mccreatorutils.mod_browser.not_ready"
+                                : "screen.mccreatorutils.mod_browser.failure");
                 return;
             }
             browser = Rinku.createBrowser(initialUrl, false);
@@ -287,12 +291,23 @@ public final class ModBrowserScreen extends Screen {
         return true;
     }
 
+    private void closeBrowser() {
+        RinkuBrowser current = browser;
+        browser = null;
+        if (current != null) {
+            SafeClose.run(current::close);
+        }
+    }
+
     @Override
     public void onClose() {
-        if (browser != null) {
-            browser.close();
-            browser = null;
-        }
+        closeBrowser();
         super.onClose();
+    }
+
+    @Override
+    public void removed() {
+        closeBrowser();
+        super.removed();
     }
 }
