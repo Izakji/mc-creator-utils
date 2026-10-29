@@ -1,5 +1,6 @@
 package com.izakji.mccreatorutils.client.browser;
 
+import com.izakji.mccreatorutils.McCreatorUtils;
 import com.izakji.mccreatorutils.browser.BrowserGeometry;
 import com.izakji.mccreatorutils.browser.BrowserLayout;
 import com.izakji.mccreatorutils.browser.BrowserTabRules;
@@ -8,6 +9,7 @@ import java.util.List;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 
 /**
  * Draws the browser window chrome and active Rinku texture.
@@ -29,6 +31,15 @@ public final class BrowserWorkspaceRenderer {
     private static final int TAB_GAP = 2;
     private static final int TAB_START = 2;
     private static final int PLUS_WIDTH = 16;
+    private static final int TAB_CLOSE_SIZE = 8;
+    static final int TITLE_BUTTON_WIDTH = 18;
+    private static final int TITLE_ICON_SIZE = 16;
+    private static final ResourceLocation CLOSE_ICON =
+            ResourceLocation.fromNamespaceAndPath(McCreatorUtils.MOD_ID, "textures/gui/close.png");
+    private static final ResourceLocation MINIMIZE_ICON =
+            ResourceLocation.fromNamespaceAndPath(McCreatorUtils.MOD_ID, "textures/gui/minimize.png");
+    private static final ResourceLocation FULLSCREEN_ICON =
+            ResourceLocation.fromNamespaceAndPath(McCreatorUtils.MOD_ID, "textures/gui/fullscreen.png");
 
     private BrowserWorkspaceRenderer() {}
 
@@ -68,25 +79,43 @@ public final class BrowserWorkspaceRenderer {
                 : tabLabel(workspace.activeUrl());
         graphics.drawString(
                 minecraft.font,
-                truncate(minecraft, title, layout.titleBar().width() - 68),
+                truncate(minecraft, title, layout.titleBar().width() - 64),
                 layout.titleBar().x() + 5,
                 layout.titleBar().y() + 4,
                 TEXT,
                 false);
-        graphics.drawString(
-                minecraft.font,
-                workspace.fullscreen() ? "[]" : "[ ]",
-                layout.titleBar().right() - 48,
-                layout.titleBar().y() + 4,
-                MUTED_TEXT,
-                false);
-        graphics.drawString(
-                minecraft.font,
-                "X",
-                layout.titleBar().right() - 16,
-                layout.titleBar().y() + 4,
-                MUTED_TEXT,
-                false);
+        int iconY = layout.titleBar().y();
+        int iconRight = layout.titleBar().right();
+        graphics.blit(
+                FULLSCREEN_ICON,
+                iconRight - TITLE_BUTTON_WIDTH * 3 + 1,
+                iconY,
+                0.0F,
+                0.0F,
+                TITLE_ICON_SIZE,
+                TITLE_ICON_SIZE,
+                TITLE_ICON_SIZE,
+                TITLE_ICON_SIZE);
+        graphics.blit(
+                MINIMIZE_ICON,
+                iconRight - TITLE_BUTTON_WIDTH * 2 + 1,
+                iconY,
+                0.0F,
+                0.0F,
+                TITLE_ICON_SIZE,
+                TITLE_ICON_SIZE,
+                TITLE_ICON_SIZE,
+                TITLE_ICON_SIZE);
+        graphics.blit(
+                CLOSE_ICON,
+                iconRight - TITLE_BUTTON_WIDTH + 1,
+                iconY,
+                0.0F,
+                0.0F,
+                TITLE_ICON_SIZE,
+                TITLE_ICON_SIZE,
+                TITLE_ICON_SIZE,
+                TITLE_ICON_SIZE);
 
         drawTabs(graphics, workspace, layout);
         drawNavigation(graphics, layout, minecraft);
@@ -125,8 +154,16 @@ public final class BrowserWorkspaceRenderer {
                     layout.tabStrip().y() + 5,
                     index == workspace.activeTabIndex() ? TEXT : MUTED_TEXT,
                     false);
-            graphics.drawString(
-                    minecraft.font, "x", right - 10, layout.tabStrip().y() + 5, MUTED_TEXT, false);
+            graphics.blit(
+                    CLOSE_ICON,
+                    right - 12,
+                    layout.tabStrip().y() + 4,
+                    0.0F,
+                    0.0F,
+                    TAB_CLOSE_SIZE,
+                    TAB_CLOSE_SIZE,
+                    TITLE_ICON_SIZE,
+                    TITLE_ICON_SIZE);
             x = right + TAB_GAP;
         }
         graphics.drawString(

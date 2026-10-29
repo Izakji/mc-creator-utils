@@ -28,8 +28,7 @@ public final class BrowserFocusScreen extends Screen {
     private static final int TAB_MIN_WIDTH = 44;
     private static final int PLUS_WIDTH = 16;
     private static final int NAV_BUTTON_WIDTH = 20;
-    private static final int FULLSCREEN_WIDTH = 28;
-    private static final int CLOSE_WIDTH = 20;
+    private static final int TITLE_BUTTON_WIDTH = BrowserWorkspaceRenderer.TITLE_BUTTON_WIDTH;
 
     private final BrowserWorkspace workspace = BrowserWorkspace.instance();
     private EditBox addressBar;
@@ -148,11 +147,16 @@ public final class BrowserFocusScreen extends Screen {
 
         if (in(layout.titleBar(), mouseX, mouseY)) {
             clearContentFocus();
-            if (mouseX >= layout.titleBar().right() - CLOSE_WIDTH) {
+            double titleRight = layout.titleBar().right();
+            if (mouseX >= titleRight - TITLE_BUTTON_WIDTH) {
                 workspace.closeWindow();
                 return true;
             }
-            if (mouseX >= layout.titleBar().right() - CLOSE_WIDTH - FULLSCREEN_WIDTH) {
+            if (mouseX >= titleRight - TITLE_BUTTON_WIDTH * 2) {
+                onClose();
+                return true;
+            }
+            if (mouseX >= titleRight - TITLE_BUTTON_WIDTH * 3) {
                 workspace.toggleFullscreen();
                 layout = BrowserLayout.of(workspace.windowBounds());
                 positionAddressBar();

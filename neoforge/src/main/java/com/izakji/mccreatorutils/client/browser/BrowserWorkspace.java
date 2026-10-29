@@ -25,6 +25,11 @@ public final class BrowserWorkspace {
     private static final BrowserWorkspace INSTANCE = new BrowserWorkspace();
     private static final int FULLSCREEN_MARGIN = 8;
 
+    /**
+     * Page opened when the browser has no saved session.
+     */
+    public static final String DEFAULT_HOME_URL = "https://www.curseforge.com/";
+
     private final java.util.ArrayList<BrowserTabHandle> tabs = new java.util.ArrayList<>();
     private final BrowserSession savedSession = new BrowserSession();
     private BrowserEngine engine;
@@ -84,7 +89,7 @@ public final class BrowserWorkspace {
     }
 
     /**
-     * Opens a new blank tab.
+     * Opens the default home tab.
      *
      * @return open result
      */
@@ -92,7 +97,7 @@ public final class BrowserWorkspace {
         if (!isAvailable()) {
             return BrowserOpenResult.UNAVAILABLE;
         }
-        return openUrl("about:blank", false);
+        return openUrl(DEFAULT_HOME_URL, false);
     }
 
     private BrowserOpenResult openUrl(String url, boolean reuseExisting) {
