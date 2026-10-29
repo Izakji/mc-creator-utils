@@ -77,7 +77,7 @@
   "tool.mccreatorutils.registry.entry": "Entry",
   "tool.mccreatorutils.registry.entry.select": "Select entry",
   "tool.mccreatorutils.registry.minecraft": "Minecraft",
-  "tool.mccreatorutils.search.placeholder": "Search",
+  "tool.mccreatorutils.combo.placeholder": "Type or select",
   "status.mccreatorutils.searching": "Searching for %s...",
   "status.mccreatorutils.teleported": "Teleported to %s",
   "status.mccreatorutils.locate_failed": "Could not locate %s",

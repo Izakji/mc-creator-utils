@@ -10,10 +10,8 @@ import com.lowdragmc.lowdraglib2.gui.ColorPattern;
 import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Button;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Label;
-import com.lowdragmc.lowdraglib2.gui.ui.elements.Selector;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.TextField;
 import com.lowdragmc.lowdraglib2.gui.ui.event.UIEvents;
-import com.lowdragmc.lowdraglib2.gui.ui.utils.UIElementProvider;
 import dev.vfyjxf.taffy.style.FlexDirection;
 import java.util.List;
 import net.minecraft.network.chat.Component;
@@ -72,10 +70,10 @@ public final class CameraToolPanel extends UIElement {
         row.layout(layout ->
                 layout.widthPercent(100).flexDirection(FlexDirection.ROW).gapAll(4));
 
-        var modeSelector = new Selector<CamMode>();
-        modeSelector.setCandidates(List.of(CamMode.values()));
-        modeSelector.setCandidateUIProvider(UIElementProvider.text(mode -> Component.translatable(
-                mode == null ? "tool.mccreatorutils.camera.mode.select" : mode.translationKey())));
+        var modeSelector = new ComboSelector<>(
+                List.of(CamMode.values()),
+                mode -> Component.translatable(
+                        mode == null ? "tool.mccreatorutils.camera.mode.select" : mode.translationKey()));
         modeSelector.layout(layout -> layout.flex(1).height(14));
         modeSelector.setSelected(session.cameraMode());
 
@@ -121,10 +119,9 @@ public final class CameraToolPanel extends UIElement {
         durationField.setText(session.cameraDurationRaw());
         durationField.setTextResponder(session::setCameraDurationRaw);
 
-        var unitSelector = new Selector<DurationUnit>();
-        unitSelector.setCandidates(List.of(DurationUnit.values()));
-        unitSelector.setCandidateUIProvider(UIElementProvider.text(
-                unit -> unit == null ? Component.empty() : Component.translatable(unit.translationKey())));
+        var unitSelector = new ComboSelector<>(
+                List.of(DurationUnit.values()),
+                unit -> unit == null ? Component.empty() : Component.translatable(unit.translationKey()));
         unitSelector.layout(layout -> layout.width(58).height(14));
         unitSelector.setSelected(session.cameraDurationUnit());
 
