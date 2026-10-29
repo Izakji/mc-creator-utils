@@ -7,11 +7,11 @@ import com.lowdragmc.lowdraglib2.gui.ui.event.UIEvents;
 import com.lowdragmc.lowdraglib2.gui.ui.rendering.GUIContext;
 import com.mojang.blaze3d.platform.Lighting;
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.math.Axis;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.client.renderer.LightTexture;
+import net.minecraft.client.renderer.block.model.ItemTransform;
 import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.resources.model.BakedModel;
@@ -39,15 +39,17 @@ public final class ModelPreview extends UIElement {
         MOB
     }
 
-    private static final float SPIN_DEGREES_PER_TICK = 0.75f;
+    private static final float TWO_PI = (float) (Math.PI * 2.0);
+    private static final float SPIN_RADIANS_PER_TICK = (float) Math.toRadians(-0.75f);
+    private static final float DRAG_RADIANS_PER_PIXEL = (float) Math.toRadians(0.45f);
     private static final float MIN_ZOOM = 0.25f;
     private static final float MAX_ZOOM = 3.0f;
 
     private final Kind kind;
+    private final Quaternionf orientation = new Quaternionf();
     private ItemStack itemStack = ItemStack.EMPTY;
     private LivingEntity entity;
-    private float yaw;
-    private float pitch;
+    private float spinAngle;
     private float zoom = 1.0f;
     private boolean spinning = true;
     private boolean dragging;
@@ -60,7 +62,7 @@ public final class ModelPreview extends UIElement {
         style(style -> style.background(ColorPattern.WHITE.rectTexture()));
         addEventListener(UIEvents.TICK, event -> {
             if (spinning && !dragging) {
-                yaw = (yaw + SPIN_DEGREES_PER_TICK) % 360.0f;
+                spinAngle = (spinAngle + SPIN_RADIANS_PER_TICK) % TWO_PI;
             }
         });
         addEventListener(UIEvents.MOUSE_DOWN, this::onMouseDown);
@@ -72,8 +74,8 @@ public final class ModelPreview extends UIElement {
     public void setSelection(ResourceLocation selection) {
         itemStack = ItemStack.EMPTY;
         entity = null;
-        yaw = 0.0f;
-        pitch = 0.0f;
+        orientation.identity();
+        spinAngle = 0.0f;
         zoom = 1.0f;
         spinning = true;
         dragging = false;
@@ -121,8 +123,14 @@ public final class ModelPreview extends UIElement {
         if (!dragging) {
             return;
         }
-        yaw = (yaw + (event.x - lastMouseX) * 0.6f) % 360.0f;
-        pitch = Mth.clamp(pitch + (event.y - lastMouseY) * 0.6f, -80.0f, 80.0f);
+        float dx = event.x - lastMouseX;
+        float dy = event.y - lastMouseY;
+        if (dx != 0.0f) {
+            orientation.premul(new Quaternionf().rotateY(-dx * DRAG_RADIANS_PER_PIXEL));
+        }
+        if (dy != 0.0f) {
+            orientation.premul(new Quaternionf().rotateX(dy * DRAG_RADIANS_PER_PIXEL));
+        }
         lastMouseX = event.x;
         lastMouseY = event.y;
     }
@@ -141,45 +149,58 @@ public final class ModelPreview extends UIElement {
             return;
         }
 
-        if (kind == Kind.ITEM && !itemStack.isEmpty()) {
-            drawItemPreview(
-                    context.graphics,
-                    itemStack,
-                    getPositionX() + width / 2f,
-                    getPositionY() + height / 2f,
-                    Math.min(width, height) * 0.55f * zoom,
-                    -yaw,
-                    pitch);
-        } else if (kind == Kind.MOB && entity != null) {
-            float halfWidth = width * 0.45f * zoom;
-            float halfHeight = height * 0.45f * zoom;
-            int x1 = Math.round(getPositionX() + width / 2f - halfWidth);
-            int y1 = Math.round(getPositionY() + height / 2f - halfHeight);
-            int x2 = Math.round(getPositionX() + width / 2f + halfWidth);
-            int y2 = Math.round(getPositionY() + height / 2f + halfHeight);
-            drawEntityPreview(context.graphics, entity, x1, y1, x2, y2, yaw, pitch);
+        int scissorX = Math.round(getPositionX());
+        int scissorY = Math.round(getPositionY());
+        int scissorRight = Math.round(getPositionX() + width);
+        int scissorBottom = Math.round(getPositionY() + height);
+        Quaternionf rotation = new Quaternionf().rotateY(spinAngle).mul(orientation);
+        context.graphics.enableScissor(scissorX, scissorY, scissorRight, scissorBottom);
+        try {
+            if (kind == Kind.ITEM && !itemStack.isEmpty()) {
+                float maxScale = Math.min(width, height) * 0.80f;
+                float scale = Math.min(Math.min(width, height) * 0.22f * zoom, maxScale);
+                drawItemPreview(
+                        context.graphics,
+                        itemStack,
+                        getPositionX() + width / 2f,
+                        getPositionY() + height / 2f,
+                        scale,
+                        rotation);
+            } else if (kind == Kind.MOB && entity != null) {
+                drawEntityPreview(
+                        context.graphics,
+                        entity,
+                        getPositionX() + width / 2f,
+                        getPositionY() + height / 2f,
+                        width * 0.90f,
+                        height * 0.90f,
+                        zoom,
+                        rotation);
+            }
+        } finally {
+            context.graphics.disableScissor();
         }
     }
 
     public static void drawItemPreview(
-            GuiGraphics graphics, ItemStack stack, float centerX, float centerY, float scale, float yaw, float pitch) {
+            GuiGraphics graphics, ItemStack stack, float centerX, float centerY, float scale, Quaternionf rotation) {
         if (stack.isEmpty()) {
             return;
         }
         Minecraft minecraft = Minecraft.getInstance();
         ItemRenderer itemRenderer = minecraft.getItemRenderer();
         BakedModel model = itemRenderer.getModel(stack, minecraft.level, null, 0);
+        ItemTransform groundTransform = model.getTransforms().getTransform(ItemDisplayContext.GROUND);
+        Vector3f pivot = groundTransform.translation;
+
         PoseStack pose = graphics.pose();
         pose.pushPose();
         pose.translate(centerX, centerY, 100.0f);
         pose.scale(scale, -scale, scale);
-        pose.mulPose(Axis.YP.rotationDegrees(yaw));
-        pose.mulPose(Axis.XP.rotationDegrees(pitch));
-        float groundScale = model.getTransforms()
-                .getTransform(ItemDisplayContext.GROUND)
-                .scale
-                .y();
-        pose.translate(0.0f, 0.25f * groundScale, 0.0f);
+        pose.mulPose(rotation);
+        // The renderer centers the model at the display transform's translation;
+        // remove that offset before rotating so the model spins around its own center.
+        pose.translate(-pivot.x(), -pivot.y(), -pivot.z());
         Lighting.setupFor3DItems();
         itemRenderer.render(
                 stack,
@@ -196,33 +217,40 @@ public final class ModelPreview extends UIElement {
     }
 
     public static void drawEntityPreview(
-            GuiGraphics graphics, LivingEntity entity, int x1, int y1, int x2, int y2, float yaw, float pitch) {
-        entity.setYRot(180.0f + yaw);
-        entity.setXRot(pitch);
-        entity.yBodyRot = 180.0f + yaw;
-        entity.yHeadRot = 180.0f + yaw;
-        entity.yHeadRotO = 180.0f + yaw;
+            GuiGraphics graphics,
+            LivingEntity entity,
+            float centerX,
+            float centerY,
+            float maxWidth,
+            float maxHeight,
+            float zoom,
+            Quaternionf rotation) {
+        // Keep the entity facing forward; the user rotation is applied as one camera-independent pose.
+        entity.setYRot(180.0f);
+        entity.setXRot(0.0f);
+        entity.yBodyRot = 180.0f;
+        entity.yHeadRot = 180.0f;
+        entity.yHeadRotO = 180.0f;
+        entity.yRotO = 180.0f;
+        entity.xRotO = 0.0f;
 
-        float maxDimension = Math.max(entity.getBbWidth(), entity.getBbHeight());
-        int width = x2 - x1;
-        int height = y2 - y1;
-        int scale = Math.max(
-                4, Math.min(80, Math.round(Math.min(width, height) * 0.55f * 1.8f / Math.max(1.8f, maxDimension))));
-        float centerX = (x1 + x2) / 2.0f;
-        float centerY = (y1 + y2) / 2.0f;
-        Quaternionf poseRotation = new Quaternionf()
-                .rotateZ((float) Math.PI)
-                .rotateY((float) Math.toRadians(yaw))
-                .rotateX((float) Math.toRadians(pitch));
-        Quaternionf cameraRotation = new Quaternionf().rotateX((float) Math.toRadians(pitch));
+        float entityWidth = Math.max(0.1f, entity.getBbWidth());
+        float entityHeight = Math.max(0.1f, entity.getBbHeight());
+        float fitScale = Math.min(maxWidth / entityWidth, maxHeight / entityHeight);
+        float scale = Math.max(1.0f, Math.min(fitScale * 0.72f * zoom, fitScale * 0.92f));
+
+        // The entity preview applies a Z-axis mirror, so compensate Y/Z to keep the
+        // same screen-space drag direction as the item preview.
+        Quaternionf entityRotation = new Quaternionf(rotation.x, -rotation.y, -rotation.z, rotation.w);
+        Quaternionf poseRotation = entityRotation.mul(new Quaternionf().rotateZ((float) Math.PI));
         InventoryScreen.renderEntityInInventory(
                 graphics,
                 centerX,
                 centerY,
                 scale,
-                new Vector3f(0.0f, entity.getBbHeight() / 2.0f, 0.0f),
+                new Vector3f(0.0f, entityHeight / 2.0f, 0.0f),
                 poseRotation,
-                cameraRotation,
+                null,
                 entity);
     }
 }

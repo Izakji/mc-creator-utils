@@ -4,6 +4,8 @@ import com.izakji.mccreatorutils.client.ComboSelector;
 import com.izakji.mccreatorutils.registry.RegistryGroup;
 import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Label;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.Selector;
+import com.lowdragmc.lowdraglib2.gui.ui.utils.UIElementProvider;
 import dev.vfyjxf.taffy.style.FlexDirection;
 import java.util.List;
 import java.util.function.Consumer;
@@ -16,8 +18,10 @@ import net.minecraft.resources.ResourceLocation;
  * @author Izakji
  */
 public final class RegistryPicker extends UIElement {
-    private final ComboSelector<RegistryGroup> modSelector;
-    private final ComboSelector<ResourceLocation> entrySelector;
+    private final Selector<RegistryGroup> modSelector = new Selector<>();
+    private final Selector<ResourceLocation> entrySelector;
+    private final ComboSelector<ResourceLocation> entryCombo;
+    private final UIElement entryControl;
     private final Consumer<ResourceLocation> onSelectionChanged;
     private final List<RegistryGroup> groups;
     private final boolean hasGroups;
@@ -30,43 +34,91 @@ public final class RegistryPicker extends UIElement {
 
         groups = RegistryCatalog.groups(kind);
         this.hasGroups = !groups.isEmpty();
+        boolean searchable = kind == RegistryKind.BIOME
+                || kind == RegistryKind.STRUCTURE
+                || kind == RegistryKind.ITEM
+                || kind == RegistryKind.MOB;
 
-        modSelector = new ComboSelector<>(
-                groups,
-                group -> group == null
-                        ? Component.translatable("tool.mccreatorutils.registry.mod.select")
-                        : RegistryCatalog.modName(group.namespace()));
+        modSelector.setCandidates(groups);
+        modSelector.setCandidateUIProvider(UIElementProvider.text(group -> group == null
+                ? Component.translatable("tool.mccreatorutils.registry.mod.select")
+                : RegistryCatalog.modName(group.namespace())));
+        modSelector.setValue(null, false);
         modSelector.layout(layout -> layout.widthPercent(100).height(14));
 
-        entrySelector = new ComboSelector<>(
-                List.of(),
-                entry -> entry == null
-                        ? Component.translatable("tool.mccreatorutils.registry.entry.select")
-                        : RegistryCatalog.label(kind, entry));
-        entrySelector.layout(layout -> layout.widthPercent(100).height(14));
-        entrySelector.setActive(false);
+        if (searchable) {
+            entryCombo = new ComboSelector<>(
+                    List.of(),
+                    entry -> entry == null
+                            ? Component.translatable("tool.mccreatorutils.registry.entry.select")
+                            : RegistryCatalog.label(kind, entry));
+            entrySelector = null;
+            entryControl = entryCombo;
+        } else {
+            entryCombo = null;
+            entrySelector = new Selector<>();
+            entrySelector.setCandidateUIProvider(UIElementProvider.text(entry -> entry == null
+                    ? Component.translatable("tool.mccreatorutils.registry.entry.select")
+                    : RegistryCatalog.label(kind, entry)));
+            entrySelector.setValue(null, false);
+            entrySelector.layout(layout -> layout.widthPercent(100).height(14));
+            entryControl = entrySelector;
+        }
+        setEntryActive(false);
+        setEntryListener(this.onSelectionChanged);
 
         restore(initialSelection, groups);
 
         modSelector.setOnValueChanged(group -> {
-            entrySelector.setAllCandidates(group == null ? List.of() : group.entries());
-            entrySelector.setSelected(null, false);
-            entrySelector.setActive(group != null && !group.entries().isEmpty());
+            setEntryCandidates(group == null ? List.of() : group.entries());
+            setEntrySelected(null, false);
+            setEntryActive(group != null && !group.entries().isEmpty());
             this.onSelectionChanged.accept(null);
         });
-        entrySelector.setOnValueChanged(this.onSelectionChanged);
 
         addChildren(
                 section(Component.translatable("tool.mccreatorutils.registry.mod"), modSelector),
-                section(Component.translatable("tool.mccreatorutils.registry.entry"), entrySelector));
+                section(Component.translatable("tool.mccreatorutils.registry.entry"), entryControl));
     }
 
     public ResourceLocation selectedEntry() {
-        return entrySelector.getValue();
+        return entryCombo != null ? entryCombo.getValue() : entrySelector.getValue();
     }
 
     public boolean hasGroups() {
         return hasGroups;
+    }
+
+    private void setEntryCandidates(List<ResourceLocation> entries) {
+        if (entryCombo != null) {
+            entryCombo.setAllCandidates(entries);
+        } else {
+            entrySelector.setCandidates(entries);
+        }
+    }
+
+    private void setEntrySelected(ResourceLocation entry, boolean notify) {
+        if (entryCombo != null) {
+            entryCombo.setSelected(entry, notify);
+        } else {
+            entrySelector.setSelected(entry, notify);
+        }
+    }
+
+    private void setEntryActive(boolean active) {
+        if (entryCombo != null) {
+            entryCombo.setActive(active);
+        } else {
+            entrySelector.setActive(active);
+        }
+    }
+
+    private void setEntryListener(Consumer<ResourceLocation> listener) {
+        if (entryCombo != null) {
+            entryCombo.setOnValueChanged(listener);
+        } else {
+            entrySelector.setOnValueChanged(listener);
+        }
     }
 
     private void restore(ResourceLocation initialSelection, List<RegistryGroup> groups) {
@@ -81,15 +133,19 @@ public final class RegistryPicker extends UIElement {
             return;
         }
         modSelector.setSelected(group, false);
-        entrySelector.setAllCandidates(group.entries());
-        entrySelector.setActive(true);
-        entrySelector.setSelected(initialSelection, false);
+        setEntryCandidates(group.entries());
+        setEntryActive(true);
+        setEntrySelected(initialSelection, false);
     }
 
     @Override
     protected void onRemoved() {
         modSelector.hide();
-        entrySelector.hide();
+        if (entryCombo != null) {
+            entryCombo.hide();
+        } else {
+            entrySelector.hide();
+        }
         super.onRemoved();
     }
 

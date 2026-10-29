@@ -23,21 +23,20 @@ public final class ComboSelector<T> extends UIElement {
     private final Function<T, Component> labels;
     private List<T> allCandidates;
     private Consumer<T> externalListener;
-    private boolean updatingText;
     private String lastText = "";
 
     public ComboSelector(List<T> candidates, Function<T, Component> labels) {
         this.allCandidates = List.copyOf(candidates);
         this.labels = labels;
         layout(layout -> layout.widthPercent(100)
-                .height(14)
+                .height(16)
                 .flexDirection(FlexDirection.ROW)
-                .gapAll(2));
+                .gapAll(1));
 
         input.setAnyString();
         input.textFieldStyle(
                 style -> style.placeholder(Component.translatable("tool.mccreatorutils.combo.placeholder")));
-        input.layout(layout -> layout.flex(1).height(14));
+        input.layout(layout -> layout.flex(1).height(16));
         input.setTextResponder(ignored -> filter());
         input.addEventListener(UIEvents.TICK, event -> {
             if (!input.getRawText().equals(lastText)) {
@@ -47,9 +46,15 @@ public final class ComboSelector<T> extends UIElement {
 
         selector.setCandidateUIProvider(UIElementProvider.text(labels));
         selector.setCandidates(allCandidates);
+        selector.setValue(null, false);
         selector.setOnValueChanged(this::onValueChanged);
-        selector.preview.setVisible(false);
-        selector.layout(layout -> layout.width(14).height(14));
+        selector.display.layout(layout -> layout.widthPercent(100)
+                .heightPercent(100)
+                .paddingTop(0)
+                .paddingBottom(0)
+                .paddingLeft(4)
+                .paddingRight(2));
+        selector.layout(layout -> layout.flex(1).height(16));
 
         addChildren(input, selector);
     }
@@ -57,18 +62,18 @@ public final class ComboSelector<T> extends UIElement {
     public ComboSelector<T> setAllCandidates(List<T> candidates) {
         allCandidates = List.copyOf(candidates);
         selector.setCandidates(allCandidates);
+        input.setText("", false);
+        lastText = "";
         return this;
     }
 
     public ComboSelector<T> setSelected(T value) {
         selector.setSelected(value, false);
-        updateText(value);
         return this;
     }
 
     public ComboSelector<T> setSelected(T value, boolean notify) {
         selector.setSelected(value, notify);
-        updateText(value);
         return this;
     }
 
@@ -86,27 +91,19 @@ public final class ComboSelector<T> extends UIElement {
     }
 
     private void onValueChanged(T value) {
-        updateText(value);
         if (externalListener != null) {
             externalListener.accept(value);
         }
     }
 
     private void filter() {
-        lastText = input.getRawText();
-        if (updatingText) {
+        String text = input.getRawText();
+        if (text.equals(lastText)) {
             return;
         }
-        List<T> filtered = SearchFilter.filter(
-                allCandidates, lastText, value -> labels.apply(value).getString());
-        selector.setCandidates(filtered);
-    }
-
-    private void updateText(T value) {
-        String text = value == null ? "" : labels.apply(value).getString();
-        updatingText = true;
-        input.setText(text, false);
         lastText = text;
-        updatingText = false;
+        List<T> filtered = SearchFilter.filter(
+                allCandidates, text, value -> labels.apply(value).getString());
+        selector.setCandidates(filtered);
     }
 }

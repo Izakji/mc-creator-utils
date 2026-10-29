@@ -5,6 +5,7 @@ import com.izakji.mccreatorutils.client.registry.RegistryPicker;
 import com.izakji.mccreatorutils.items.GiveCommands;
 import com.izakji.mccreatorutils.items.ItemCountInput;
 import com.izakji.mccreatorutils.session.CreatorToolSession;
+import com.lowdragmc.lowdraglib2.gui.ColorPattern;
 import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Button;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Label;
@@ -38,8 +39,12 @@ public final class ItemsToolPanel extends UIElement {
                 .heightPercent(100)
                 .flexDirection(FlexDirection.COLUMN)
                 .gapAll(5));
-        preview.layout(layout -> layout.width(170).heightPercent(100));
-        addChildren(controls, preview);
+        var previewFrame = new UIElement();
+        previewFrame.layout(layout -> layout.width(150).height(200).paddingAll(1));
+        previewFrame.style(style -> style.background(ColorPattern.BLACK.rectTexture()));
+        preview.layout(layout -> layout.widthPercent(100).heightPercent(100));
+        previewFrame.addChild(preview);
+        addChildren(controls, previewFrame);
 
         var description = new Label();
         description.setText(Component.translatable("tool.mccreatorutils.items.description"));
