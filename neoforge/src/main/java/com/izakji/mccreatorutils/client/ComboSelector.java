@@ -1,24 +1,27 @@
 package com.izakji.mccreatorutils.client;
 
 import com.izakji.mccreatorutils.search.SearchFilter;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Selector;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.TextField;
 import com.lowdragmc.lowdraglib2.gui.ui.event.UIEvents;
 import com.lowdragmc.lowdraglib2.gui.ui.utils.UIElementProvider;
+import dev.vfyjxf.taffy.style.FlexDirection;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import net.minecraft.network.chat.Component;
 
 /**
- * Editable selector: type to filter candidates or use the dropdown arrow.
+ * Editable selector: type in the field or use the dropdown arrow.
  *
  * @author Izakji
  */
-public final class ComboSelector<T> extends Selector<T> {
+public final class ComboSelector<T> extends UIElement {
     private final TextField input = new TextField();
-    private List<T> allCandidates;
+    private final Selector<T> selector = new Selector<>();
     private final Function<T, Component> labels;
+    private List<T> allCandidates;
     private Consumer<T> externalListener;
     private boolean updatingText;
     private String lastText = "";
@@ -26,49 +29,60 @@ public final class ComboSelector<T> extends Selector<T> {
     public ComboSelector(List<T> candidates, Function<T, Component> labels) {
         this.allCandidates = List.copyOf(candidates);
         this.labels = labels;
-        super.setCandidateUIProvider(UIElementProvider.text(labels));
-        super.setCandidates(allCandidates);
-        super.setOnValueChanged(this::onValueChanged);
+        layout(layout -> layout.widthPercent(100)
+                .height(14)
+                .flexDirection(FlexDirection.ROW)
+                .gapAll(2));
 
-        preview.setVisible(false);
         input.setAnyString();
         input.textFieldStyle(
                 style -> style.placeholder(Component.translatable("tool.mccreatorutils.combo.placeholder")));
-        input.layout(layout -> layout.flex(1).height(12));
+        input.layout(layout -> layout.flex(1).height(14));
         input.setTextResponder(ignored -> filter());
         input.addEventListener(UIEvents.TICK, event -> {
             if (!input.getRawText().equals(lastText)) {
                 filter();
             }
         });
-        input.addEventListener(UIEvents.MOUSE_DOWN, event -> show());
-        display.addChildAt(input, 0);
+
+        selector.setCandidateUIProvider(UIElementProvider.text(labels));
+        selector.setCandidates(allCandidates);
+        selector.setOnValueChanged(this::onValueChanged);
+        selector.preview.setVisible(false);
+        selector.layout(layout -> layout.width(14).height(14));
+
+        addChildren(input, selector);
     }
 
     public ComboSelector<T> setAllCandidates(List<T> candidates) {
         allCandidates = List.copyOf(candidates);
-        super.setCandidates(allCandidates);
+        selector.setCandidates(allCandidates);
         return this;
     }
 
-    @Override
-    public Selector<T> setSelected(T value) {
-        super.setSelected(value);
+    public ComboSelector<T> setSelected(T value) {
+        selector.setSelected(value, false);
         updateText(value);
         return this;
     }
 
-    @Override
-    public Selector<T> setSelected(T value, boolean notify) {
-        super.setSelected(value, notify);
+    public ComboSelector<T> setSelected(T value, boolean notify) {
+        selector.setSelected(value, notify);
         updateText(value);
         return this;
     }
 
-    @Override
-    public Selector<T> setOnValueChanged(Consumer<T> consumer) {
+    public ComboSelector<T> setOnValueChanged(Consumer<T> consumer) {
         externalListener = consumer;
         return this;
+    }
+
+    public T getValue() {
+        return selector.getValue();
+    }
+
+    public void hide() {
+        selector.hide();
     }
 
     private void onValueChanged(T value) {
@@ -85,10 +99,7 @@ public final class ComboSelector<T> extends Selector<T> {
         }
         List<T> filtered = SearchFilter.filter(
                 allCandidates, lastText, value -> labels.apply(value).getString());
-        super.setCandidates(filtered);
-        if (!lastText.isEmpty()) {
-            show();
-        }
+        selector.setCandidates(filtered);
     }
 
     private void updateText(T value) {
