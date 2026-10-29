@@ -2,6 +2,7 @@ package com.izakji.mccreatorutils.client.browser;
 
 import com.izakji.mccreatorutils.browser.BrowserGeometry;
 import com.izakji.mccreatorutils.browser.BrowserLayout;
+import com.izakji.mccreatorutils.browser.BrowserTabRules;
 import java.net.URI;
 import java.util.List;
 import net.minecraft.client.Minecraft;
@@ -133,7 +134,7 @@ public final class BrowserWorkspaceRenderer {
                 "+",
                 layout.tabStrip().right() - PLUS_WIDTH,
                 layout.tabStrip().y() + 4,
-                TEXT,
+                BrowserTabRules.canOpenNewTab(tabs.size()) ? TEXT : MUTED_TEXT,
                 false);
     }
 
@@ -204,9 +205,11 @@ public final class BrowserWorkspaceRenderer {
                     content.y() + content.height() - 12,
                     LOADING);
         }
-        BrowserGeometry grip = layout.resizeGrip();
-        graphics.fill(grip.right() - 2, grip.bottom() - 10, grip.right(), grip.bottom() - 8, MUTED_TEXT);
-        graphics.fill(grip.right() - 6, grip.bottom() - 6, grip.right(), grip.bottom() - 4, MUTED_TEXT);
+        if (!workspace.fullscreen()) {
+            BrowserGeometry grip = layout.resizeGrip();
+            graphics.fill(grip.right() - 2, grip.bottom() - 10, grip.right(), grip.bottom() - 8, MUTED_TEXT);
+            graphics.fill(grip.right() - 6, grip.bottom() - 6, grip.right(), grip.bottom() - 4, MUTED_TEXT);
+        }
     }
 
     private static String tabLabel(String url) {

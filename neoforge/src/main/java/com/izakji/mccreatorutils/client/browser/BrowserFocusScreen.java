@@ -1,10 +1,13 @@
 package com.izakji.mccreatorutils.client.browser;
 
 import com.izakji.mccreatorutils.browser.BrowserGeometry;
+import com.izakji.mccreatorutils.browser.BrowserInputCoordinates;
 import com.izakji.mccreatorutils.browser.BrowserLayout;
+import com.izakji.mccreatorutils.browser.BrowserTabRules;
 import com.izakji.mccreatorutils.browser.BrowserUrlInput;
 import java.util.List;
 import java.util.Optional;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
@@ -115,12 +118,29 @@ public final class BrowserFocusScreen extends Screen {
         return in(layout.window(), mouseX, mouseY);
     }
 
+    private int contentPixelX(double mouseX) {
+        return BrowserInputCoordinates.toTexturePixel(
+                mouseX,
+                layout.content().x(),
+                Minecraft.getInstance().getWindow().getGuiScale());
+    }
+
+    private int contentPixelY(double mouseY) {
+        return BrowserInputCoordinates.toTexturePixel(
+                mouseY,
+                layout.content().y(),
+                Minecraft.getInstance().getWindow().getGuiScale());
+    }
+
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        layout = BrowserLayout.of(workspace.windowBounds());
+        if (in(layout.addressBar(), mouseX, mouseY)) {
+            clearContentFocus();
+        }
         if (super.mouseClicked(mouseX, mouseY, button)) {
             return true;
         }
-        layout = BrowserLayout.of(workspace.windowBounds());
         if (!inWindow(mouseX, mouseY)) {
             onClose();
             return true;
@@ -138,9 +158,11 @@ public final class BrowserFocusScreen extends Screen {
                 positionAddressBar();
                 return true;
             }
-            draggingWindow = true;
-            dragOffsetX = (int) mouseX - layout.window().x();
-            dragOffsetY = (int) mouseY - layout.window().y();
+            if (!workspace.fullscreen()) {
+                draggingWindow = true;
+                dragOffsetX = (int) mouseX - layout.window().x();
+                dragOffsetY = (int) mouseY - layout.window().y();
+            }
             return true;
         }
 
@@ -180,10 +202,7 @@ public final class BrowserFocusScreen extends Screen {
                 setFocused(null);
                 contentFocused = true;
                 active.setFocus(true);
-                active.sendMousePress(
-                        (int) (mouseX - layout.content().x()),
-                        (int) (mouseY - layout.content().y()),
-                        button);
+                active.sendMousePress(contentPixelX(mouseX), contentPixelY(mouseY), button);
                 return true;
             }
         }
@@ -193,6 +212,10 @@ public final class BrowserFocusScreen extends Screen {
     private void handleTabClick(double mouseX) {
         List<BrowserTabHandle> tabs = workspace.tabs();
         if (mouseX >= layout.tabStrip().right() - PLUS_WIDTH) {
+            if (!BrowserTabRules.canOpenNewTab(tabs.size())) {
+                error = Component.translatable("screen.mccreatorutils.browser.tab_limit");
+                return;
+            }
             BrowserOpenResult result = workspace.openNewTab();
             if (result == BrowserOpenResult.OPENED) {
                 addressBar.setFocused(true);
@@ -283,10 +306,7 @@ public final class BrowserFocusScreen extends Screen {
         if (contentFocused) {
             BrowserTabHandle active = workspace.activeTab();
             if (active != null) {
-                active.sendMouseRelease(
-                        (int) (mouseX - layout.content().x()),
-                        (int) (mouseY - layout.content().y()),
-                        button);
+                active.sendMouseRelease(contentPixelX(mouseX), contentPixelY(mouseY), button);
             }
             return true;
         }
@@ -298,8 +318,7 @@ public final class BrowserFocusScreen extends Screen {
         if (contentFocused && layout != null && in(layout.content(), mouseX, mouseY)) {
             BrowserTabHandle active = workspace.activeTab();
             if (active != null) {
-                active.sendMouseMove((int) (mouseX - layout.content().x()), (int)
-                        (mouseY - layout.content().y()));
+                active.sendMouseMove(contentPixelX(mouseX), contentPixelY(mouseY));
             }
         }
         super.mouseMoved(mouseX, mouseY);
@@ -329,8 +348,7 @@ public final class BrowserFocusScreen extends Screen {
         if (contentFocused && in(layout.content(), mouseX, mouseY)) {
             BrowserTabHandle active = workspace.activeTab();
             if (active != null) {
-                active.sendMouseMove((int) (mouseX - layout.content().x()), (int)
-                        (mouseY - layout.content().y()));
+                active.sendMouseMove(contentPixelX(mouseX), contentPixelY(mouseY));
             }
             return true;
         }
@@ -345,11 +363,7 @@ public final class BrowserFocusScreen extends Screen {
         if (contentFocused && in(layout.content(), mouseX, mouseY)) {
             BrowserTabHandle active = workspace.activeTab();
             if (active != null) {
-                active.sendMouseWheel(
-                        (int) (mouseX - layout.content().x()),
-                        (int) (mouseY - layout.content().y()),
-                        scrollY,
-                        0);
+                active.sendMouseWheel(contentPixelX(mouseX), contentPixelY(mouseY), scrollY, 0);
             }
             return true;
         }
@@ -359,6 +373,11 @@ public final class BrowserFocusScreen extends Screen {
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
+            if (addressBar != null && addressBar.isFocused()) {
+                addressBar.setFocused(false);
+                setFocused(null);
+                return true;
+            }
             if (workspace.fullscreen()) {
                 workspace.toggleFullscreen();
                 layout = BrowserLayout.of(workspace.windowBounds());
