@@ -51,6 +51,18 @@ class ModApiJsonTest {
     }
 
     @Test
+    void missingSlugsDoNotCreateNullPages() {
+        String curseForge = """
+                {"data":[{"name":"Example Mod"}]}
+                """;
+        String modrinth = """
+                {"hits":[{"title":"Example Mod"}]}
+                """;
+        assertTrue(ModApiJson.curseForgeResult(curseForge, MOD).isEmpty());
+        assertTrue(ModApiJson.modrinthSearchResult(modrinth, MOD).isEmpty());
+    }
+
+    @Test
     void malformedJsonReturnsEmpty() {
         assertTrue(ModApiJson.curseForgeResult("not json", MOD).isEmpty());
         assertTrue(ModApiJson.modrinthProjectResult("").isEmpty());

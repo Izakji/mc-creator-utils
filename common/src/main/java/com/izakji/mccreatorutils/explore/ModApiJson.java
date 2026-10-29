@@ -44,6 +44,9 @@ public final class ModApiJson {
                 if (link.isPresent()) {
                     return link;
                 }
+                if (slug == null || slug.isBlank()) {
+                    continue;
+                }
                 Optional<ResolvedModPage> generated =
                         ModPageUrls.parse("https://www.curseforge.com/minecraft/mc-mods/" + slug);
                 if (generated.isPresent()) {
@@ -97,7 +100,7 @@ public final class ModApiJson {
                 JsonObject project = element.getAsJsonObject();
                 String slug = string(project, "slug");
                 String title = string(project, "title");
-                if (!matches(slug, title, candidates, mod.displayName())) {
+                if (!matches(slug, title, candidates, mod.displayName()) || slug == null || slug.isBlank()) {
                     continue;
                 }
                 Optional<ResolvedModPage> page = ModPageUrls.parse("https://modrinth.com/mod/" + slug);
