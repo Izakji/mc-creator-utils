@@ -3,10 +3,13 @@ package com.izakji.mccreatorutils.client.explore;
 import com.izakji.mccreatorutils.client.ComboSelector;
 import com.izakji.mccreatorutils.client.CommandStatusLabel;
 import com.izakji.mccreatorutils.client.CreatorToolsScreen;
+import com.izakji.mccreatorutils.client.browser.BrowserOpenResult;
+import com.izakji.mccreatorutils.client.browser.BrowserWorkspace;
 import com.izakji.mccreatorutils.explore.InstalledMod;
 import com.izakji.mccreatorutils.explore.ModLabels;
 import com.izakji.mccreatorutils.explore.ModPlatform;
 import com.izakji.mccreatorutils.explore.ResolvedModPage;
+import com.izakji.mccreatorutils.session.CreatorToolSession;
 import com.lowdragmc.lowdraglib2.gui.ColorPattern;
 import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Button;
@@ -15,7 +18,6 @@ import dev.vfyjxf.taffy.style.FlexDirection;
 import java.util.Optional;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
-import net.neoforged.fml.ModList;
 
 /**
  * Explore installed mods and open their CurseForge or Modrinth page.
@@ -23,10 +25,11 @@ import net.neoforged.fml.ModList;
  * @author Izakji
  */
 public final class ExploreModsToolPanel extends UIElement {
+    private final CreatorToolSession session = CreatorToolSession.instance();
     private final CommandStatusLabel status = new CommandStatusLabel();
     private final ComboSelector<InstalledMod> modSelector;
     private final Button openButton = new Button();
-    private final boolean rinkuAvailable = ModList.get().isLoaded("rinku");
+    private final boolean rinkuAvailable = BrowserWorkspace.instance().isAvailable();
     private boolean removed;
 
     public ExploreModsToolPanel() {
@@ -46,11 +49,19 @@ public final class ExploreModsToolPanel extends UIElement {
             addChild(notice);
         }
 
-        modSelector = new ComboSelector<>(InstalledModCatalog.load(), mod -> Component.literal(ModLabels.label(mod)));
+        var installedMods = InstalledModCatalog.load();
+        modSelector = new ComboSelector<>(installedMods, mod -> Component.literal(ModLabels.label(mod)));
         modSelector.setOnValueChanged(selected -> {
+            session.setExploreModId(selected == null ? null : selected.modId());
             status.setText(Component.empty());
             updateOpenButton();
         });
+        if (session.exploreModId() != null) {
+            installedMods.stream()
+                    .filter(mod -> mod.modId().equals(session.exploreModId()))
+                    .findFirst()
+                    .ifPresent(mod -> modSelector.setSelected(mod, false));
+        }
         addChild(modSelector);
 
         openButton.setText(Component.translatable("tool.mccreatorutils.explore_mods.open"));
@@ -104,7 +115,15 @@ public final class ExploreModsToolPanel extends UIElement {
                             resolved.platform() == ModPlatform.CURSEFORGE
                                     ? "status.mccreatorutils.opening_curseforge"
                                     : "status.mccreatorutils.opening_modrinth"));
-                    ModBrowserLauncher.open(resolved);
+                    BrowserOpenResult openResult =
+                            BrowserWorkspace.instance().openPage(resolved.uri().toString());
+                    if (openResult == BrowserOpenResult.CAPACITY) {
+                        status.showError(Component.translatable("screen.mccreatorutils.browser.tab_limit"));
+                    } else if (openResult == BrowserOpenResult.UNAVAILABLE) {
+                        status.showError(Component.translatable("screen.mccreatorutils.browser.rinku_unavailable"));
+                    } else if (openResult == BrowserOpenResult.FAILED) {
+                        status.showError(Component.translatable("screen.mccreatorutils.browser.open_failed"));
+                    }
                 }));
     }
 }
