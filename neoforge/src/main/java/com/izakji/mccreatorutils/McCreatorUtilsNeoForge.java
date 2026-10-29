@@ -1,5 +1,6 @@
 package com.izakji.mccreatorutils;
 
+import com.izakji.mccreatorutils.client.explore.ExploreModsConfig;
 import com.izakji.mccreatorutils.locate.LocateConfig;
 import com.izakji.mccreatorutils.locate.LocateLifecycle;
 import net.neoforged.bus.api.IEventBus;
@@ -16,6 +17,7 @@ import net.neoforged.fml.config.ModConfig;
 public final class McCreatorUtilsNeoForge {
     public McCreatorUtilsNeoForge(IEventBus modEventBus, ModContainer modContainer) {
         modContainer.registerConfig(ModConfig.Type.SERVER, LocateConfig.SPEC);
+        modContainer.registerConfig(ModConfig.Type.CLIENT, ExploreModsConfig.SPEC);
         modEventBus.addListener(LocateLifecycle::onConfigReloading);
     }
 }
