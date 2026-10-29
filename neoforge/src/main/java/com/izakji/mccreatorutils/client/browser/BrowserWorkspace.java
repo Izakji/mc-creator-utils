@@ -1,6 +1,7 @@
 package com.izakji.mccreatorutils.client.browser;
 
 import com.izakji.mccreatorutils.browser.BrowserGeometry;
+import com.izakji.mccreatorutils.browser.BrowserLayout;
 import com.izakji.mccreatorutils.browser.BrowserTabRules;
 import com.izakji.mccreatorutils.browser.BrowserUrlInput;
 import com.izakji.mccreatorutils.client.CreatorToolsScreen;
@@ -97,6 +98,7 @@ public final class BrowserWorkspace {
                 activeTabIndex = existing.getAsInt();
                 ensureWindowBounds();
                 windowVisible = true;
+                resizeActiveTab();
                 focus();
                 return BrowserOpenResult.FOCUSED_EXISTING;
             }
@@ -119,6 +121,7 @@ public final class BrowserWorkspace {
         activeTabIndex = tabs.size() - 1;
         ensureWindowBounds();
         windowVisible = true;
+        resizeActiveTab();
         focus();
         return BrowserOpenResult.OPENED;
     }
@@ -153,6 +156,34 @@ public final class BrowserWorkspace {
             return;
         }
         activeTabIndex = BrowserTabRules.nextActiveIndex(activeTabIndex, index, oldSize);
+        resizeActiveTab();
+    }
+
+    /**
+     * Activates a tab by index.
+     *
+     * @param index tab index
+     */
+    public void setActiveTab(int index) {
+        if (index >= 0 && index < tabs.size()) {
+            activeTabIndex = index;
+            resizeActiveTab();
+        }
+    }
+
+    /**
+     * Resizes the active browser to the current content rectangle.
+     */
+    public void resizeActiveTab() {
+        BrowserTabHandle active = activeTab();
+        if (active == null) {
+            return;
+        }
+        ensureWindowBounds();
+        BrowserLayout layout = BrowserLayout.of(windowBounds);
+        double scale = Minecraft.getInstance().getWindow().getGuiScale();
+        active.resize(Math.max(1, (int) (layout.content().width() * scale)), Math.max(1, (int)
+                (layout.content().height() * scale)));
     }
 
     /**
@@ -231,6 +262,7 @@ public final class BrowserWorkspace {
         int screenWidth = minecraft.getWindow().getGuiScaledWidth();
         int screenHeight = minecraft.getWindow().getGuiScaledHeight();
         windowBounds = bounds.clampTo(screenWidth, screenHeight, 320, 220);
+        resizeActiveTab();
     }
 
     /**
@@ -265,6 +297,7 @@ public final class BrowserWorkspace {
             windowBounds = BrowserGeometry.fullscreen(screenWidth, screenHeight, FULLSCREEN_MARGIN);
             fullscreen = true;
         }
+        resizeActiveTab();
     }
 
     /**

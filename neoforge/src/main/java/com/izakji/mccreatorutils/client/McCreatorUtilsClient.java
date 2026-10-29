@@ -1,6 +1,7 @@
 package com.izakji.mccreatorutils.client;
 
 import com.izakji.mccreatorutils.McCreatorUtils;
+import com.izakji.mccreatorutils.client.browser.BrowserWorkspace;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
@@ -8,6 +9,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
+import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import org.lwjgl.glfw.GLFW;
@@ -25,10 +27,16 @@ public final class McCreatorUtilsClient {
             InputConstants.Type.KEYSYM,
             GLFW.GLFW_KEY_PERIOD,
             "key.categories.mccreatorutils");
+    public static final KeyMapping FOCUS_BROWSER = new KeyMapping(
+            "key.mccreatorutils.focus_browser",
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_B,
+            "key.categories.mccreatorutils");
 
     @SubscribeEvent
     static void registerKeyMappings(RegisterKeyMappingsEvent event) {
         event.register(OPEN_GUI);
+        event.register(FOCUS_BROWSER);
     }
 
     @SubscribeEvent
@@ -39,5 +47,15 @@ public final class McCreatorUtilsClient {
                 minecraft.setScreen(new CreatorToolsScreen());
             }
         }
+        while (FOCUS_BROWSER.consumeClick()) {
+            if (minecraft.screen == null && BrowserWorkspace.instance().hasWindow()) {
+                BrowserWorkspace.instance().focus();
+            }
+        }
+    }
+
+    @SubscribeEvent
+    static void onLogout(ClientPlayerNetworkEvent.LoggingOut event) {
+        BrowserWorkspace.instance().onLogout();
     }
 }
