@@ -36,29 +36,28 @@ public final class StdioMcpTransport implements McpTransport {
     @Override
     public CompletableFuture<Void> start(Consumer<JsonObject> listener) {
         this.listener = listener;
-        return CompletableFuture.runAsync(() -> {
-            try {
-                ProcessBuilder builder = new ProcessBuilder();
-                builder.command(config.command() == null ? "node" : config.command());
-                builder.command().addAll(config.args());
-                if (config.workingDirectory() != null
-                        && !config.workingDirectory().isBlank()) {
-                    builder.directory(Path.of(config.workingDirectory()).toFile());
-                }
-                Map<String, String> environment = builder.environment();
-                environment.putAll(config.environment());
-                process = factory.start(builder);
-                stdin = new OutputStreamWriter(process.getOutputStream(), StandardCharsets.UTF_8);
-                Thread reader = new Thread(this::readStdout, "mcp-" + config.id() + "-stdout");
-                reader.setDaemon(true);
-                reader.start();
-                Thread errors = new Thread(this::readStderr, "mcp-" + config.id() + "-stderr");
-                errors.setDaemon(true);
-                errors.start();
-            } catch (IOException failure) {
-                throw new IllegalStateException("Could not start MCP server " + config.id(), failure);
+        try {
+            ProcessBuilder builder = new ProcessBuilder();
+            builder.command(config.command() == null ? "node" : config.command());
+            builder.command().addAll(config.args());
+            if (config.workingDirectory() != null && !config.workingDirectory().isBlank()) {
+                builder.directory(Path.of(config.workingDirectory()).toFile());
             }
-        });
+            Map<String, String> environment = builder.environment();
+            environment.putAll(config.environment());
+            process = factory.start(builder);
+            stdin = new OutputStreamWriter(process.getOutputStream(), StandardCharsets.UTF_8);
+            Thread reader = new Thread(this::readStdout, "mcp-" + config.id() + "-stdout");
+            reader.setDaemon(true);
+            reader.start();
+            Thread errors = new Thread(this::readStderr, "mcp-" + config.id() + "-stderr");
+            errors.setDaemon(true);
+            errors.start();
+            return CompletableFuture.completedFuture(null);
+        } catch (IOException failure) {
+            return CompletableFuture.failedFuture(
+                    new IllegalStateException("Could not start MCP server " + config.id(), failure));
+        }
     }
 
     @Override

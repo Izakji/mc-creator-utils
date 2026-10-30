@@ -315,8 +315,7 @@ public final class AgentRuntime implements AutoCloseable {
         return new ToolExecution(updated, message);
     }
 
-    private ToolExecution rejected(
-            Conversation conversation, ToolCall call, TurnObserver observer, String message) {
+    private ToolExecution rejected(Conversation conversation, ToolCall call, TurnObserver observer, String message) {
         ToolResult result = error(call, message);
         observer.onToolFinished(result);
         com.izakji.agent.api.ToolMessage toolMessage = toolMessage(result, call.name());

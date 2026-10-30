@@ -40,10 +40,10 @@ class McpManagerTest {
 
     @Test
     void startingAServerDoesNotCloseItsClient() {
-        FakeMcpClient client = new FakeMcpClient(
-                List.of(McpTestSupport.descriptor("inspect", true, false)), List.of(), List.of());
-        McpManager manager = new McpManager(
-                Map.of("server", client), Map.of("server", McpTestSupport.config("server")));
+        FakeMcpClient client =
+                new FakeMcpClient(List.of(McpTestSupport.descriptor("inspect", true, false)), List.of(), List.of());
+        McpManager manager =
+                new McpManager(Map.of("server", client), Map.of("server", McpTestSupport.config("server")));
         manager.start("server");
         org.junit.jupiter.api.Assertions.assertFalse(client.closed());
     }
