@@ -20,6 +20,7 @@ import com.izakji.agent.config.ProviderProfile;
 import com.izakji.agent.conversation.Conversation;
 import com.izakji.agent.conversation.ConversationStore;
 import com.izakji.agent.provider.ProviderRegistry;
+import com.izakji.agent.skill.Skill;
 import com.izakji.agent.util.Redactor;
 import java.time.Clock;
 import java.time.Instant;
@@ -48,6 +49,7 @@ public final class AgentRuntime implements AutoCloseable {
     private final PermissionGate permissions;
     private final List<ContextProvider> contextProviders;
     private final String agentsMarkdown;
+    private final List<Skill> skills;
     private final ExecutorService executor;
     private final Clock clock;
     private final Map<String, TurnHandle> active = new ConcurrentHashMap<>();
@@ -66,6 +68,30 @@ public final class AgentRuntime implements AutoCloseable {
             String agentsMarkdown,
             ExecutorService executor,
             Clock clock) {
+        this(
+                settings,
+                providers,
+                tools,
+                conversations,
+                permissions,
+                contextProviders,
+                agentsMarkdown,
+                List.of(),
+                executor,
+                clock);
+    }
+
+    public AgentRuntime(
+            AgentSettings settings,
+            ProviderRegistry providers,
+            ToolRegistry tools,
+            ConversationStore conversations,
+            PermissionGate permissions,
+            List<ContextProvider> contextProviders,
+            String agentsMarkdown,
+            List<Skill> skills,
+            ExecutorService executor,
+            Clock clock) {
         this.settings = Objects.requireNonNull(settings, "settings");
         this.providers = Objects.requireNonNull(providers, "providers");
         this.tools = Objects.requireNonNull(tools, "tools");
@@ -73,6 +99,7 @@ public final class AgentRuntime implements AutoCloseable {
         this.permissions = Objects.requireNonNull(permissions, "permissions");
         this.contextProviders = List.copyOf(Objects.requireNonNullElse(contextProviders, List.of()));
         this.agentsMarkdown = agentsMarkdown == null ? "" : agentsMarkdown;
+        this.skills = List.copyOf(Objects.requireNonNullElse(skills, List.of()));
         this.executor = Objects.requireNonNull(executor, "executor");
         this.clock = Objects.requireNonNull(clock, "clock");
         java.util.Set<String> secrets = new java.util.LinkedHashSet<>();
@@ -144,7 +171,7 @@ public final class AgentRuntime implements AutoCloseable {
                     .orElseThrow(() -> new AgentException("Provider not registered: " + profile.type()));
 
             String systemPrompt =
-                    promptBuilder.build(settings, List.of(), agentsMarkdown, snapshots(conversationId, handle));
+                    promptBuilder.build(settings, skills, agentsMarkdown, snapshots(conversationId, handle));
             List<ChatMessage> requestMessages = new ArrayList<>();
             requestMessages.add(new SystemMessage(systemPrompt));
             requestMessages.addAll(truncator.truncate(conversation.messages(), profile.contextWindow()));
