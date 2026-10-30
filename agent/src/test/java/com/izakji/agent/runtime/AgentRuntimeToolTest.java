@@ -163,6 +163,109 @@ class AgentRuntimeToolTest {
     }
 
     @Test
+    void redactsConfiguredSecretsFromToolResults() throws Exception {
+        FakeProvider provider = new FakeProvider(List.of(
+                new FakeProvider.Turn(List.of(), List.of(), List.of(TestMessages.call("call-1"))),
+                new FakeProvider.Turn(List.of("done"), List.of(), List.of())));
+        FakeTool tool = new FakeTool("mutate", ToolRisk.READ_ONLY, "sk-secret");
+        try (AgentRuntime runtime =
+                AgentRuntimeTestSupport.runtime(AgentRuntimeTestSupport.root(), provider, List.of(tool))) {
+            Conversation conversation = runtime.createConversation("Chat", "main");
+            RecordingObserver observer = new RecordingObserver();
+            runtime.startTurn(conversation.id(), "do it", observer).completion().get(2, TimeUnit.SECONDS);
+            org.junit.jupiter.api.Assertions.assertFalse(
+                    observer.toolResults.get(0).content().contains("sk-secret"));
+        }
+    }
+
+    @Test
+    void omitsToolSchemasWhenProfileDisablesTools() throws Exception {
+        FakeProvider provider = new FakeProvider(List.of(new FakeProvider.Turn(List.of("done"), List.of(), List.of())));
+        FakeTool tool = new FakeTool("mutate", ToolRisk.READ_ONLY, "ok");
+        com.izakji.agent.config.AgentSettings base = AgentRuntimeTestSupport.settings();
+        com.izakji.agent.config.ProviderProfile profile = base.profiles().get(0);
+        com.izakji.agent.config.ProviderProfile withoutTools = new com.izakji.agent.config.ProviderProfile(
+                profile.id(),
+                profile.displayName(),
+                profile.type(),
+                profile.baseUrl(),
+                profile.model(),
+                profile.apiKey(),
+                profile.headers(),
+                profile.temperature(),
+                profile.maxOutputTokens(),
+                profile.contextWindow(),
+                profile.stream(),
+                false);
+        com.izakji.agent.config.AgentSettings settings = new com.izakji.agent.config.AgentSettings(
+                base.defaultProfileId(), List.of(withoutTools), base.permissions(), 8, 32, 1);
+        try (AgentRuntime runtime =
+                AgentRuntimeTestSupport.runtime(AgentRuntimeTestSupport.root(), provider, List.of(tool), settings)) {
+            Conversation conversation = runtime.createConversation("Chat", "main");
+            runtime.startTurn(conversation.id(), "hello", new RecordingObserver())
+                    .completion()
+                    .get(2, TimeUnit.SECONDS);
+            assertTrue(provider.lastTools().isEmpty());
+        }
+    }
+
+    @Test
+    void reTruncatesHistoryAfterLargeToolResults() throws Exception {
+        FakeProvider provider = new FakeProvider(List.of(
+                new FakeProvider.Turn(List.of(), List.of(), List.of(TestMessages.call("call-1"))),
+                new FakeProvider.Turn(List.of("done"), List.of(), List.of())));
+        FakeTool tool = new FakeTool("mutate", ToolRisk.READ_ONLY, "x".repeat(2000));
+        com.izakji.agent.config.AgentSettings settings = smallContextSettings();
+        try (AgentRuntime runtime =
+                AgentRuntimeTestSupport.runtime(AgentRuntimeTestSupport.root(), provider, List.of(tool), settings)) {
+            Conversation conversation = runtime.createConversation("Chat", "main");
+            runtime.startTurn(conversation.id(), "do it", new RecordingObserver())
+                    .completion()
+                    .get(3, TimeUnit.SECONDS);
+            assertTrue(provider.lastMessages().stream()
+                    .filter(com.izakji.agent.api.SystemMessage.class::isInstance)
+                    .map(com.izakji.agent.api.SystemMessage.class::cast)
+                    .anyMatch(message -> message.text().contains("truncated")));
+        }
+    }
+
+    @Test
+    void retriesOnceAfterAContextOverflow() throws Exception {
+        FakeProvider provider = new FakeProvider(List.of(
+                new FakeProvider.Failure("maximum context length exceeded"),
+                new FakeProvider.Turn(List.of("done"), List.of(), List.of())));
+        try (AgentRuntime runtime =
+                AgentRuntimeTestSupport.runtime(AgentRuntimeTestSupport.root(), provider, List.of())) {
+            Conversation conversation = runtime.createConversation("Chat", "main");
+            TurnResult result = runtime.startTurn(conversation.id(), "hi", new RecordingObserver())
+                    .completion()
+                    .get(3, TimeUnit.SECONDS);
+            assertEquals(TurnOutcome.COMPLETED, result.outcome());
+            assertEquals(2, provider.requests());
+        }
+    }
+
+    private static com.izakji.agent.config.AgentSettings smallContextSettings() {
+        com.izakji.agent.config.AgentSettings base = AgentRuntimeTestSupport.settings();
+        com.izakji.agent.config.ProviderProfile profile = base.profiles().get(0);
+        com.izakji.agent.config.ProviderProfile small = new com.izakji.agent.config.ProviderProfile(
+                profile.id(),
+                profile.displayName(),
+                profile.type(),
+                profile.baseUrl(),
+                profile.model(),
+                profile.apiKey(),
+                profile.headers(),
+                profile.temperature(),
+                500,
+                1024,
+                profile.stream(),
+                profile.tools());
+        return new com.izakji.agent.config.AgentSettings(
+                base.defaultProfileId(), List.of(small), base.permissions(), 8, 32, 1);
+    }
+
+    @Test
     void stopsAtMaxToolRounds() throws Exception {
         List<FakeProvider.Step> steps = new ArrayList<>();
         for (int index = 0; index < 20; index++) {
@@ -200,6 +303,28 @@ class AgentRuntimeToolTest {
                     TurnOutcome.CANCELLED,
                     handle.completion().get(2, TimeUnit.SECONDS).outcome());
             assertTrue(tool.executions.isEmpty());
+        }
+    }
+
+    @Test
+    void cancelStopsRunningToolAndFinishesTheTurn() throws Exception {
+        FakeProvider provider = new FakeProvider(List.of(
+                new FakeProvider.Turn(List.of(), List.of(), List.of(TestMessages.call("call-1"))),
+                new FakeProvider.Turn(List.of("done"), List.of(), List.of())));
+        FakeTool tool = new FakeTool("mutate", ToolRisk.READ_ONLY, "ok");
+        tool.neverCompletes();
+        try (AgentRuntime runtime =
+                AgentRuntimeTestSupport.runtime(AgentRuntimeTestSupport.root(), provider, List.of(tool))) {
+            Conversation conversation = runtime.createConversation("Chat", "main");
+            RecordingObserver observer = new RecordingObserver();
+            TurnHandle handle = runtime.startTurn(conversation.id(), "do it", observer);
+            assertTrue(tool.awaitExecution());
+
+            handle.cancel();
+
+            assertTrue(observer.awaitFinished());
+            assertEquals(TurnOutcome.CANCELLED, observer.finished.outcome());
+            assertTrue(tool.pending.isCancelled());
         }
     }
 

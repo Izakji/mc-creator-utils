@@ -24,7 +24,6 @@ import com.izakji.agent.config.ProviderType;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -63,14 +62,22 @@ public final class AnthropicProvider implements LlmProvider {
         } catch (RuntimeException failure) {
             return CompletableFuture.failedFuture(failure);
         }
-        return client.sendAsync(httpRequest, HttpResponse.BodyHandlers.ofLines())
-                .thenApply(response -> {
-                    if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                        throw new IllegalStateException("Provider returned HTTP " + response.statusCode());
-                    }
-                    consume(response.body(), listener, cancellationToken);
-                    return null;
-                });
+        return ProviderStreamingHttp.execute(
+                client,
+                httpRequest,
+                cancellationToken,
+                lines -> consume(lines, listener, cancellationToken),
+                scrubber(request.profile()));
+    }
+
+    private static java.util.function.UnaryOperator<String> scrubber(ProviderProfile profile) {
+        java.util.Set<String> secrets = new java.util.LinkedHashSet<>();
+        if (!profile.apiKey().isBlank()) {
+            secrets.add(profile.apiKey());
+        }
+        secrets.addAll(profile.headers().values());
+        com.izakji.agent.util.Redactor redactor = new com.izakji.agent.util.Redactor(secrets);
+        return redactor::redact;
     }
 
     private HttpRequest buildRequest(ChatRequest request) {
@@ -80,6 +87,14 @@ public final class AnthropicProvider implements LlmProvider {
         body.addProperty("max_tokens", request.maxOutputTokens());
         body.addProperty("temperature", profile.temperature());
         body.addProperty("stream", true);
+        if (profile.thinkingBudgetTokens() > 0) {
+            JsonObject thinking = new JsonObject();
+            thinking.addProperty("type", "enabled");
+            thinking.addProperty(
+                    "budget_tokens",
+                    Math.min(profile.thinkingBudgetTokens(), Math.max(1, request.maxOutputTokens() - 1)));
+            body.add("thinking", thinking);
+        }
 
         List<String> system = new ArrayList<>();
         JsonArray messages = new JsonArray();
@@ -163,11 +178,18 @@ public final class AnthropicProvider implements LlmProvider {
                 block.addProperty("text", text.text());
                 blocks.add(block);
             } else if (part instanceof ReasoningPart reasoning) {
-                JsonObject block = new JsonObject();
-                block.addProperty("type", "thinking");
-                block.addProperty("thinking", reasoning.text());
-                block.addProperty("signature", reasoning.signature());
-                blocks.add(block);
+                if (reasoning.signature().startsWith("redacted:")) {
+                    JsonObject block = new JsonObject();
+                    block.addProperty("type", "redacted_thinking");
+                    block.addProperty("data", reasoning.signature().substring("redacted:".length()));
+                    blocks.add(block);
+                } else if (!reasoning.signature().isEmpty()) {
+                    JsonObject block = new JsonObject();
+                    block.addProperty("type", "thinking");
+                    block.addProperty("thinking", reasoning.text());
+                    block.addProperty("signature", reasoning.signature());
+                    blocks.add(block);
+                }
             } else if (part instanceof ImagePart image) {
                 JsonObject source = new JsonObject();
                 source.addProperty("type", "base64");
@@ -193,7 +215,9 @@ public final class AnthropicProvider implements LlmProvider {
         boolean sawTool = false;
         FinishReason finish = FinishReason.STOP;
         try (lines) {
-            for (String line : lines.toList()) {
+            java.util.Iterator<String> iterator = lines.iterator();
+            while (iterator.hasNext()) {
+                String line = iterator.next();
                 cancellationToken.throwIfCancelled();
                 for (SseEvent event : parser.accept(line + "\n")) {
                     JsonObject data = event.data().isBlank()
@@ -212,6 +236,12 @@ public final class AnthropicProvider implements LlmProvider {
                                 }
                                 if (block.has("signature")) {
                                     signature.append(block.get("signature").getAsString());
+                                }
+                            } else if ("redacted_thinking".equals(blockType)) {
+                                if (block.has("data")) {
+                                    signature
+                                            .append("redacted:")
+                                            .append(block.get("data").getAsString());
                                 }
                             } else if ("tool_use".equals(blockType)) {
                                 toolId = block.get("id").getAsString();
@@ -235,6 +265,8 @@ public final class AnthropicProvider implements LlmProvider {
                         }
                         case "content_block_stop" -> {
                             if ("thinking".equals(blockType) && !signature.isEmpty()) {
+                                listener.onReasoningSignature(signature.toString());
+                            } else if ("redacted_thinking".equals(blockType) && !signature.isEmpty()) {
                                 listener.onReasoningSignature(signature.toString());
                             } else if ("tool_use".equals(blockType)) {
                                 listener.onToolCall(new ToolCall(toolId, toolName, parse(toolInput.toString())));
@@ -260,6 +292,7 @@ public final class AnthropicProvider implements LlmProvider {
                             }
                         }
                         case "message_stop" -> {}
+                        case "error" -> throw new IllegalStateException("Provider error: " + data);
                         default -> {}
                     }
                 }

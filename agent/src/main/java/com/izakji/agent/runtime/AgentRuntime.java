@@ -14,6 +14,7 @@ import com.izakji.agent.api.TextPart;
 import com.izakji.agent.api.ToolCall;
 import com.izakji.agent.api.ToolContext;
 import com.izakji.agent.api.ToolResult;
+import com.izakji.agent.api.ToolSchema;
 import com.izakji.agent.api.UserMessage;
 import com.izakji.agent.config.AgentSettings;
 import com.izakji.agent.config.ProviderProfile;
@@ -28,6 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -55,7 +57,8 @@ public final class AgentRuntime implements AutoCloseable {
     private final Map<String, TurnHandle> active = new ConcurrentHashMap<>();
     private final Map<String, CompletableFuture<ApprovalChoice>> pendingApprovals = new ConcurrentHashMap<>();
     private final SystemPromptBuilder promptBuilder = new SystemPromptBuilder();
-    private final ConversationTruncator truncator = new ConversationTruncator(new TokenEstimator());
+    private final TokenEstimator estimator = new TokenEstimator();
+    private final ConversationTruncator truncator = new ConversationTruncator(estimator);
     private final Redactor redactor;
 
     public AgentRuntime(
@@ -77,6 +80,7 @@ public final class AgentRuntime implements AutoCloseable {
                 contextProviders,
                 agentsMarkdown,
                 List.of(),
+                List.of(),
                 executor,
                 clock);
     }
@@ -92,6 +96,32 @@ public final class AgentRuntime implements AutoCloseable {
             List<Skill> skills,
             ExecutorService executor,
             Clock clock) {
+        this(
+                settings,
+                providers,
+                tools,
+                conversations,
+                permissions,
+                contextProviders,
+                agentsMarkdown,
+                skills,
+                List.of(),
+                executor,
+                clock);
+    }
+
+    public AgentRuntime(
+            AgentSettings settings,
+            ProviderRegistry providers,
+            ToolRegistry tools,
+            ConversationStore conversations,
+            PermissionGate permissions,
+            List<ContextProvider> contextProviders,
+            String agentsMarkdown,
+            List<Skill> skills,
+            List<String> secrets,
+            ExecutorService executor,
+            Clock clock) {
         this.settings = Objects.requireNonNull(settings, "settings");
         this.providers = Objects.requireNonNull(providers, "providers");
         this.tools = Objects.requireNonNull(tools, "tools");
@@ -102,14 +132,15 @@ public final class AgentRuntime implements AutoCloseable {
         this.skills = List.copyOf(Objects.requireNonNullElse(skills, List.of()));
         this.executor = Objects.requireNonNull(executor, "executor");
         this.clock = Objects.requireNonNull(clock, "clock");
-        java.util.Set<String> secrets = new java.util.LinkedHashSet<>();
+        java.util.Set<String> allSecrets = new java.util.LinkedHashSet<>();
         settings.profiles().forEach(profile -> {
             if (!profile.apiKey().isBlank()) {
-                secrets.add(profile.apiKey());
+                allSecrets.add(profile.apiKey());
             }
-            profile.headers().values().forEach(secrets::add);
+            profile.headers().values().forEach(allSecrets::add);
         });
-        this.redactor = new Redactor(secrets);
+        Objects.requireNonNullElse(secrets, List.<String>of()).forEach(allSecrets::add);
+        this.redactor = new Redactor(allSecrets);
     }
 
     public Conversation createConversation(String title, String profileId) {
@@ -172,26 +203,48 @@ public final class AgentRuntime implements AutoCloseable {
 
             String systemPrompt =
                     promptBuilder.build(settings, skills, agentsMarkdown, snapshots(conversationId, handle));
-            List<ChatMessage> requestMessages = new ArrayList<>();
-            requestMessages.add(new SystemMessage(systemPrompt));
-            requestMessages.addAll(truncator.truncate(conversation.messages(), profile.contextWindow()));
+            int historyBudget = Math.max(
+                    1,
+                    profile.contextWindow()
+                            - profile.maxOutputTokens()
+                            - estimator.estimate(new SystemMessage(systemPrompt)));
 
             int rounds = 0;
             int calls = 0;
+            boolean contextRetried = false;
+            boolean truncationNotified = false;
             while (rounds < settings.maxToolRounds()) {
                 if (handle.isCancelled()) {
                     finish(conversationId, handle, observer, TurnOutcome.CANCELLED, "cancelled");
                     return;
                 }
                 rounds++;
-                AssistantMessage assistant = callProvider(provider, profile, requestMessages, observer, handle);
+                ConversationTruncator.TruncationResult history =
+                        truncator.truncateDetailed(conversation.messages(), historyBudget);
+                if (history.truncated() && !truncationNotified) {
+                    observer.onHistoryTruncated();
+                    truncationNotified = true;
+                }
+                List<ChatMessage> requestMessages = new ArrayList<>();
+                requestMessages.add(new SystemMessage(systemPrompt));
+                requestMessages.addAll(history.messages());
+                AssistantMessage assistant;
+                try {
+                    assistant = callProvider(provider, profile, requestMessages, observer, handle);
+                } catch (RuntimeException failure) {
+                    if (!contextRetried && isContextOverflow(failure)) {
+                        contextRetried = true;
+                        historyBudget = Math.max(1, historyBudget / 2);
+                        continue;
+                    }
+                    throw failure;
+                }
                 if (handle.isCancelled()) {
                     finish(conversationId, handle, observer, TurnOutcome.CANCELLED, "cancelled");
                     return;
                 }
                 conversation = conversation.withMessage(assistant, clock.instant());
                 conversations.save(conversation);
-                requestMessages.add(assistant);
 
                 if (assistant.toolCalls().isEmpty()) {
                     finish(conversationId, handle, observer, TurnOutcome.COMPLETED, "");
@@ -210,7 +263,6 @@ public final class AgentRuntime implements AutoCloseable {
                     calls++;
                     ToolExecution execution = executeTool(conversation, call, observer, handle);
                     conversation = execution.conversation();
-                    requestMessages.add(execution.message());
                 }
             }
             finish(conversationId, handle, observer, TurnOutcome.MAX_ITERATIONS, "tool-round limit");
@@ -234,6 +286,7 @@ public final class AgentRuntime implements AutoCloseable {
             TurnHandle handle) {
         StringBuilder text = new StringBuilder();
         StringBuilder reasoning = new StringBuilder();
+        List<ContentPart> reasoningParts = new ArrayList<>();
         AtomicReference<String> signature = new AtomicReference<>("");
         List<ToolCall> toolCalls = new ArrayList<>();
         StreamListener listener = new StreamListener() {
@@ -251,6 +304,10 @@ public final class AgentRuntime implements AutoCloseable {
 
             @Override
             public void onReasoningSignature(String value) {
+                if (!reasoning.isEmpty() || !value.isBlank()) {
+                    reasoningParts.add(new ReasoningPart(reasoning.toString(), value));
+                    reasoning.setLength(0);
+                }
                 signature.set(value);
             }
 
@@ -265,12 +322,18 @@ public final class AgentRuntime implements AutoCloseable {
             @Override
             public void onFinish(com.izakji.agent.api.FinishReason reason) {}
         };
-        provider.stream(
-                        new ChatRequest(profile, messages, tools.schemas(), profile.maxOutputTokens()),
-                        listener,
-                        handle::isCancelled)
-                .join();
+        List<ToolSchema> schemas = profile.tools() && provider.supportsTools() ? tools.schemas() : List.of();
+        CompletableFuture<Void> future = provider.stream(
+                new ChatRequest(profile, messages, schemas, profile.maxOutputTokens()), listener, handle::isCancelled);
+        Runnable cancel = () -> future.cancel(true);
+        handle.onCancel(cancel);
+        try {
+            future.join();
+        } finally {
+            handle.removeOnCancel(cancel);
+        }
         List<ContentPart> parts = new ArrayList<>();
+        parts.addAll(reasoningParts);
         if (!reasoning.isEmpty()) {
             parts.add(new ReasoningPart(reasoning.toString(), signature.get()));
         }
@@ -315,7 +378,8 @@ public final class AgentRuntime implements AutoCloseable {
                 return rejected(conversation, call, observer, "Permission denied: user denied the tool call");
             }
             if (choice == ApprovalChoice.ALLOW_CONVERSATION && tool.allowsConversationApproval()) {
-                conversation = conversation.withConversationApproval(tool.name(), clock.instant());
+                conversation = conversation.withConversationApproval(
+                        PermissionGate.approvalKey(tool.name(), call.arguments()), clock.instant());
                 conversations.save(conversation);
             }
         }
@@ -324,17 +388,26 @@ public final class AgentRuntime implements AutoCloseable {
         }
         observer.onToolStarted(call);
         ToolResult result;
+        CompletableFuture<ToolResult> future = tool.execute(
+                new com.izakji.agent.api.ToolInvocation(call.id(), call.name(), call.arguments()),
+                new ToolContext(conversation.id(), handle::isCancelled));
+        Runnable cancel = () -> future.cancel(true);
+        handle.onCancel(cancel);
         try {
-            result = tool.execute(
-                            new com.izakji.agent.api.ToolInvocation(call.id(), call.name(), call.arguments()),
-                            new ToolContext(conversation.id(), handle::isCancelled))
-                    .get(60, TimeUnit.SECONDS);
+            result = future.get(60, TimeUnit.SECONDS);
         } catch (InterruptedException interrupted) {
             Thread.currentThread().interrupt();
             result = error(call, "Tool interrupted");
+        } catch (CancellationException cancelled) {
+            result = error(call, "Cancelled");
         } catch (ExecutionException | TimeoutException failure) {
+            future.cancel(true);
             result = error(call, "Tool failed: " + failure.getMessage());
+        } finally {
+            handle.removeOnCancel(cancel);
         }
+        result = new ToolResult(
+                result.callId(), redactor.redact(result.content()), result.error(), result.attachments());
         observer.onToolFinished(result);
         com.izakji.agent.api.ToolMessage message = toolMessage(result, call.name());
         Conversation updated = conversation.withMessage(message, clock.instant());
@@ -374,7 +447,7 @@ public final class AgentRuntime implements AutoCloseable {
                         .exceptionally(failure -> "")
                         .join();
                 if (value != null && !value.isBlank()) {
-                    values.add(value);
+                    values.add(redactor.redact(value));
                 }
             } catch (RuntimeException ignored) {
                 // A failed optional context provider must not fail the turn.
@@ -387,9 +460,6 @@ public final class AgentRuntime implements AutoCloseable {
         pendingApprovals.entrySet().stream()
                 .filter(entry -> entry.getKey().startsWith(conversationId + "\u0000"))
                 .forEach(entry -> entry.getValue().complete(ApprovalChoice.DENY));
-        if (active.get(conversationId) == handle) {
-            handle.complete(new TurnResult(TurnOutcome.CANCELLED, conversationId, "cancelled"));
-        }
     }
 
     private void finish(
@@ -398,6 +468,24 @@ public final class AgentRuntime implements AutoCloseable {
         TurnResult result = new TurnResult(outcome, conversationId, error);
         observer.onFinished(result);
         handle.complete(result);
+    }
+
+    private static boolean isContextOverflow(Throwable failure) {
+        Throwable current = failure;
+        while (current != null) {
+            String message =
+                    current.getMessage() == null ? "" : current.getMessage().toLowerCase(java.util.Locale.ROOT);
+            if ((message.contains("context")
+                            && (message.contains("length")
+                                    || message.contains("window")
+                                    || message.contains("maximum")
+                                    || message.contains("too long")))
+                    || message.contains("too many tokens")) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 
     private static String approvalKey(String conversationId, String approvalId) {

@@ -1,11 +1,13 @@
 package com.izakji.agent.runtime;
 
 import com.izakji.agent.api.CancellationToken;
+import com.izakji.agent.api.ChatMessage;
 import com.izakji.agent.api.ChatRequest;
 import com.izakji.agent.api.FinishReason;
 import com.izakji.agent.api.LlmProvider;
 import com.izakji.agent.api.StreamListener;
 import com.izakji.agent.api.ToolCall;
+import com.izakji.agent.api.ToolSchema;
 import com.izakji.agent.config.ProviderType;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -20,6 +22,8 @@ final class FakeProvider implements LlmProvider {
 
     private final List<Step> steps;
     private final AtomicInteger requests = new AtomicInteger();
+    private volatile List<ToolSchema> lastTools = List.of();
+    private volatile List<ChatMessage> lastMessages = List.of();
 
     FakeProvider(List<Step> steps) {
         this.steps = List.copyOf(steps);
@@ -27,6 +31,14 @@ final class FakeProvider implements LlmProvider {
 
     int requests() {
         return requests.get();
+    }
+
+    List<ToolSchema> lastTools() {
+        return lastTools;
+    }
+
+    List<ChatMessage> lastMessages() {
+        return lastMessages;
     }
 
     @Override
@@ -42,6 +54,8 @@ final class FakeProvider implements LlmProvider {
     @Override
     public CompletableFuture<Void> stream(
             ChatRequest request, StreamListener listener, CancellationToken cancellationToken) {
+        lastTools = List.copyOf(request.tools());
+        lastMessages = List.copyOf(request.messages());
         int index = requests.getAndIncrement();
         if (index >= steps.size()) {
             return CompletableFuture.failedFuture(new IllegalStateException("No fake step"));

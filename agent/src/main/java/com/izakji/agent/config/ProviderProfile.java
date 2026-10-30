@@ -21,6 +21,7 @@ import java.util.Objects;
  * @param contextWindow context window in tokens
  * @param stream whether to request streaming responses
  * @param tools whether the model supports tool calling
+ * @param thinkingBudgetTokens extended-thinking budget, or zero to disable
  * @author Izakji
  */
 public record ProviderProfile(
@@ -35,7 +36,37 @@ public record ProviderProfile(
         int maxOutputTokens,
         int contextWindow,
         boolean stream,
-        boolean tools) {
+        boolean tools,
+        int thinkingBudgetTokens) {
+
+    public ProviderProfile(
+            String id,
+            String displayName,
+            ProviderType type,
+            String baseUrl,
+            String model,
+            String apiKey,
+            Map<String, String> headers,
+            double temperature,
+            int maxOutputTokens,
+            int contextWindow,
+            boolean stream,
+            boolean tools) {
+        this(
+                id,
+                displayName,
+                type,
+                baseUrl,
+                model,
+                apiKey,
+                headers,
+                temperature,
+                maxOutputTokens,
+                contextWindow,
+                stream,
+                tools,
+                0);
+    }
 
     public ProviderProfile {
         id = required(id, "id");
@@ -48,6 +79,7 @@ public record ProviderProfile(
         temperature = Math.max(0.0, Math.min(2.0, temperature));
         maxOutputTokens = Math.max(1, maxOutputTokens);
         contextWindow = Math.max(1024, contextWindow);
+        thinkingBudgetTokens = Math.max(0, thinkingBudgetTokens);
     }
 
     @Override
@@ -55,7 +87,8 @@ public record ProviderProfile(
         return "ProviderProfile[id=" + id + ", displayName=" + displayName + ", type=" + type
                 + ", baseUrl=" + baseUrl + ", model=" + model + ", temperature=" + temperature
                 + ", maxOutputTokens=" + maxOutputTokens + ", contextWindow=" + contextWindow
-                + ", stream=" + stream + ", tools=" + tools + ", apiKey=<redacted>]";
+                + ", stream=" + stream + ", tools=" + tools + ", thinkingBudgetTokens="
+                + thinkingBudgetTokens + ", apiKey=<redacted>]";
     }
 
     private static String required(String value, String name) {

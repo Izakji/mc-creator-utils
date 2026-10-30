@@ -15,7 +15,10 @@ final class FakeTool implements AgentTool {
     private final ToolRisk risk;
     private final String result;
     final List<ToolInvocation> executions = new ArrayList<>();
+    final CompletableFuture<ToolResult> pending = new CompletableFuture<>();
+    private final java.util.concurrent.CountDownLatch started = new java.util.concurrent.CountDownLatch(1);
     private RuntimeException failure;
+    private boolean neverCompletes;
 
     FakeTool(String name, ToolRisk risk, String result) {
         this.name = name;
@@ -25,6 +28,14 @@ final class FakeTool implements AgentTool {
 
     void failWith(RuntimeException failure) {
         this.failure = failure;
+    }
+
+    void neverCompletes() {
+        this.neverCompletes = true;
+    }
+
+    boolean awaitExecution() throws InterruptedException {
+        return started.await(2, java.util.concurrent.TimeUnit.SECONDS);
     }
 
     @Override
@@ -50,6 +61,10 @@ final class FakeTool implements AgentTool {
     @Override
     public CompletableFuture<ToolResult> execute(ToolInvocation invocation, ToolContext context) {
         executions.add(invocation);
+        started.countDown();
+        if (neverCompletes) {
+            return pending;
+        }
         if (failure != null) {
             return CompletableFuture.failedFuture(failure);
         }

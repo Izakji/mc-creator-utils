@@ -46,10 +46,10 @@ public final class McpTool implements AgentTool {
 
     @Override
     public ToolRisk risk() {
-        if (descriptor.readOnly()) {
-            return ToolRisk.READ_ONLY;
+        if (descriptor.destructive()) {
+            return ToolRisk.DANGEROUS;
         }
-        return descriptor.destructive() ? ToolRisk.DANGEROUS : ToolRisk.MUTATING;
+        return descriptor.readOnly() ? ToolRisk.READ_ONLY : ToolRisk.MUTATING;
     }
 
     @Override

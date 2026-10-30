@@ -71,10 +71,58 @@ class FileConversationStoreTest {
     void quarantinesCorruptConversationFiles() throws Exception {
         Path root = Files.createTempDirectory("agent-conversations");
         FileConversationStore store = new FileConversationStore(root, new Gson());
-        Files.writeString(root.resolve("bad.json"), "{broken");
-        assertTrue(store.load("bad").isEmpty());
+        String id = java.util.UUID.randomUUID().toString();
+        Files.writeString(root.resolve(id + ".json"), "{broken");
+        assertTrue(store.load(id).isEmpty());
         try (Stream<Path> files = Files.list(root)) {
             assertTrue(files.anyMatch(path -> path.getFileName().toString().contains(".corrupt-")));
         }
+    }
+
+    @Test
+    void rejectsConversationIdsThatEscapeTheStoreDirectory() throws Exception {
+        Path root = Files.createTempDirectory("agent-conversations");
+        FileConversationStore store = new FileConversationStore(root, new Gson());
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class, () -> store.load("../escape"));
+        org.junit.jupiter.api.Assertions.assertThrows(
+                IllegalArgumentException.class, () -> store.delete("../../escape"));
+        org.junit.jupiter.api.Assertions.assertThrows(
+                IllegalArgumentException.class,
+                () -> store.save(new Conversation(
+                        "../escape", "Bad", Instant.now(), Instant.now(), "main", List.of(), java.util.Set.of())));
+    }
+
+    @Test
+    void ignoresFilesWhoseStoredIdDoesNotMatchTheirName() throws Exception {
+        Path root = Files.createTempDirectory("agent-conversations");
+        FileConversationStore store = new FileConversationStore(root, new Gson());
+        String fileNameId = java.util.UUID.randomUUID().toString();
+        Conversation other = new Conversation(
+                java.util.UUID.randomUUID().toString(),
+                "Other",
+                Instant.now(),
+                Instant.now(),
+                "main",
+                List.of(),
+                java.util.Set.of());
+        Files.writeString(root.resolve(fileNameId + ".json"), new ConversationJson(new Gson()).write(other));
+        assertTrue(store.load(fileNameId).isEmpty());
+    }
+
+    @Test
+    void repairsUnansweredToolCallsWhenLoading() throws Exception {
+        Path root = Files.createTempDirectory("agent-conversations");
+        FileConversationStore store = new FileConversationStore(root, new Gson());
+        Conversation conversation = store.create("Chat", "main");
+        Conversation dangling = conversation.withMessage(
+                new com.izakji.agent.api.AssistantMessage(
+                        List.of(), List.of(new ToolCall("call-1", "mutate", new JsonObject()))),
+                Instant.now());
+        Files.writeString(root.resolve(conversation.id() + ".json"), new ConversationJson(new Gson()).write(dangling));
+
+        Conversation loaded = store.load(conversation.id()).orElseThrow();
+        assertTrue(loaded.messages().stream()
+                .anyMatch(message ->
+                        message instanceof ToolMessage tool && tool.toolCallId().equals("call-1") && tool.error()));
     }
 }

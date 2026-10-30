@@ -6,10 +6,11 @@ import com.izakji.agent.api.ToolCall;
 import java.util.ArrayList;
 import java.util.List;
 
-final class RecordingListener implements StreamListener {
+class RecordingListener implements StreamListener {
     final StringBuilder text = new StringBuilder();
     final StringBuilder reasoning = new StringBuilder();
     final List<ToolCall> toolCalls = new ArrayList<>();
+    String signature = "";
     FinishReason finish;
 
     @Override
@@ -20,6 +21,11 @@ final class RecordingListener implements StreamListener {
     @Override
     public void onReasoningDelta(String delta) {
         reasoning.append(delta);
+    }
+
+    @Override
+    public void onReasoningSignature(String value) {
+        signature = value;
     }
 
     @Override

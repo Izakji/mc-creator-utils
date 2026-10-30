@@ -15,6 +15,7 @@ final class RecordingObserver implements TurnObserver {
     final List<ApprovalRequest> approvals = new ArrayList<>();
     final List<ToolResult> toolResults = new ArrayList<>();
     private final CountDownLatch approvalLatch = new CountDownLatch(1);
+    private final CountDownLatch finishedLatch = new CountDownLatch(1);
     TurnResult finished;
 
     @Override
@@ -49,6 +50,11 @@ final class RecordingObserver implements TurnObserver {
     @Override
     public void onFinished(TurnResult result) {
         finished = result;
+        finishedLatch.countDown();
+    }
+
+    boolean awaitFinished() throws InterruptedException {
+        return finishedLatch.await(2, TimeUnit.SECONDS);
     }
 
     ApprovalRequest approval() {

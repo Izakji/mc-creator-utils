@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 /**
@@ -20,11 +21,13 @@ import java.util.stream.Stream;
  * @author Izakji
  */
 public final class FileConversationStore implements ConversationStore {
+    private static final Pattern ID =
+            Pattern.compile("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}");
     private final Path root;
     private final ConversationJson json;
 
     public FileConversationStore(Path root, Gson gson) {
-        this.root = root.toAbsolutePath();
+        this.root = root.toAbsolutePath().normalize();
         this.json = new ConversationJson(gson);
     }
 
@@ -41,7 +44,16 @@ public final class FileConversationStore implements ConversationStore {
             return Optional.empty();
         }
         try {
-            return Optional.of(json.read(Files.readString(file)));
+            Conversation conversation = json.read(Files.readString(file));
+            if (!conversation.id().equals(id)) {
+                quarantine(file);
+                return Optional.empty();
+            }
+            Conversation repaired = ConversationRepair.repair(conversation, Instant.now());
+            if (repaired != conversation) {
+                save(repaired);
+            }
+            return Optional.of(repaired);
         } catch (Exception failure) {
             quarantine(file);
             return Optional.empty();
@@ -73,6 +85,7 @@ public final class FileConversationStore implements ConversationStore {
         }
         try (Stream<Path> files = Files.list(root)) {
             files.filter(path -> path.getFileName().toString().endsWith(".json"))
+                    .filter(path -> isValidId(idOf(path)))
                     .forEach(path -> load(idOf(path))
                             .ifPresent(conversation -> summaries.add(new ConversationSummary(
                                     conversation.id(), conversation.title(), conversation.updated()))));
@@ -98,7 +111,18 @@ public final class FileConversationStore implements ConversationStore {
     }
 
     private Path path(String id) {
-        return root.resolve(id + ".json");
+        if (!isValidId(id)) {
+            throw new IllegalArgumentException("Invalid conversation id");
+        }
+        Path file = root.resolve(id + ".json").normalize();
+        if (!file.startsWith(root)) {
+            throw new IllegalArgumentException("Invalid conversation id");
+        }
+        return file;
+    }
+
+    private static boolean isValidId(String id) {
+        return id != null && ID.matcher(id).matches();
     }
 
     private static String idOf(Path file) {

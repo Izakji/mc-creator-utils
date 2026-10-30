@@ -17,12 +17,13 @@ public final class JsonRpcClient implements AutoCloseable {
     private final McpTransport transport;
     private final Duration timeout;
     private final AtomicLong ids = new AtomicLong();
-    private final Map<Long, CompletableFuture<JsonObject>> pending = new ConcurrentHashMap<>();
+    private final Map<String, CompletableFuture<JsonObject>> pending = new ConcurrentHashMap<>();
+    private final CompletableFuture<Void> started;
 
     public JsonRpcClient(McpTransport transport, Duration timeout) {
         this.transport = transport;
         this.timeout = timeout;
-        transport.start(this::handle);
+        this.started = transport.start(this::handle);
     }
 
     public CompletableFuture<JsonObject> request(String method, JsonObject params) {
@@ -33,15 +34,19 @@ public final class JsonRpcClient implements AutoCloseable {
         message.addProperty("method", method);
         message.add("params", params == null ? new JsonObject() : params);
         CompletableFuture<JsonObject> future = new CompletableFuture<>();
-        pending.put(id, future);
-        future.whenComplete((result, failure) -> pending.remove(id));
-        try {
-            transport.send(message);
-        } catch (RuntimeException failure) {
-            pending.remove(id);
-            future.completeExceptionally(failure);
-        }
-        return future.orTimeout(timeout.toMillis(), TimeUnit.MILLISECONDS);
+        CompletableFuture<JsonObject> timed = future.orTimeout(timeout.toMillis(), TimeUnit.MILLISECONDS);
+        return started.thenCompose(ignored -> {
+            String key = Long.toString(id);
+            pending.put(key, future);
+            future.whenComplete((result, failure) -> pending.remove(key));
+            try {
+                transport.send(message);
+            } catch (RuntimeException failure) {
+                pending.remove(key);
+                future.completeExceptionally(failure);
+            }
+            return timed;
+        });
     }
 
     public void notify(String method, JsonObject params) {
@@ -49,7 +54,7 @@ public final class JsonRpcClient implements AutoCloseable {
         message.addProperty("jsonrpc", "2.0");
         message.addProperty("method", method);
         message.add("params", params == null ? new JsonObject() : params);
-        transport.send(message);
+        started.thenRun(() -> transport.send(message));
     }
 
     public void close() {
@@ -57,11 +62,11 @@ public final class JsonRpcClient implements AutoCloseable {
     }
 
     private void handle(JsonObject message) {
-        if (!message.has("id") || message.get("id").isJsonNull()) {
+        if (message.has("method") || !message.has("id") || message.get("id").isJsonNull()) {
             return;
         }
-        long id = message.get("id").getAsLong();
-        CompletableFuture<JsonObject> future = pending.remove(id);
+        String key = message.get("id").getAsString();
+        CompletableFuture<JsonObject> future = pending.remove(key);
         if (future == null) {
             return;
         }

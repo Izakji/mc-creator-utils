@@ -48,23 +48,35 @@ public final class HttpMcpTransport implements McpTransport {
         if (!sessionId.isBlank()) {
             builder.header("Mcp-Session-Id", sessionId);
         }
-        client.sendAsync(builder.build(), HttpResponse.BodyHandlers.ofString()).thenAccept(response -> {
+        client.sendAsync(builder.build(), HttpResponse.BodyHandlers.ofString()).whenComplete((response, failure) -> {
+            if (failure != null) {
+                fail(message, "MCP request failed: " + failure.getMessage());
+                return;
+            }
             String session = response.headers().firstValue("Mcp-Session-Id").orElse("");
             if (!session.isBlank()) {
                 sessionId = session;
             }
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                fail(message, "MCP server returned HTTP " + response.statusCode() + ": " + response.body());
                 return;
             }
-            dispatch(response.body());
+            try {
+                dispatch(
+                        response.body(),
+                        response.headers().firstValue("Content-Type").orElse(""));
+            } catch (RuntimeException malformed) {
+                fail(message, "Could not read MCP response: " + malformed.getMessage());
+            }
         });
     }
 
-    protected void dispatch(String body) {
+    protected void dispatch(String body, String contentType) {
         if (body == null || body.isBlank()) {
             return;
         }
-        if (body.contains("data:") || body.contains("event:")) {
+        String type = contentType == null ? "" : contentType.toLowerCase(java.util.Locale.ROOT);
+        if (type.startsWith("text/event-stream")) {
             SseParserLike.parse(body).forEach(event -> {
                 if (!event.isBlank()) {
                     listener.accept(JsonParser.parseString(event).getAsJsonObject());
@@ -73,6 +85,20 @@ public final class HttpMcpTransport implements McpTransport {
         } else {
             listener.accept(JsonParser.parseString(body).getAsJsonObject());
         }
+    }
+
+    protected void fail(JsonObject request, String message) {
+        if (!request.has("id") || request.get("id").isJsonNull()) {
+            return;
+        }
+        JsonObject error = new JsonObject();
+        error.addProperty("code", -32603);
+        error.addProperty("message", message);
+        JsonObject response = new JsonObject();
+        response.addProperty("jsonrpc", "2.0");
+        response.add("id", request.get("id").deepCopy());
+        response.add("error", error);
+        listener.accept(response);
     }
 
     @Override

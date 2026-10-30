@@ -20,6 +20,8 @@ public interface TurnObserver {
 
     void onApprovalNeeded(ApprovalRequest request);
 
+    default void onHistoryTruncated() {}
+
     void onError(AgentException error);
 
     void onFinished(TurnResult result);

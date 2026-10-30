@@ -2,6 +2,7 @@ package com.izakji.agent.runtime;
 
 import com.izakji.agent.api.AssistantMessage;
 import com.izakji.agent.api.ChatMessage;
+import com.izakji.agent.api.SystemMessage;
 import com.izakji.agent.api.ToolMessage;
 import com.izakji.agent.api.UserMessage;
 import java.util.ArrayList;
@@ -15,6 +16,7 @@ import java.util.Set;
  * @author Izakji
  */
 public final class ConversationTruncator {
+    public static final String TRUNCATION_NOTE = "Earlier conversation history was truncated.";
     private final TokenEstimator estimator;
 
     public ConversationTruncator(TokenEstimator estimator) {
@@ -22,8 +24,12 @@ public final class ConversationTruncator {
     }
 
     public List<ChatMessage> truncate(List<ChatMessage> messages, int maxTokens) {
+        return truncateDetailed(messages, maxTokens).messages();
+    }
+
+    public TruncationResult truncateDetailed(List<ChatMessage> messages, int maxTokens) {
         if (messages == null || messages.isEmpty() || estimator.estimate(messages) <= maxTokens) {
-            return messages == null ? List.of() : List.copyOf(messages);
+            return new TruncationResult(messages == null ? List.of() : List.copyOf(messages), false);
         }
         List<Unit> units = group(messages);
         int latestUser = -1;
@@ -50,12 +56,13 @@ public final class ConversationTruncator {
             }
         }
         List<ChatMessage> result = new ArrayList<>();
+        result.add(new SystemMessage(TRUNCATION_NOTE));
         for (int index = 0; index < units.size(); index++) {
             if (kept.contains(index)) {
                 result.addAll(units.get(index).messages());
             }
         }
-        return List.copyOf(result);
+        return new TruncationResult(List.copyOf(result), true);
     }
 
     private static List<Unit> group(List<ChatMessage> messages) {
@@ -81,6 +88,12 @@ public final class ConversationTruncator {
             }
         }
         return units;
+    }
+
+    public record TruncationResult(List<ChatMessage> messages, boolean truncated) {
+        public TruncationResult {
+            messages = List.copyOf(messages);
+        }
     }
 
     private record Unit(List<ChatMessage> messages) {

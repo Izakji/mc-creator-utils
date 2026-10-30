@@ -75,9 +75,57 @@ class AnthropicProviderTest {
 
             assertEquals("Hi", listener.text.toString());
             assertEquals("plan", listener.reasoning.toString());
+            assertEquals("sig", listener.signature);
             assertEquals("call-1", listener.toolCalls.get(0).id());
             assertEquals("sk-ant", server.lastApiKey());
             assertEquals("2023-06-01", server.lastAnthropicVersion());
+        }
+    }
+
+    @Test
+    void sendsThinkingBudgetAndOnlyReplaysSignedOrRedactedBlocks() throws Exception {
+        try (TestHttpServer server = TestHttpServer.sse("""
+                event: message_stop
+                data: {}
+
+                """)) {
+            ProviderProfile profile = new ProviderProfile(
+                    "main",
+                    "Anthropic",
+                    ProviderType.ANTHROPIC,
+                    server.baseUrl(),
+                    "claude-sonnet-4-5",
+                    "sk-ant",
+                    Map.of(),
+                    0.7,
+                    2048,
+                    128000,
+                    true,
+                    true,
+                    1024);
+            com.izakji.agent.api.AssistantMessage assistant = new com.izakji.agent.api.AssistantMessage(
+                    List.of(
+                            new com.izakji.agent.api.ReasoningPart("unsigned", ""),
+                            new com.izakji.agent.api.ReasoningPart("signed", "sig"),
+                            new com.izakji.agent.api.ReasoningPart("", "redacted:opaque")),
+                    List.of());
+            new AnthropicProvider()
+                    .stream(
+                                    new ChatRequest(
+                                            profile,
+                                            List.of(new UserMessage(List.of(new TextPart("hi"))), assistant),
+                                            List.of(),
+                                            2048),
+                                    new RecordingListener(),
+                                    () -> false)
+                            .join();
+
+            String body = server.lastBody();
+            assertEquals(true, body.contains("\"budget_tokens\":1024"));
+            assertEquals(true, body.contains("\"signature\":\"sig\""));
+            assertEquals(false, body.contains("unsigned"));
+            assertEquals(true, body.contains("\"type\":\"redacted_thinking\""));
+            assertEquals(true, body.contains("\"data\":\"opaque\""));
         }
     }
 }

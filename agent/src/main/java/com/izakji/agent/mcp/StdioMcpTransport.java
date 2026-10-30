@@ -96,10 +96,14 @@ public final class StdioMcpTransport implements McpTransport {
             String line;
             while ((line = reader.readLine()) != null) {
                 if (!line.isBlank()) {
-                    listener.accept(JsonParser.parseString(line).getAsJsonObject());
+                    try {
+                        listener.accept(JsonParser.parseString(line).getAsJsonObject());
+                    } catch (RuntimeException ignored) {
+                        // One malformed server message must not stop the reader.
+                    }
                 }
             }
-        } catch (IOException | RuntimeException ignored) {
+        } catch (IOException ignored) {
             // The client reports a closed transport through request timeouts.
         }
     }

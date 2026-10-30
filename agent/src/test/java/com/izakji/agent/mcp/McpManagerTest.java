@@ -14,8 +14,8 @@ class McpManagerTest {
     void namespacesToolsAndMapsAnnotationsToRisk() {
         McpToolDescriptor descriptor = McpTestSupport.descriptor("inspect", true, false);
         FakeMcpClient client = new FakeMcpClient(List.of(descriptor), List.of(), List.of());
-        McpManager manager = new McpManager(
-                Map.of("server", () -> client), Map.of("server", McpTestSupport.config("server")));
+        McpManager manager =
+                new McpManager(Map.of("server", () -> client), Map.of("server", McpTestSupport.config("server")));
         manager.start("server");
         AgentTool tool = manager.tools().find("mcp__server__inspect").orElseThrow();
         assertEquals(ToolRisk.READ_ONLY, tool.risk());
@@ -30,8 +30,8 @@ class McpManagerTest {
     void missingAnnotationsRequireApproval() {
         McpToolDescriptor descriptor = McpTestSupport.descriptor("mutate", false, false);
         FakeMcpClient client = new FakeMcpClient(List.of(descriptor), List.of(), List.of());
-        McpManager manager = new McpManager(
-                Map.of("server", () -> client), Map.of("server", McpTestSupport.config("server")));
+        McpManager manager =
+                new McpManager(Map.of("server", () -> client), Map.of("server", McpTestSupport.config("server")));
         manager.start("server");
         assertEquals(
                 ToolRisk.MUTATING,
@@ -39,11 +39,23 @@ class McpManagerTest {
     }
 
     @Test
+    void contradictoryAnnotationsAreTreatedAsDangerous() {
+        McpToolDescriptor descriptor = McpTestSupport.descriptor("delete", true, true);
+        FakeMcpClient client = new FakeMcpClient(List.of(descriptor), List.of(), List.of());
+        McpManager manager =
+                new McpManager(Map.of("server", () -> client), Map.of("server", McpTestSupport.config("server")));
+        manager.start("server");
+        assertEquals(
+                ToolRisk.DANGEROUS,
+                manager.tools().find("mcp__server__delete").orElseThrow().risk());
+    }
+
+    @Test
     void startingAServerDoesNotCloseItsClient() {
         FakeMcpClient client =
                 new FakeMcpClient(List.of(McpTestSupport.descriptor("inspect", true, false)), List.of(), List.of());
-        McpManager manager = new McpManager(
-                Map.of("server", () -> client), Map.of("server", McpTestSupport.config("server")));
+        McpManager manager =
+                new McpManager(Map.of("server", () -> client), Map.of("server", McpTestSupport.config("server")));
         manager.start("server");
         org.junit.jupiter.api.Assertions.assertFalse(client.closed());
     }
@@ -53,11 +65,10 @@ class McpManagerTest {
         java.util.concurrent.atomic.AtomicInteger created = new java.util.concurrent.atomic.AtomicInteger();
         java.util.function.Supplier<McpClient> factory = () -> {
             created.incrementAndGet();
-            return new FakeMcpClient(
-                    List.of(McpTestSupport.descriptor("inspect", true, false)), List.of(), List.of());
+            return new FakeMcpClient(List.of(McpTestSupport.descriptor("inspect", true, false)), List.of(), List.of());
         };
-        McpManager manager = new McpManager(
-                Map.of("server", factory), Map.of("server", McpTestSupport.config("server")));
+        McpManager manager =
+                new McpManager(Map.of("server", factory), Map.of("server", McpTestSupport.config("server")));
         manager.start("server");
         manager.stop("server");
         manager.start("server");

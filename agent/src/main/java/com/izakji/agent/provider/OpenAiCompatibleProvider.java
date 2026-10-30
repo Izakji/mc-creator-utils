@@ -25,7 +25,6 @@ import com.izakji.agent.config.ProviderType;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -64,14 +63,22 @@ public final class OpenAiCompatibleProvider implements LlmProvider {
         } catch (RuntimeException failure) {
             return CompletableFuture.failedFuture(failure);
         }
-        return client.sendAsync(httpRequest, HttpResponse.BodyHandlers.ofLines())
-                .thenApply(response -> {
-                    if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                        throw new IllegalStateException("Provider returned HTTP " + response.statusCode());
-                    }
-                    consume(response.body(), listener, cancellationToken);
-                    return null;
-                });
+        return ProviderStreamingHttp.execute(
+                client,
+                httpRequest,
+                cancellationToken,
+                lines -> consume(lines, listener, cancellationToken),
+                scrubber(request.profile()));
+    }
+
+    private static java.util.function.UnaryOperator<String> scrubber(ProviderProfile profile) {
+        java.util.Set<String> secrets = new java.util.LinkedHashSet<>();
+        if (!profile.apiKey().isBlank()) {
+            secrets.add(profile.apiKey());
+        }
+        secrets.addAll(profile.headers().values());
+        com.izakji.agent.util.Redactor redactor = new com.izakji.agent.util.Redactor(secrets);
+        return redactor::redact;
     }
 
     private HttpRequest buildRequest(ChatRequest request) {
@@ -202,10 +209,15 @@ public final class OpenAiCompatibleProvider implements LlmProvider {
         Map<Integer, ToolBuilder> tools = new TreeMap<>();
         FinishReason finish = FinishReason.STOP;
         try (lines) {
-            for (String line : lines.toList()) {
+            java.util.Iterator<String> iterator = lines.iterator();
+            while (iterator.hasNext()) {
+                String line = iterator.next();
                 cancellationToken.throwIfCancelled();
                 for (SseEvent event : parser.accept(line + "\n")) {
                     JsonObject chunk = JsonParser.parseString(event.data()).getAsJsonObject();
+                    if (chunk.has("error")) {
+                        throw new IllegalStateException("Provider error: " + chunk.get("error"));
+                    }
                     if (chunk.has("usage")) {
                         JsonObject usage = chunk.getAsJsonObject("usage");
                         listener.onUsage(intValue(usage, "prompt_tokens"), intValue(usage, "completion_tokens"));

@@ -30,6 +30,16 @@ public final class AgentRuntimeTestSupport {
     }
 
     public static AgentRuntime runtime(Path root, LlmProvider provider, List<AgentTool> tools, AgentSettings settings) {
+        return runtime(root, provider, tools, settings, List.of(), List.of());
+    }
+
+    public static AgentRuntime runtime(
+            Path root,
+            LlmProvider provider,
+            List<AgentTool> tools,
+            AgentSettings settings,
+            List<ContextProvider> contextProviders,
+            List<String> secrets) {
         ProviderRegistry providers = new ProviderRegistry();
         providers.register(provider);
         ToolRegistry registry = new ToolRegistry();
@@ -41,8 +51,10 @@ public final class AgentRuntimeTestSupport {
                 registry,
                 new FileConversationStore(root, new Gson()),
                 new PermissionGate(settings.permissions(), List.of()),
-                List.of(),
+                contextProviders,
                 "",
+                List.of(),
+                secrets,
                 executor,
                 Clock.systemUTC());
     }

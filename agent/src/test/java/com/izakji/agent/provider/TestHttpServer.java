@@ -10,6 +10,7 @@ final class TestHttpServer implements AutoCloseable {
     private volatile String lastAuthorization = "";
     private volatile String lastApiKey = "";
     private volatile String lastAnthropicVersion = "";
+    private volatile String lastBody = "";
 
     private TestHttpServer(String body) throws IOException {
         server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
@@ -17,7 +18,7 @@ final class TestHttpServer implements AutoCloseable {
             lastAuthorization = exchange.getRequestHeaders().getFirst("Authorization");
             lastApiKey = exchange.getRequestHeaders().getFirst("x-api-key");
             lastAnthropicVersion = exchange.getRequestHeaders().getFirst("anthropic-version");
-            exchange.getRequestBody().readAllBytes();
+            lastBody = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
             byte[] response = body.getBytes(StandardCharsets.UTF_8);
             exchange.getResponseHeaders().add("Content-Type", "text/event-stream");
             exchange.sendResponseHeaders(200, response.length);
@@ -45,6 +46,10 @@ final class TestHttpServer implements AutoCloseable {
 
     String lastAnthropicVersion() {
         return lastAnthropicVersion;
+    }
+
+    String lastBody() {
+        return lastBody;
     }
 
     @Override

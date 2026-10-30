@@ -34,11 +34,38 @@ class PermissionGateTest {
                 PermissionKind.ASK,
                 gate.decide(mutatingTool(), invocation("mutate"), conversation())
                         .kind());
-        com.izakji.agent.conversation.Conversation approved =
-                conversation().withConversationApproval("mutate", Instant.now());
+        com.izakji.agent.conversation.Conversation approved = conversation()
+                .withConversationApproval(
+                        PermissionGate.approvalKey("mutate", new com.google.gson.JsonObject()), Instant.now());
         assertEquals(
                 PermissionKind.ALLOW,
                 gate.decide(mutatingTool(), invocation("mutate"), approved).kind());
+    }
+
+    @Test
+    void conversationApprovalIsScopedToTheExactArguments() {
+        PermissionGate gate = gate(new PermissionRules(true, Set.of(), Set.of(), Set.of()));
+        com.google.gson.JsonObject first = new com.google.gson.JsonObject();
+        first.addProperty("path", "a");
+        com.google.gson.JsonObject second = new com.google.gson.JsonObject();
+        second.addProperty("path", "b");
+        com.izakji.agent.conversation.Conversation approved =
+                conversation().withConversationApproval(PermissionGate.approvalKey("mutate", first), Instant.now());
+
+        assertEquals(
+                PermissionKind.ALLOW,
+                gate.decide(
+                                mutatingTool(),
+                                new com.izakji.agent.api.ToolInvocation("call-1", "mutate", first),
+                                approved)
+                        .kind());
+        assertEquals(
+                PermissionKind.ASK,
+                gate.decide(
+                                mutatingTool(),
+                                new com.izakji.agent.api.ToolInvocation("call-2", "mutate", second),
+                                approved)
+                        .kind());
     }
 
     @Test

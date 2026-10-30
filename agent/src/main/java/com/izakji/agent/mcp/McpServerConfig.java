@@ -41,4 +41,10 @@ public record McpServerConfig(
         environment = Map.copyOf(Objects.requireNonNullElse(environment, Map.of()));
         headers = Map.copyOf(Objects.requireNonNullElse(headers, Map.of()));
     }
+
+    @Override
+    public String toString() {
+        return "McpServerConfig[id=" + id + ", name=" + name + ", transport=" + transport + ", enabled=" + enabled
+                + ", autoStart=" + autoStart + "]";
+    }
 }

@@ -74,6 +74,21 @@ public final class McpManager implements AutoCloseable {
         return configs;
     }
 
+    /**
+     * Returns MCP header and environment values so the runtime can redact them from prompts,
+     * tool output, and persisted conversations.
+     *
+     * @return configured secret values
+     */
+    public List<String> secrets() {
+        List<String> values = new ArrayList<>();
+        for (McpServerConfig config : configs.values()) {
+            values.addAll(config.headers().values());
+            values.addAll(config.environment().values());
+        }
+        return List.copyOf(values);
+    }
+
     @Override
     public void close() {
         List.copyOf(active.keySet()).forEach(this::stop);
