@@ -68,7 +68,6 @@ key. Metadata and Modrinth lookup work without one.
 
 - `common/` — loader-neutral rules, commands, search, layout, and tests.
 - `neoforge/` — NeoForge client/server integration, UI panels, mixins, and Rinku adapter.
-- `docs/superpowers/` — design records and implementation plans.
 
 ## License
 
