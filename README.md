@@ -52,18 +52,6 @@ All keybinds are configurable in Minecraft's Controls screen.
 The NeoForge jar is written to `neoforge/build/libs/`. Rinku and Chromium are never embedded in
 the Creator Utils jar.
 
-## Configuration
-
-The Explore Mods CurseForge lookup can use an optional API key in the client config:
-
-```toml
-[exploreMods]
-curseForgeApiKey = ""
-```
-
-The key is read locally, never logged, and must not be committed. Creator Utils does not ship a
-key. Metadata and Modrinth lookup work without one.
-
 ## Project layout
 
 - `common/` — loader-neutral rules, commands, search, layout, and tests.
