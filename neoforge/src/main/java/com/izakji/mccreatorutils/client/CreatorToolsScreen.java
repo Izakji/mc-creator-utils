@@ -16,7 +16,8 @@ public final class CreatorToolsScreen extends ModularUIScreen {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (McCreatorUtilsClient.OPEN_GUI.isActiveAndMatches(InputConstants.getKey(keyCode, scanCode))) {
+        if (getFocused() == null
+                && McCreatorUtilsClient.OPEN_GUI.isActiveAndMatches(InputConstants.getKey(keyCode, scanCode))) {
             onClose();
             return true;
         }

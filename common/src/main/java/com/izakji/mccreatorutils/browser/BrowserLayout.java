@@ -26,6 +26,9 @@ public record BrowserLayout(
     public static final int ADDRESS_HEIGHT = 16;
     public static final int MIN_WINDOW_WIDTH = 320;
     public static final int MIN_WINDOW_HEIGHT = 220;
+    public static final int DEFAULT_WINDOW_WIDTH = 480;
+    public static final int DEFAULT_WINDOW_HEIGHT = 320;
+    public static final int DEFAULT_SCREEN_PERCENT = 70;
     public static final int CONTENT_MARGIN = 2;
     public static final int RESIZE_GRIP = 12;
 

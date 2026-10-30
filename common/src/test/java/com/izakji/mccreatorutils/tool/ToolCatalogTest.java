@@ -54,6 +54,12 @@ class ToolCatalogTest {
     }
 
     @Test
+    void whitespaceRequiredModIdMeansNoRequirement() {
+        var tool = new ToolDescriptor(ToolId.CAMERA, "tool.mccreatorutils.camera", "  ");
+        assertFalse(tool.hasRequiredMod());
+    }
+
+    @Test
     void playerDescriptorHasNoRequiredMod() {
         var player = ToolCatalog.PLAYER;
         assertEquals(ToolId.PLAYER, player.id());

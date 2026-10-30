@@ -29,6 +29,21 @@ class LocateFeedbackTest {
     }
 
     @Test
+    void readsTheLocatedTargetArgument() {
+        var message = Component.translatable(
+                "commands.locate.biome.success",
+                Component.literal("Plains"),
+                clickable(ClickEvent.Action.SUGGEST_COMMAND, "/tp @s 10 64 -20"),
+                42);
+
+        assertEquals(
+                Optional.of("Plains"),
+                LocateFeedback.translationArgumentText(message, "commands.locate.biome.success", 0));
+        assertTrue(LocateFeedback.translationArgumentText(message, "commands.locate.structure.success", 0)
+                .isEmpty());
+    }
+
+    @Test
     void findsTeleportInSibling() {
         MutableComponent message = Component.empty();
         message.append(Component.literal("Found it "));

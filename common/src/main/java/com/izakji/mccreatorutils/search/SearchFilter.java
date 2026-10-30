@@ -21,7 +21,11 @@ public final class SearchFilter {
         }
         String needle = query.trim().toLowerCase(Locale.ROOT);
         return values.stream()
-                .filter(value -> text.apply(value).toLowerCase(Locale.ROOT).contains(needle))
+                .filter(value -> {
+                    String candidate = text.apply(value);
+                    return candidate != null
+                            && candidate.toLowerCase(Locale.ROOT).contains(needle);
+                })
                 .toList();
     }
 }

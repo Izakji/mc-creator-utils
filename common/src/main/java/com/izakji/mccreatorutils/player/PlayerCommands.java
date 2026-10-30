@@ -35,6 +35,6 @@ public final class PlayerCommands {
         if (amount < XpAmountInput.MIN_VALUE || amount > XpAmountInput.MAX_VALUE) {
             throw new IllegalArgumentException("XP amount must be between 1 and 999");
         }
-        return "xp set @s " + amount + " " + type.commandToken();
+        return "xp add @s " + amount + " " + type.commandToken();
     }
 }

@@ -44,6 +44,8 @@ public final class ModelPreview extends UIElement {
     private static final float DRAG_RADIANS_PER_PIXEL = (float) Math.toRadians(0.45f);
     private static final float MIN_ZOOM = 0.25f;
     private static final float MAX_ZOOM = 3.0f;
+    private static final float ITEM_FIT_RATIO = 0.72f;
+    private static final float ITEM_MAX_RATIO = 0.92f;
 
     private final Kind kind;
     private final Quaternionf orientation = new Quaternionf();
@@ -157,14 +159,14 @@ public final class ModelPreview extends UIElement {
         context.graphics.enableScissor(scissorX, scissorY, scissorRight, scissorBottom);
         try {
             if (kind == Kind.ITEM && !itemStack.isEmpty()) {
-                float maxScale = Math.min(width, height) * 0.80f;
-                float scale = Math.min(Math.min(width, height) * 0.22f * zoom, maxScale);
                 drawItemPreview(
                         context.graphics,
                         itemStack,
                         getPositionX() + width / 2f,
                         getPositionY() + height / 2f,
-                        scale,
+                        width,
+                        height,
+                        zoom,
                         rotation);
             } else if (kind == Kind.MOB && entity != null) {
                 drawEntityPreview(
@@ -182,8 +184,15 @@ public final class ModelPreview extends UIElement {
         }
     }
 
-    public static void drawItemPreview(
-            GuiGraphics graphics, ItemStack stack, float centerX, float centerY, float scale, Quaternionf rotation) {
+    private static void drawItemPreview(
+            GuiGraphics graphics,
+            ItemStack stack,
+            float centerX,
+            float centerY,
+            float width,
+            float height,
+            float zoom,
+            Quaternionf rotation) {
         if (stack.isEmpty()) {
             return;
         }
@@ -192,6 +201,18 @@ public final class ModelPreview extends UIElement {
         BakedModel model = itemRenderer.getModel(stack, minecraft.level, null, 0);
         ItemTransform groundTransform = model.getTransforms().getTransform(ItemDisplayContext.GROUND);
         Vector3f pivot = groundTransform.translation;
+        float modelScale = Math.max(
+                Math.abs(groundTransform.scale.x()),
+                Math.max(Math.abs(groundTransform.scale.y()), Math.abs(groundTransform.scale.z())));
+        if (modelScale < 1.0e-4f) {
+            modelScale = 1.0f;
+        }
+
+        // ItemRenderer applies the ground transform inside this pose. Divide by its scale so the
+        // visible item is sized like the mob preview instead of being shrunk to a few pixels.
+        float minDimension = Math.min(width, height);
+        float desired = Math.min(minDimension * ITEM_FIT_RATIO * zoom, minDimension * ITEM_MAX_RATIO);
+        float scale = desired / modelScale;
 
         PoseStack pose = graphics.pose();
         pose.pushPose();
@@ -216,7 +237,7 @@ public final class ModelPreview extends UIElement {
         Lighting.setupFor3DItems();
     }
 
-    public static void drawEntityPreview(
+    private static void drawEntityPreview(
             GuiGraphics graphics,
             LivingEntity entity,
             float centerX,

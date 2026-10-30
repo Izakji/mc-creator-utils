@@ -27,7 +27,7 @@ public final class BrowserUrlInput {
         if (value.equalsIgnoreCase("about:blank")) {
             return Optional.of("about:blank");
         }
-        if (!value.matches("^[a-zA-Z][a-zA-Z0-9+.-]*:.*")) {
+        if (!value.matches("^[a-zA-Z][a-zA-Z0-9+.-]*://.*")) {
             value = "https://" + value;
         }
         try {

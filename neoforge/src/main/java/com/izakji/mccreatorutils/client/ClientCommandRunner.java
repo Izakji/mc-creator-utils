@@ -26,7 +26,7 @@ public final class ClientCommandRunner {
         }
         try {
             player.connection.sendCommand(command);
-            return new CommandResult(true, Component.translatable("status.mccreatorutils.ran", command));
+            return new CommandResult(true, Component.translatable("status.mccreatorutils.sent", command));
         } catch (RuntimeException exception) {
             McCreatorUtils.LOGGER.error("Failed to execute client command: {}", command, exception);
             return new CommandResult(false, Component.translatable("status.mccreatorutils.failed", command));

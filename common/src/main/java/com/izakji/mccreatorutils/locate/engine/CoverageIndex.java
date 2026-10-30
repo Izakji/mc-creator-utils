@@ -27,6 +27,12 @@ public final class CoverageIndex {
         this.root = root;
     }
 
+    /**
+     * Builds an index from parameter points.
+     *
+     * @param points parameter points
+     * @return coverage index
+     */
     public static CoverageIndex fromPoints(List<Climate.ParameterPoint> points) {
         if (points.isEmpty()) {
             return new CoverageIndex(null);
@@ -38,6 +44,12 @@ public final class CoverageIndex {
         return new CoverageIndex(build(boxes));
     }
 
+    /**
+     * Returns whether a zero-offset non-target point contains the sample.
+     *
+     * @param point target point
+     * @return true when pruning is safe
+     */
     public boolean covers(Climate.TargetPoint point) {
         return root != null
                 && root.covers(new long[] {
@@ -50,6 +62,16 @@ public final class CoverageIndex {
                 });
     }
 
+    /**
+     * Returns whether a zero-offset non-target point contains the five height-independent axes.
+     *
+     * @param temperature temperature
+     * @param humidity humidity
+     * @param continentalness continentalness
+     * @param erosion erosion
+     * @param weirdness weirdness
+     * @return true when pruning is safe for the five axes
+     */
     public boolean coversFive(long temperature, long humidity, long continentalness, long erosion, long weirdness) {
         return root != null && root.coversFive(new long[] {temperature, humidity, continentalness, erosion, weirdness});
     }

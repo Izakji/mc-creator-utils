@@ -1,6 +1,7 @@
 package com.izakji.mccreatorutils.util;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -23,9 +24,23 @@ class SafeCloseTest {
     }
 
     @Test
-    void swallowsError() {
+    void swallowsLinkageError() {
         assertDoesNotThrow(() -> SafeClose.run(() -> {
-            throw new AssertionError("native close failed");
+            throw new NoClassDefFoundError("browser classes are absent");
         }));
+    }
+
+    @Test
+    void doesNotSwallowFatalErrors() {
+        assertThrows(
+                AssertionError.class,
+                () -> SafeClose.run(() -> {
+                    throw new AssertionError("programming error");
+                }));
+        assertThrows(
+                OutOfMemoryError.class,
+                () -> SafeClose.run(() -> {
+                    throw new OutOfMemoryError("out of memory");
+                }));
     }
 }

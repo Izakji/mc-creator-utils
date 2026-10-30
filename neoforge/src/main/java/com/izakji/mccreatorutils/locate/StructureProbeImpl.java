@@ -1,5 +1,6 @@
 package com.izakji.mccreatorutils.locate;
 
+import com.izakji.mccreatorutils.locate.engine.CancellationToken;
 import com.izakji.mccreatorutils.locate.engine.LocateStats;
 import com.izakji.mccreatorutils.locate.engine.StructureBiomeFilter;
 import com.izakji.mccreatorutils.locate.engine.StructureHit;
@@ -38,8 +39,10 @@ public final class StructureProbeImpl implements StructureProbe {
             Set<Holder<Structure>> structures,
             ChunkPos chunk,
             StructurePlacement placement,
-            boolean skipKnownStructures) {
+            boolean skipKnownStructures,
+            CancellationToken cancellationToken) {
         for (Holder<Structure> holder : structures) {
+            cancellationToken.throwIfCancelled();
             if (!filter.mayMatch(holder, chunk)) {
                 stats.prefilterSkips++;
                 continue;
@@ -55,8 +58,11 @@ public final class StructureProbeImpl implements StructureProbe {
                 return Optional.of(new StructureHit(placement.getLocatePos(chunk), holder));
             }
 
+            // Shutdown cancels the request before the lane blocks inside a chunk load.
+            cancellationToken.throwIfCancelled();
             stats.chunkLoads++;
             ChunkAccess chunkAccess = level.getChunk(chunk.x, chunk.z, ChunkStatus.STRUCTURE_STARTS);
+            cancellationToken.throwIfCancelled();
             StructureStart start = level.structureManager()
                     .getStartForStructure(SectionPos.bottomOf(chunkAccess), holder.value(), chunkAccess);
             if (start != null && start.isValid() && (!skipKnownStructures || addReference(start))) {

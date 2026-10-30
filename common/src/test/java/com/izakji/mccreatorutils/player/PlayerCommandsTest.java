@@ -18,8 +18,8 @@ class PlayerCommandsTest {
 
     @Test
     void buildsXpCommand() {
-        assertEquals("xp set @s 1 levels", PlayerCommands.addXp(1, XpType.LEVELS));
-        assertEquals("xp set @s 999 points", PlayerCommands.addXp(999, XpType.POINTS));
+        assertEquals("xp add @s 1 levels", PlayerCommands.addXp(1, XpType.LEVELS));
+        assertEquals("xp add @s 999 points", PlayerCommands.addXp(999, XpType.POINTS));
     }
 
     @Test

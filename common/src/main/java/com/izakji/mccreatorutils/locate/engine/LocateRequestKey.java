@@ -10,6 +10,12 @@ import net.minecraft.world.level.Level;
 /**
  * Canonical identity of a locate request.
  *
+ * @param dimension target dimension
+ * @param type biome or structure
+ * @param targets sorted, distinct target ids
+ * @param origin search origin
+ * @param radius search radius
+ * @param skipKnownStructures whether already-referenced structures are skipped
  * @author Izakji
  */
 public record LocateRequestKey(

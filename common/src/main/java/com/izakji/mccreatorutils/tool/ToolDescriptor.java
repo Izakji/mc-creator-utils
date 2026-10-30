@@ -14,7 +14,7 @@ public record ToolDescriptor(ToolId id, String translationKey, String requiredMo
     public ToolDescriptor {
         Objects.requireNonNull(id, "id");
         Objects.requireNonNull(translationKey, "translationKey");
-        requiredModId = requiredModId == null ? "" : requiredModId;
+        requiredModId = requiredModId == null ? "" : requiredModId.strip();
     }
 
     public boolean hasRequiredMod() {

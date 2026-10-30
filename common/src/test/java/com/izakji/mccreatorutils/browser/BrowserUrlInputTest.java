@@ -24,6 +24,16 @@ class BrowserUrlInputTest {
     }
 
     @Test
+    void treatsHostAndPortAsMissingScheme() {
+        assertEquals(
+                "https://localhost:8080",
+                BrowserUrlInput.normalize("localhost:8080").orElseThrow());
+        assertEquals(
+                "https://example.com:8443/path",
+                BrowserUrlInput.normalize("example.com:8443/path").orElseThrow());
+    }
+
+    @Test
     void rejectsUnsafeOrMalformedInput() {
         for (String raw :
                 List.of("javascript:alert(1)", "file:///etc/passwd", "data:text/html,hi", "http://", "", "   ")) {

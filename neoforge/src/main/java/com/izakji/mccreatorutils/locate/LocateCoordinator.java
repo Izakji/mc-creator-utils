@@ -20,15 +20,20 @@ import com.izakji.mccreatorutils.locate.engine.StructureSearchInput;
 import com.mojang.datafixers.util.Pair;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.OptionalInt;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.arguments.ResourceOrTagArgument;
@@ -52,6 +57,10 @@ import net.minecraft.world.level.levelgen.structure.placement.StructurePlacement
 /**
  * Builds engine requests from command arguments and dispatches vanilla feedback.
  *
+ * <p>Only results that are available synchronously (admission rejection or a cache hit) can set the
+ * command return value. An asynchronous not-found, timeout, or error is reported in chat after the
+ * command has already returned success.
+ *
  * @author Izakji
  */
 public final class LocateCoordinator {
@@ -70,7 +79,7 @@ public final class LocateCoordinator {
                 .collect(Collectors.toUnmodifiableSet());
         if (targets.isEmpty()) {
             source.sendFailure(Component.translatableEscape("commands.locate.biome.not_found", target.asPrintable()));
-            return OptionalInt.of(1);
+            return OptionalInt.of(0);
         }
 
         BlockPos origin = BlockPos.containing(source.getPosition());
@@ -100,6 +109,10 @@ public final class LocateCoordinator {
                                     .orElseGet(() -> LocateResult.notFound(elapsed(started)));
                         },
                         settings.timeoutSeconds() * 1000L));
+        if (future.isDone()) {
+            return OptionalInt.of(completeImmediately(
+                    future, result -> feedbackBiome(source, level, target, origin, result, stats, settings)));
+        }
         future.thenAccept(result ->
                 dispatch(source, level, () -> feedbackBiome(source, level, target, origin, result, stats, settings)));
         return OptionalInt.of(1);
@@ -120,7 +133,7 @@ public final class LocateCoordinator {
         if (holders.isEmpty()) {
             source.sendFailure(
                     Component.translatableEscape("commands.locate.structure.not_found", printable.asPrintable()));
-            return OptionalInt.of(1);
+            return OptionalInt.of(0);
         }
 
         BlockPos origin = BlockPos.containing(source.getPosition());
@@ -137,7 +150,8 @@ public final class LocateCoordinator {
         List<StructurePlacementGroup> groups = new ArrayList<>();
         Map<ConcentricRingsStructurePlacement, List<ChunkPos>> concentricPositions = new LinkedHashMap<>();
         for (Map.Entry<StructurePlacement, Set<Holder<Structure>>> entry : placementMap.entrySet()) {
-            groups.add(new StructurePlacementGroup(entry.getKey(), Set.copyOf(entry.getValue())));
+            groups.add(new StructurePlacementGroup(
+                    entry.getKey(), Collections.unmodifiableSet(new LinkedHashSet<>(entry.getValue()))));
             if (entry.getKey() instanceof ConcentricRingsStructurePlacement concentric) {
                 List<ChunkPos> rings = state.getRingPositionsFor(concentric);
                 concentricPositions.put(concentric, rings == null ? List.of() : List.copyOf(rings));
@@ -153,15 +167,18 @@ public final class LocateCoordinator {
                 service.submit(
                         key,
                         token -> {
-                            BiomeBackend backend = BiomeBackendFactory.create(level);
-                            StructureBiomeFilter filter = settings.structurePrefilter()
-                                    ? new StructurePrefilter<>(
-                                            backend.envelopes(),
-                                            backend.sampler(),
-                                            holder -> holder.value().biomes().stream()
-                                                    .collect(Collectors.toUnmodifiableSet()),
-                                            settings.structurePrefilterMarginChunks())
-                                    : StructurePrefilter.disabled();
+                            StructureBiomeFilter filter;
+                            if (settings.structurePrefilter()) {
+                                BiomeBackend backend = BiomeBackendFactory.create(level);
+                                filter = new StructurePrefilter<>(
+                                        backend.envelopes(),
+                                        backend.sampler(),
+                                        holder -> holder.value().biomes().stream()
+                                                .collect(Collectors.toUnmodifiableSet()),
+                                        settings.structurePrefilterMarginChunks());
+                            } else {
+                                filter = StructurePrefilter.disabled();
+                            }
                             return StructureSearch.findNearest(new StructureSearchInput(
                                             origin,
                                             100,
@@ -176,9 +193,24 @@ public final class LocateCoordinator {
                                     .orElseGet(() -> LocateResult.notFound(elapsed(started)));
                         },
                         settings.timeoutSeconds() * 1000L));
+        if (future.isDone()) {
+            return OptionalInt.of(completeImmediately(
+                    future, result -> feedbackStructure(source, level, printable, origin, result, stats, settings)));
+        }
         future.thenAccept(result -> dispatch(
                 source, level, () -> feedbackStructure(source, level, printable, origin, result, stats, settings)));
         return OptionalInt.of(1);
+    }
+
+    private static int completeImmediately(CompletableFuture<LocateResult> future, Consumer<LocateResult> feedback) {
+        LocateResult result;
+        try {
+            result = future.join();
+        } catch (CompletionException | CancellationException failure) {
+            return 0;
+        }
+        feedback.accept(result);
+        return result.success() ? 1 : 0;
     }
 
     public void cancelPlayer(UUID playerId) {
@@ -196,12 +228,16 @@ public final class LocateCoordinator {
             return future;
         }
         UUID playerId = player.getUUID();
-        Set<CompletableFuture<LocateResult>> futures =
-                pending.computeIfAbsent(playerId, ignored -> ConcurrentHashMap.newKeySet());
-        futures.add(future);
+        pending.compute(playerId, (ignored, current) -> {
+            Set<CompletableFuture<LocateResult>> futures = current == null ? ConcurrentHashMap.newKeySet() : current;
+            futures.add(future);
+            return futures;
+        });
         future.whenComplete((result, throwable) -> {
-            futures.remove(future);
-            pending.computeIfPresent(playerId, (ignored, current) -> current.isEmpty() ? null : current);
+            pending.computeIfPresent(playerId, (ignored, current) -> {
+                current.remove(future);
+                return current.isEmpty() ? null : current;
+            });
         });
         return future;
     }

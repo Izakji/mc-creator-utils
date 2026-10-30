@@ -1,7 +1,9 @@
 package com.izakji.mccreatorutils.util;
 
+import com.izakji.mccreatorutils.McCreatorUtils;
+
 /**
- * Runs cleanup actions without allowing failures to escape.
+ * Runs cleanup actions without allowing recoverable failures to escape.
  *
  * @author Izakji
  */
@@ -9,7 +11,11 @@ public final class SafeClose {
     private SafeClose() {}
 
     /**
-     * Runs a close action, swallowing runtime failures so screen teardown can continue.
+     * Runs a close action, logging recoverable failures so screen teardown can continue.
+     *
+     * <p>Runtime exceptions and linkage errors are contained because a browser or optional
+     * dependency can fail while unloading. Fatal errors such as {@link OutOfMemoryError} and
+     * {@link AssertionError} propagate, since continuing after them can leave corrupt state.
      *
      * @param action close action
      */
@@ -19,8 +25,8 @@ public final class SafeClose {
         }
         try {
             action.run();
-        } catch (RuntimeException | Error ignored) {
-            // Cleanup must not strand the screen or the game.
+        } catch (RuntimeException | LinkageError failure) {
+            McCreatorUtils.LOGGER.warn("Cleanup action failed", failure);
         }
     }
 }

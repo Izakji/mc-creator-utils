@@ -8,11 +8,17 @@ import net.minecraft.world.level.biome.Climate;
 /**
  * Base parameter-list envelope provider.
  *
+ * @param <T> biome value type
  * @author Izakji
  */
 public final class ParameterListEnvelopeProvider<T> implements BiomeEnvelopeProvider<T> {
     private final BiomeEnvelopeIndex<T> index;
 
+    /**
+     * Creates a provider backed by one envelope index.
+     *
+     * @param index envelope index
+     */
     public ParameterListEnvelopeProvider(BiomeEnvelopeIndex<T> index) {
         this.index = index;
     }

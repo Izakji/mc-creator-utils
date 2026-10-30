@@ -3,6 +3,7 @@ package com.izakji.mccreatorutils.client.browser;
 import com.izakji.mccreatorutils.McCreatorUtils;
 import com.izakji.mccreatorutils.browser.BrowserGeometry;
 import com.izakji.mccreatorutils.browser.BrowserLayout;
+import com.izakji.mccreatorutils.browser.BrowserTabLayout;
 import com.izakji.mccreatorutils.browser.BrowserTabRules;
 import java.net.URI;
 import java.util.List;
@@ -28,9 +29,6 @@ public final class BrowserWorkspaceRenderer {
     private static final int TEXT = 0xFFD0D0D0;
     private static final int MUTED_TEXT = 0xFF8A8A8A;
     private static final int LOADING = 0xFFFFD45A;
-    private static final int TAB_GAP = 2;
-    private static final int TAB_START = 2;
-    private static final int PLUS_WIDTH = 16;
     static final int TITLE_BUTTON_WIDTH = 18;
     private static final int TITLE_ICON_SIZE = 16;
     private static final ResourceLocation CLOSE_ICON =
@@ -123,37 +121,33 @@ public final class BrowserWorkspaceRenderer {
                 layout.tabStrip().bottom(),
                 TAB_BACKGROUND);
         List<BrowserTabHandle> tabs = workspace.tabs();
-        int available = layout.tabStrip().width() - TAB_START - PLUS_WIDTH - 4;
-        int tabWidth = tabs.isEmpty() ? 0 : Math.max(44, available / tabs.size());
-        int x = layout.tabStrip().x() + TAB_START;
         for (int index = 0; index < tabs.size(); index++) {
-            int right = Math.min(layout.tabStrip().right() - PLUS_WIDTH - 4, x + tabWidth - TAB_GAP);
-            if (right <= x) {
-                break;
-            }
+            BrowserGeometry tab = BrowserTabLayout.tabBounds(layout.tabStrip(), index, tabs.size());
             graphics.fill(
-                    x,
-                    layout.tabStrip().y() + 2,
-                    right,
-                    layout.tabStrip().bottom() - 2,
+                    tab.x(),
+                    tab.y(),
+                    tab.right(),
+                    tab.bottom(),
                     index == workspace.activeTabIndex() ? TAB_ACTIVE : TAB_BACKGROUND);
-            String label = truncate(minecraft, tabLabel(tabs.get(index).url()), right - x - 22);
+            String label = truncate(minecraft, tabLabel(tabs.get(index).url()), tab.width() - 20);
             graphics.drawString(
                     minecraft.font,
                     label,
-                    x + 4,
-                    layout.tabStrip().y() + 5,
+                    tab.x() + 4,
+                    tab.y() + 3,
                     index == workspace.activeTabIndex() ? TEXT : MUTED_TEXT,
                     false);
-            graphics.drawString(
-                    minecraft.font, "X", right - 10, layout.tabStrip().y() + 5, MUTED_TEXT, false);
-            x = right + TAB_GAP;
+            if (tab.width() >= 14) {
+                int closeX = Math.max(tab.x() + 1, tab.right() - minecraft.font.width("X") - 3);
+                graphics.drawString(minecraft.font, "X", closeX, tab.y() + 3, MUTED_TEXT, false);
+            }
         }
+        BrowserGeometry plus = BrowserTabLayout.plusBounds(layout.tabStrip());
         graphics.drawString(
                 minecraft.font,
                 "+",
-                layout.tabStrip().right() - PLUS_WIDTH,
-                layout.tabStrip().y() + 4,
+                plus.x() + (plus.width() - minecraft.font.width("+")) / 2,
+                plus.y() + 2,
                 BrowserTabRules.canOpenNewTab(tabs.size()) ? TEXT : MUTED_TEXT,
                 false);
     }

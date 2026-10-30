@@ -108,7 +108,9 @@ public final class CreatorToolsUi {
                 Math.max(1, Math.min(520, screenSize.getWidth() - 20)),
                 Math.max(1, Math.min(300, screenSize.getHeight() - 20)));
 
-        selectTool(ToolCatalog.tools().get(0));
+        if (!ToolCatalog.tools().isEmpty()) {
+            selectTool(ToolCatalog.tools().get(0));
+        }
         return ModularUI.of(UI.of(root, dynamicSize));
     }
 
@@ -121,24 +123,20 @@ public final class CreatorToolsUi {
                 style -> style.baseTexture(id == tool.id() ? Sprites.RECT_RD_LIGHT : Sprites.RECT_RD)));
         heading.setText(Component.translatable(tool.translationKey()));
         content.clearAllChildren();
-        if (tool.id() == ToolId.CAMERA) {
-            content.addChild(new CameraToolPanel());
-        } else if (tool.id() == ToolId.WORLD_TIME) {
-            content.addChild(new WorldTimeToolPanel());
-        } else if (tool.id() == ToolId.BIOMES) {
-            content.addChild(new BiomesToolPanel());
-        } else if (tool.id() == ToolId.STRUCTURES) {
-            content.addChild(new StructuresToolPanel());
-        } else if (tool.id() == ToolId.DIMENSIONS) {
-            content.addChild(new DimensionsToolPanel());
-        } else if (tool.id() == ToolId.ITEMS) {
-            content.addChild(new ItemsToolPanel());
-        } else if (tool.id() == ToolId.MOBS) {
-            content.addChild(new MobsToolPanel());
-        } else if (tool.id() == ToolId.PLAYER) {
-            content.addChild(new PlayerToolPanel());
-        } else if (tool.id() == ToolId.EXPLORE_MODS) {
-            content.addChild(new ExploreModsToolPanel());
-        }
+        content.addChild(createPanel(tool.id()));
+    }
+
+    private static UIElement createPanel(ToolId id) {
+        return switch (id) {
+            case CAMERA -> new CameraToolPanel();
+            case WORLD_TIME -> new WorldTimeToolPanel();
+            case BIOMES -> new BiomesToolPanel();
+            case STRUCTURES -> new StructuresToolPanel();
+            case DIMENSIONS -> new DimensionsToolPanel();
+            case ITEMS -> new ItemsToolPanel();
+            case MOBS -> new MobsToolPanel();
+            case PLAYER -> new PlayerToolPanel();
+            case EXPLORE_MODS -> new ExploreModsToolPanel();
+        };
     }
 }

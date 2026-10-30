@@ -1,5 +1,6 @@
 package com.izakji.mccreatorutils.client.browser;
 
+import com.izakji.mccreatorutils.McCreatorUtils;
 import com.izakji.mccreatorutils.browser.BrowserGeometry;
 import com.izakji.mccreatorutils.browser.BrowserLayout;
 import com.izakji.mccreatorutils.browser.BrowserSession;
@@ -71,6 +72,10 @@ public final class BrowserWorkspace {
     /**
      * Opens a page, reusing an existing normalized URL tab.
      *
+     * <p>When the window is closed, a saved session is restored only if it already contains the
+     * requested page. Otherwise the requested page opens on its own, so an external page request
+     * cannot recreate an unrelated full tab set and fail with {@link BrowserOpenResult#CAPACITY}.
+     *
      * @param url page URL
      * @return open result
      */
@@ -83,7 +88,12 @@ public final class BrowserWorkspace {
             return BrowserOpenResult.UNAVAILABLE;
         }
         if (tabs.isEmpty() && savedSession.hasPages()) {
-            restoreSavedSession();
+            if (BrowserTabRules.findOpenTab(savedSession.urls(), normalized.get())
+                    .isPresent()) {
+                restoreSavedSession();
+            } else {
+                savedSession.clear();
+            }
         }
         return openUrl(normalized.get(), true);
     }
@@ -223,23 +233,31 @@ public final class BrowserWorkspace {
 
     /**
      * Closes every tab, snapshots the open pages, and hides the workspace.
+     *
+     * <p>Teardown clears the window even when a tab fails while its URL is read or while it closes.
      */
     public void closeWindow() {
-        if (!tabs.isEmpty()) {
-            savedSession.save(tabs.stream().map(BrowserTabHandle::url).toList(), activeTabIndex);
-        }
-        for (BrowserTabHandle tab : List.copyOf(tabs)) {
-            SafeClose.run(tab::close);
-        }
-        tabs.clear();
-        activeTabIndex = -1;
-        engine = null;
-        windowVisible = false;
-        fullscreen = false;
-        restoreBounds = null;
-        Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.screen instanceof BrowserFocusScreen) {
-            minecraft.setScreen(null);
+        try {
+            if (!tabs.isEmpty()) {
+                savedSession.save(tabs.stream().map(BrowserTabHandle::url).toList(), activeTabIndex);
+            }
+        } catch (RuntimeException | LinkageError failure) {
+            McCreatorUtils.LOGGER.warn("Could not snapshot the browser session", failure);
+            savedSession.clear();
+        } finally {
+            for (BrowserTabHandle tab : List.copyOf(tabs)) {
+                SafeClose.run(tab::close);
+            }
+            tabs.clear();
+            activeTabIndex = -1;
+            engine = null;
+            windowVisible = false;
+            fullscreen = false;
+            restoreBounds = null;
+            Minecraft minecraft = Minecraft.getInstance();
+            if (minecraft.screen instanceof BrowserFocusScreen) {
+                minecraft.setScreen(null);
+            }
         }
     }
 
@@ -305,7 +323,8 @@ public final class BrowserWorkspace {
         Minecraft minecraft = Minecraft.getInstance();
         int screenWidth = minecraft.getWindow().getGuiScaledWidth();
         int screenHeight = minecraft.getWindow().getGuiScaledHeight();
-        windowBounds = bounds.clampTo(screenWidth, screenHeight, 320, 220);
+        windowBounds = bounds.clampTo(
+                screenWidth, screenHeight, BrowserLayout.MIN_WINDOW_WIDTH, BrowserLayout.MIN_WINDOW_HEIGHT);
         resizeActiveTab();
     }
 
@@ -326,14 +345,10 @@ public final class BrowserWorkspace {
         int screenWidth = minecraft.getWindow().getGuiScaledWidth();
         int screenHeight = minecraft.getWindow().getGuiScaledHeight();
         if (fullscreen) {
-            BrowserGeometry restored = restoreBounds == null
-                    ? BrowserGeometry.centered(
-                            screenWidth,
-                            screenHeight,
-                            Math.max(480, screenWidth * 70 / 100),
-                            Math.max(320, screenHeight * 70 / 100))
-                    : restoreBounds;
-            windowBounds = restored.clampTo(screenWidth, screenHeight, 320, 220);
+            BrowserGeometry restored =
+                    restoreBounds == null ? defaultWindowBounds(screenWidth, screenHeight) : restoreBounds;
+            windowBounds = restored.clampTo(
+                    screenWidth, screenHeight, BrowserLayout.MIN_WINDOW_WIDTH, BrowserLayout.MIN_WINDOW_HEIGHT);
             fullscreen = false;
             restoreBounds = null;
         } else {
@@ -345,10 +360,14 @@ public final class BrowserWorkspace {
     }
 
     /**
-     * Releases all browser resources when the player logs out.
+     * Releases all browser resources and drops the saved session when the player logs out.
+     *
+     * <p>Pages belong to the current connection; restoring them after joining a different server
+     * would be surprising and could expose unrelated browsing state.
      */
     public void onLogout() {
         closeWindow();
+        savedSession.clear();
     }
 
     private boolean restoreSavedSession() {
@@ -384,6 +403,9 @@ public final class BrowserWorkspace {
 
     private BrowserEngine ensureEngine() {
         if (engine == null) {
+            if (!isAvailable()) {
+                return null;
+            }
             try {
                 engine = new RinkuBrowserEngine();
             } catch (RuntimeException | LinkageError failure) {
@@ -396,12 +418,22 @@ public final class BrowserWorkspace {
     private void ensureWindowBounds() {
         if (windowBounds == null) {
             Minecraft minecraft = Minecraft.getInstance();
-            int screenWidth = minecraft.getWindow().getGuiScaledWidth();
-            int screenHeight = minecraft.getWindow().getGuiScaledHeight();
-            int width = Math.max(480, screenWidth * 70 / 100);
-            int height = Math.max(320, screenHeight * 70 / 100);
-            windowBounds = BrowserGeometry.centered(screenWidth, screenHeight, width, height)
-                    .clampTo(screenWidth, screenHeight, 320, 220);
+            windowBounds = defaultWindowBounds(
+                            minecraft.getWindow().getGuiScaledWidth(),
+                            minecraft.getWindow().getGuiScaledHeight())
+                    .clampTo(
+                            minecraft.getWindow().getGuiScaledWidth(),
+                            minecraft.getWindow().getGuiScaledHeight(),
+                            BrowserLayout.MIN_WINDOW_WIDTH,
+                            BrowserLayout.MIN_WINDOW_HEIGHT);
         }
+    }
+
+    private static BrowserGeometry defaultWindowBounds(int screenWidth, int screenHeight) {
+        int width =
+                Math.max(BrowserLayout.DEFAULT_WINDOW_WIDTH, screenWidth * BrowserLayout.DEFAULT_SCREEN_PERCENT / 100);
+        int height = Math.max(
+                BrowserLayout.DEFAULT_WINDOW_HEIGHT, screenHeight * BrowserLayout.DEFAULT_SCREEN_PERCENT / 100);
+        return BrowserGeometry.centered(screenWidth, screenHeight, width, height);
     }
 }

@@ -15,9 +15,20 @@ import net.minecraft.world.level.levelgen.structure.placement.StructurePlacement
 @FunctionalInterface
 public interface StructureProbe {
 
+    /**
+     * Checks the structures that share one placement at a candidate chunk.
+     *
+     * @param structures candidate structures in vanilla placement order
+     * @param chunk potential structure chunk
+     * @param placement placement shared by the candidates
+     * @param skipKnownStructures whether already-referenced starts are skipped
+     * @param cancellationToken cooperative cancellation signal
+     * @return first matching structure, or empty
+     */
     Optional<StructureHit> probe(
             Set<Holder<Structure>> structures,
             ChunkPos chunk,
             StructurePlacement placement,
-            boolean skipKnownStructures);
+            boolean skipKnownStructures,
+            CancellationToken cancellationToken);
 }

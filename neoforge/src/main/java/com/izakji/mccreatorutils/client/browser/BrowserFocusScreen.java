@@ -3,6 +3,7 @@ package com.izakji.mccreatorutils.client.browser;
 import com.izakji.mccreatorutils.browser.BrowserGeometry;
 import com.izakji.mccreatorutils.browser.BrowserInputCoordinates;
 import com.izakji.mccreatorutils.browser.BrowserLayout;
+import com.izakji.mccreatorutils.browser.BrowserTabLayout;
 import com.izakji.mccreatorutils.browser.BrowserTabRules;
 import com.izakji.mccreatorutils.browser.BrowserUrlInput;
 import java.util.List;
@@ -23,10 +24,6 @@ import org.lwjgl.glfw.GLFW;
  * @author Izakji
  */
 public final class BrowserFocusScreen extends Screen {
-    private static final int TAB_START = 2;
-    private static final int TAB_GAP = 2;
-    private static final int TAB_MIN_WIDTH = 44;
-    private static final int PLUS_WIDTH = 16;
     private static final int NAV_BUTTON_WIDTH = 20;
     private static final int TITLE_BUTTON_WIDTH = BrowserWorkspaceRenderer.TITLE_BUTTON_WIDTH;
 
@@ -64,6 +61,7 @@ public final class BrowserFocusScreen extends Screen {
                 12,
                 Component.translatable("screen.mccreatorutils.browser.address"));
         addressBar.setMaxLength(2048);
+        addressBar.setHint(Component.translatable("screen.mccreatorutils.browser.address"));
         addressBar.setValue(workspace.activeUrl());
         addRenderableWidget(addressBar);
         workspace.resizeActiveTab();
@@ -168,7 +166,7 @@ public final class BrowserFocusScreen extends Screen {
 
         if (in(layout.tabStrip(), mouseX, mouseY)) {
             clearContentFocus();
-            handleTabClick(mouseX);
+            handleTabClick(mouseX, mouseY);
             return true;
         }
 
@@ -209,9 +207,10 @@ public final class BrowserFocusScreen extends Screen {
         return false;
     }
 
-    private void handleTabClick(double mouseX) {
+    private void handleTabClick(double mouseX, double mouseY) {
         List<BrowserTabHandle> tabs = workspace.tabs();
-        if (mouseX >= layout.tabStrip().right() - PLUS_WIDTH) {
+        BrowserGeometry plus = BrowserTabLayout.plusBounds(layout.tabStrip());
+        if (mouseX >= plus.x() && mouseX < plus.right()) {
             if (!BrowserTabRules.canOpenNewTab(tabs.size())) {
                 error = Component.translatable("screen.mccreatorutils.browser.tab_limit");
                 return;
@@ -223,23 +222,16 @@ public final class BrowserFocusScreen extends Screen {
             }
             return;
         }
-        int available = layout.tabStrip().width() - TAB_START - PLUS_WIDTH - 4;
-        int tabWidth = tabs.isEmpty() ? 0 : Math.max(TAB_MIN_WIDTH, available / tabs.size());
-        int x = layout.tabStrip().x() + TAB_START;
         for (int index = 0; index < tabs.size(); index++) {
-            int right = Math.min(layout.tabStrip().right() - PLUS_WIDTH - 4, x + tabWidth - TAB_GAP);
-            if (right <= x) {
-                return;
-            }
-            if (mouseX >= x && mouseX < right) {
-                if (mouseX >= right - 12) {
+            BrowserGeometry tab = BrowserTabLayout.tabBounds(layout.tabStrip(), index, tabs.size());
+            if (mouseX >= tab.x() && mouseX < tab.right()) {
+                if (BrowserTabLayout.isCloseHit(tab, mouseX)) {
                     workspace.closeTab(index);
                 } else {
                     workspace.setActiveTab(index);
                 }
                 return;
             }
-            x = right + TAB_GAP;
         }
     }
 
@@ -463,6 +455,11 @@ public final class BrowserFocusScreen extends Screen {
 
     @Override
     public void removed() {
+        // A screen can be replaced without onClose (for example by the death screen); do not
+        // leave the floating workspace stuck in fullscreen without drag/resize controls.
+        if (workspace.fullscreen()) {
+            workspace.toggleFullscreen();
+        }
         clearContentFocus();
         super.removed();
     }

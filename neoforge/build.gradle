@@ -92,9 +92,24 @@ dependencies {
 }
 
 def rinkuModJar = layout.buildDirectory.file('rinku/rinku-mod.jar')
+def rinkuArchive = configurations.rinkuDist.elements.map { elements -> elements.iterator().next().asFile }
 def extractRinkuMod = tasks.register('extractRinkuMod', Copy) {
     inputs.files(configurations.rinkuDist)
-    from({ zipTree(configurations.rinkuDist.singleFile) }) {
+    doFirst {
+        def archive = rinkuArchive.get()
+        def matches = 0
+        new java.util.zip.ZipFile(archive).withCloseable { zip ->
+            matches = Collections.list(zip.entries()).count { entry ->
+                entry.name ==~ 'META-INF/jarjar/[^/]+-mod\\.jar'
+            }
+        }
+        if (matches != 1) {
+            throw new GradleException(
+                    "Expected exactly one nested Rinku mod jar in ${archive.name}, found ${matches}. " +
+                    "Rinku's wrapper layout changed; update neoforge/build.gradle.")
+        }
+    }
+    from({ zipTree(rinkuArchive.get()) }) {
         include 'META-INF/jarjar/*-mod.jar'
         eachFile { details -> details.path = 'rinku-mod.jar' }
         includeEmptyDirs = false

@@ -6,9 +6,14 @@ package com.izakji.mccreatorutils.locate.engine;
  * @author Izakji
  */
 public enum ClimateAxis {
+    /** Temperature parameter. */
     TEMPERATURE,
+    /** Humidity parameter. */
     HUMIDITY,
+    /** Continentalness parameter. */
     CONTINENTALNESS,
+    /** Erosion parameter. */
     EROSION,
+    /** Weirdness parameter. */
     WEIRDNESS
 }

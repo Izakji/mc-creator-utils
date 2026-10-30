@@ -24,6 +24,13 @@ class SearchFilterTest {
     }
 
     @Test
+    void skipsNullMapperResults() {
+        assertEquals(
+                List.of("alpha"),
+                SearchFilter.filter(List.of("alpha", "beta"), "a", value -> value.equals("beta") ? null : value));
+    }
+
+    @Test
     void preservesCandidateOrder() {
         assertEquals(List.of("beta", "alpha"), SearchFilter.filter(List.of("beta", "alpha"), "a", value -> value));
     }

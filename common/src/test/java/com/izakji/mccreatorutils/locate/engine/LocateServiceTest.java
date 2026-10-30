@@ -199,6 +199,71 @@ class LocateServiceTest {
     }
 
     @Test
+    void closeDoesNotWaitForBlockedTask() throws Exception {
+        var started = new CountDownLatch(1);
+        var release = new CountDownLatch(1);
+        LocateService service = service(1, 0);
+        try {
+            service.submit(
+                    key("minecraft:plains"),
+                    token -> {
+                        started.countDown();
+                        boolean released = false;
+                        while (!released) {
+                            try {
+                                release.await();
+                                released = true;
+                            } catch (InterruptedException ignored) {
+                                // Mimic a task waiting on work that the interrupt cannot stop.
+                            }
+                        }
+                        return LocateResult.notFound(0);
+                    },
+                    5_000);
+            assertTrue(started.await(1, TimeUnit.SECONDS));
+
+            long began = System.nanoTime();
+            service.close();
+            long elapsedMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - began);
+
+            assertTrue(elapsedMillis < 500, "close blocked for " + elapsedMillis + " ms");
+        } finally {
+            release.countDown();
+            service.close();
+        }
+    }
+
+    @Test
+    void clearingOneDimensionKeepsOtherDimensionCacheEntries() throws Exception {
+        LocateService service = service(1, 4);
+        try {
+            service.submit(
+                            key("minecraft:plains"),
+                            token -> LocateResult.found(BlockPos.ZERO, Holder.direct(null), 0),
+                            1_000)
+                    .get(1, TimeUnit.SECONDS);
+            service.submit(
+                            new LocateRequestKey(
+                                    Level.NETHER,
+                                    LocateType.BIOME,
+                                    List.of(ResourceLocation.parse("minecraft:nether_wastes")),
+                                    BlockPos.ZERO,
+                                    6400,
+                                    false),
+                            token -> LocateResult.found(BlockPos.ZERO, Holder.direct(null), 0),
+                            1_000)
+                    .get(1, TimeUnit.SECONDS);
+            assertEquals(2, service.cacheSize());
+
+            service.clearCacheDimension(Level.OVERWORLD);
+
+            assertEquals(1, service.cacheSize());
+        } finally {
+            service.close();
+        }
+    }
+
+    @Test
     void reconfigureAppliesNewQueueLimit() throws Exception {
         var started = new CountDownLatch(1);
         var release = new CountDownLatch(1);

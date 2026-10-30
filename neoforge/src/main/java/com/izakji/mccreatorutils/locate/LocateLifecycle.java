@@ -40,6 +40,7 @@ public final class LocateLifecycle {
         if (previous != null) {
             previous.close();
         }
+        BiomeBackendFactory.clearCache();
 
         LocateSettings settings = LocateConfig.settings();
         service = new LocateService(
@@ -62,6 +63,7 @@ public final class LocateLifecycle {
         if (current != null) {
             current.close();
         }
+        BiomeBackendFactory.clearCache();
     }
 
     @SubscribeEvent
@@ -77,7 +79,8 @@ public final class LocateLifecycle {
         LocateService current = service;
         if (current != null && event.getLevel() instanceof ServerLevel level) {
             current.cancelDimension(level.dimension());
-            current.clearCache();
+            current.clearCacheDimension(level.dimension());
+            BiomeBackendFactory.clearCache();
         }
     }
 
@@ -108,6 +111,7 @@ public final class LocateLifecycle {
     static void onDatapackSync(OnDatapackSyncEvent event) {
         LocateService current = service;
         if (current != null) {
+            current.cancelAll();
             current.clearCache();
         }
         BiomeBackendFactory.clearCache();

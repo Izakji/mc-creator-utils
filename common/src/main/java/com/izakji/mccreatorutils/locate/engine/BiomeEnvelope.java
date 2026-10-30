@@ -27,10 +27,21 @@ public final class BiomeEnvelope {
         this.maximums = maximums;
     }
 
+    /**
+     * Returns the empty envelope.
+     *
+     * @return impossible envelope
+     */
     public static BiomeEnvelope impossible() {
         return IMPOSSIBLE;
     }
 
+    /**
+     * Builds the box containing all supplied parameter points.
+     *
+     * @param points parameter points
+     * @return envelope, or the impossible envelope for an empty collection
+     */
     public static BiomeEnvelope of(Collection<Climate.ParameterPoint> points) {
         if (points.isEmpty()) {
             return IMPOSSIBLE;
@@ -50,6 +61,13 @@ public final class BiomeEnvelope {
         return new BiomeEnvelope(false, minimums, maximums);
     }
 
+    /**
+     * Returns the smallest box containing both envelopes.
+     *
+     * @param first first envelope
+     * @param second second envelope
+     * @return union envelope
+     */
     public static BiomeEnvelope union(BiomeEnvelope first, BiomeEnvelope second) {
         if (first.impossible) {
             return second;
@@ -68,10 +86,22 @@ public final class BiomeEnvelope {
         return new BiomeEnvelope(false, minimums, maximums);
     }
 
+    /**
+     * Returns whether this envelope has no axis range.
+     *
+     * @return true when the envelope is empty
+     */
     public boolean isImpossible() {
         return impossible;
     }
 
+    /**
+     * Returns whether one axis value is inside the envelope.
+     *
+     * @param axis axis to test
+     * @param value axis value
+     * @return true when the value is inside the box
+     */
     public boolean contains(ClimateAxis axis, long value) {
         if (impossible) {
             return false;
@@ -80,6 +110,16 @@ public final class BiomeEnvelope {
         return value >= minimums[index] && value <= maximums[index];
     }
 
+    /**
+     * Returns whether all five axes are inside the envelope.
+     *
+     * @param temperature temperature
+     * @param humidity humidity
+     * @param continentalness continentalness
+     * @param erosion erosion
+     * @param weirdness weirdness
+     * @return true when every axis is inside the box
+     */
     public boolean contains(long temperature, long humidity, long continentalness, long erosion, long weirdness) {
         if (impossible) {
             return false;

@@ -22,6 +22,7 @@ public final class BiomesToolPanel extends UIElement {
     private final CommandStatusLabel status = new CommandStatusLabel();
     private final Button teleportButton = new Button();
     private final RegistryPicker picker;
+    private boolean removed;
 
     public BiomesToolPanel() {
         this.layout(layout -> layout.widthPercent(100)
@@ -58,9 +59,19 @@ public final class BiomesToolPanel extends UIElement {
         status.showInfo(Component.translatable("status.mccreatorutils.searching", targetName));
         teleportButton.setActive(false);
         ClientLocateTeleporter.requestBiome(biome, targetName, result -> {
+            if (removed) {
+                return;
+            }
             updateTeleportButton();
             status.showResult(result);
         });
+    }
+
+    @Override
+    protected void onRemoved() {
+        removed = true;
+        ClientLocateTeleporter.abandon();
+        super.onRemoved();
     }
 
     private void updateTeleportButton() {

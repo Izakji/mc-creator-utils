@@ -38,8 +38,13 @@ public final class StructureSearch {
                     }
 
                     input.stats().candidates++;
-                    Optional<StructureHit> hit =
-                            input.probe().probe(group.structures(), chunk, placement, input.skipKnownStructures());
+                    Optional<StructureHit> hit = input.probe()
+                            .probe(
+                                    group.structures(),
+                                    chunk,
+                                    placement,
+                                    input.skipKnownStructures(),
+                                    input.cancellationToken());
                     if (hit.isPresent()) {
                         bestConcentric = hit.get();
                         bestCandidateDistance = candidateDistance;
@@ -104,8 +109,13 @@ public final class StructureSearch {
                 int regionZ = centerZ + spacing * l;
                 ChunkPos chunk = placement.getPotentialStructureChunk(input.seed(), regionX, regionZ);
                 input.stats().candidates++;
-                Optional<StructureHit> hit =
-                        input.probe().probe(group.structures(), chunk, placement, input.skipKnownStructures());
+                Optional<StructureHit> hit = input.probe()
+                        .probe(
+                                group.structures(),
+                                chunk,
+                                placement,
+                                input.skipKnownStructures(),
+                                input.cancellationToken());
                 if (hit.isPresent()) {
                     return hit;
                 }

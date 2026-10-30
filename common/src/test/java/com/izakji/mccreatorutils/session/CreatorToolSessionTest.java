@@ -152,6 +152,8 @@ class CreatorToolSessionTest {
         assertNull(session.exploreModId());
         session.setExploreModId("example");
         assertEquals("example", session.exploreModId());
+        session.setExploreModId("  example  ");
+        assertEquals("example", session.exploreModId());
         session.setExploreModId(" ");
         assertNull(session.exploreModId());
     }

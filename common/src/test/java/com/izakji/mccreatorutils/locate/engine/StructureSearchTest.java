@@ -45,7 +45,7 @@ class StructureSearchTest {
                 false,
                 List.of(new StructurePlacementGroup(placement, Set.of(structure))),
                 Map.of(),
-                (structures, chunk, p, skip) -> {
+                (structures, chunk, p, skip, cancellation) -> {
                     observed.add(chunk);
                     return Optional.empty();
                 },
@@ -69,7 +69,7 @@ class StructureSearchTest {
                 false,
                 List.of(new StructurePlacementGroup(placement, Set.of(structure))),
                 Map.of(),
-                (structures, chunk, p, skip) -> {
+                (structures, chunk, p, skip, cancellation) -> {
                     calls.incrementAndGet();
                     return chunk.equals(hitChunk)
                             ? Optional.of(new StructureHit(BlockPos.ZERO, structure))
@@ -93,7 +93,7 @@ class StructureSearchTest {
                 false,
                 List.of(new StructurePlacementGroup(placement, Set.of(structure))),
                 Map.of(),
-                (structures, chunk, p, skip) -> Optional.empty(),
+                (structures, chunk, p, skip, cancellation) -> Optional.empty(),
                 new LocateStats(),
                 () -> true);
 
@@ -112,7 +112,8 @@ class StructureSearchTest {
                 false,
                 List.of(new StructurePlacementGroup(placement, Set.of(structure))),
                 Map.of(placement, List.of(ring)),
-                (structures, chunk, p, skip) -> Optional.of(new StructureHit(new BlockPos(40, 32, 40), structure)),
+                (structures, chunk, p, skip, cancellation) ->
+                        Optional.of(new StructureHit(new BlockPos(40, 32, 40), structure)),
                 new LocateStats(),
                 () -> false);
 
@@ -134,7 +135,7 @@ class StructureSearchTest {
                 false,
                 groups,
                 Map.of(),
-                (structures, chunk, placement, skip) -> Optional.of(new StructureHit(
+                (structures, chunk, placement, skip, cancellation) -> Optional.of(new StructureHit(
                         placement == first ? new BlockPos(100, 0, 0) : new BlockPos(10, 0, 0), structure)),
                 new LocateStats(),
                 () -> false);

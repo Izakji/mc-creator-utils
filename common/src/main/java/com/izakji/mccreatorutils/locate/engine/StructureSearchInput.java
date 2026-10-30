@@ -9,6 +9,15 @@ import net.minecraft.world.level.levelgen.structure.placement.ConcentricRingsStr
 /**
  * Immutable placement snapshot and probe for one structure search.
  *
+ * @param origin search origin
+ * @param searchRadius maximum random-spread ring radius
+ * @param seed level seed
+ * @param skipKnownStructures whether already-referenced starts are skipped
+ * @param placements placement groups in vanilla order
+ * @param concentricPositions precomputed ring positions
+ * @param probe structure presence check
+ * @param stats mutable search counters
+ * @param cancellationToken cooperative cancellation signal
  * @author Izakji
  */
 public record StructureSearchInput(

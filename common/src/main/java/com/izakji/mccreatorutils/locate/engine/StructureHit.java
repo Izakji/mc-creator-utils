@@ -7,6 +7,8 @@ import net.minecraft.world.level.levelgen.structure.Structure;
 /**
  * One located structure.
  *
+ * @param position structure position
+ * @param structure matched structure holder
  * @author Izakji
  */
 public record StructureHit(BlockPos position, Holder<Structure> structure) {}
