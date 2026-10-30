@@ -4,10 +4,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-final class TestSettings {
+public final class TestSettings {
     private TestSettings() {}
 
-    static AgentSettings settings() {
+    public static AgentSettings settings() {
         ProviderProfile profile = new ProviderProfile(
                 "main",
                 "Test",
