@@ -1,6 +1,7 @@
 package com.izakji.agent.runtime;
 
 import com.izakji.agent.api.AgentException;
+import com.izakji.agent.api.AgentTool;
 import com.izakji.agent.api.AssistantMessage;
 import com.izakji.agent.api.ChatMessage;
 import com.izakji.agent.api.ChatRequest;
@@ -12,6 +13,7 @@ import com.izakji.agent.api.SystemMessage;
 import com.izakji.agent.api.TextPart;
 import com.izakji.agent.api.ToolCall;
 import com.izakji.agent.api.ToolContext;
+import com.izakji.agent.api.ToolResult;
 import com.izakji.agent.api.UserMessage;
 import com.izakji.agent.config.AgentSettings;
 import com.izakji.agent.config.ProviderProfile;
@@ -19,14 +21,17 @@ import com.izakji.agent.conversation.Conversation;
 import com.izakji.agent.conversation.ConversationStore;
 import com.izakji.agent.provider.ProviderRegistry;
 import java.time.Clock;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -45,6 +50,7 @@ public final class AgentRuntime implements AutoCloseable {
     private final ExecutorService executor;
     private final Clock clock;
     private final Map<String, TurnHandle> active = new ConcurrentHashMap<>();
+    private final Map<String, CompletableFuture<ApprovalChoice>> pendingApprovals = new ConcurrentHashMap<>();
     private final SystemPromptBuilder promptBuilder = new SystemPromptBuilder();
 
     public AgentRuntime(
@@ -87,7 +93,10 @@ public final class AgentRuntime implements AutoCloseable {
     }
 
     public void approve(String conversationId, String approvalId, ApprovalChoice choice) {
-        // Approval resolution is wired in Task 10; an unknown approval is a no-op.
+        CompletableFuture<ApprovalChoice> future = pendingApprovals.get(approvalKey(conversationId, approvalId));
+        if (future != null) {
+            future.complete(choice);
+        }
     }
 
     public void close() {
@@ -103,87 +112,206 @@ public final class AgentRuntime implements AutoCloseable {
     }
 
     private void runTurn(
-            Conversation conversation, String userText, TurnObserver observer, TurnHandle handle) {
-        String conversationId = conversation.id();
+            Conversation loaded, String userText, TurnObserver observer, TurnHandle handle) {
+        String conversationId = loaded.id();
         try {
             if (handle.isCancelled()) {
                 finish(conversationId, handle, observer, TurnOutcome.CANCELLED, "cancelled");
                 return;
             }
-            InstantHolder now = new InstantHolder(clock.instant());
-            Conversation updated = conversation.withMessage(
-                    new UserMessage(List.of(new TextPart(userText))), now.value);
-            conversations.save(updated);
+            Instant now = clock.instant();
+            Conversation conversation = loaded.withMessage(
+                    new UserMessage(List.of(new TextPart(userText))), now);
+            conversations.save(conversation);
 
+            String profileId = conversation.profileId();
             ProviderProfile profile = settings.profiles().stream()
-                    .filter(candidate -> candidate.id().equals(updated.profileId()))
+                    .filter(candidate -> candidate.id().equals(profileId))
                     .findFirst()
-                    .orElseThrow(() -> new AgentException("Provider profile not found: " + updated.profileId()));
+                    .orElseThrow(() -> new AgentException("Provider profile not found: " + profileId));
             LlmProvider provider = providers.forType(profile.type())
                     .orElseThrow(() -> new AgentException("Provider not registered: " + profile.type()));
 
             String systemPrompt = promptBuilder.build(
                     settings, List.of(), agentsMarkdown, snapshots(conversationId, handle));
-            List<ChatMessage> messages = new ArrayList<>();
-            messages.add(new SystemMessage(systemPrompt));
-            messages.addAll(updated.messages());
-            ChatRequest request = new ChatRequest(
-                    profile, messages, tools.schemas(), profile.maxOutputTokens());
+            List<ChatMessage> requestMessages = new ArrayList<>();
+            requestMessages.add(new SystemMessage(systemPrompt));
+            requestMessages.addAll(conversation.messages());
 
-            StringBuilder text = new StringBuilder();
-            StringBuilder reasoning = new StringBuilder();
-            AtomicReference<String> reasoningSignature = new AtomicReference<>("");
-            StreamListener listener = new StreamListener() {
-                @Override
-                public void onTextDelta(String delta) {
-                    text.append(delta);
-                    observer.onTextDelta(delta);
+            int rounds = 0;
+            int calls = 0;
+            while (rounds < settings.maxToolRounds()) {
+                rounds++;
+                AssistantMessage assistant = callProvider(
+                        provider, profile, requestMessages, observer, handle);
+                if (handle.isCancelled()) {
+                    finish(conversationId, handle, observer, TurnOutcome.CANCELLED, "cancelled");
+                    return;
                 }
+                conversation = conversation.withMessage(assistant, clock.instant());
+                conversations.save(conversation);
+                requestMessages.add(assistant);
 
-                @Override
-                public void onReasoningDelta(String delta) {
-                    reasoning.append(delta);
-                    observer.onReasoningDelta(delta);
+                if (assistant.toolCalls().isEmpty()) {
+                    finish(conversationId, handle, observer, TurnOutcome.COMPLETED, "");
+                    return;
                 }
-
-                @Override
-                public void onReasoningSignature(String signature) {
-                    reasoningSignature.set(signature);
+                if (calls + assistant.toolCalls().size() > settings.maxToolCalls()) {
+                    finish(conversationId, handle, observer, TurnOutcome.MAX_ITERATIONS, "tool-call limit");
+                    return;
                 }
-
-                @Override
-                public void onToolCall(ToolCall call) {
-                    // Tool execution is added in Task 10.
+                for (ToolCall call : assistant.toolCalls()) {
+                    calls++;
+                    ToolExecution execution = executeTool(conversation, call, observer, handle);
+                    conversation = execution.conversation();
+                    requestMessages.add(execution.message());
                 }
-
-                @Override
-                public void onUsage(int promptTokens, int completionTokens) {}
-
-                @Override
-                public void onFinish(com.izakji.agent.api.FinishReason reason) {}
-            };
-
-            provider.stream(request, listener, handle::isCancelled).join();
-            if (handle.isCancelled()) {
-                finish(conversationId, handle, observer, TurnOutcome.CANCELLED, "cancelled");
-                return;
             }
-            List<ContentPart> parts = new ArrayList<>();
-            if (!reasoning.isEmpty()) {
-                parts.add(new ReasoningPart(reasoning.toString(), reasoningSignature.get()));
-            }
-            if (!text.isEmpty()) {
-                parts.add(new TextPart(text.toString()));
-            }
-            Conversation completed = updated.withMessage(
-                    new AssistantMessage(parts, List.of()), clock.instant());
-            conversations.save(completed);
-            finish(conversationId, handle, observer, TurnOutcome.COMPLETED, "");
+            finish(conversationId, handle, observer, TurnOutcome.MAX_ITERATIONS, "tool-round limit");
         } catch (Exception failure) {
             String message = failure.getMessage() == null ? failure.getClass().getSimpleName() : failure.getMessage();
             observer.onError(new AgentException("Provider failed: " + message, failure));
             finish(conversationId, handle, observer, TurnOutcome.ERROR, message);
         }
+    }
+
+    private AssistantMessage callProvider(
+            LlmProvider provider,
+            ProviderProfile profile,
+            List<ChatMessage> messages,
+            TurnObserver observer,
+            TurnHandle handle) {
+        StringBuilder text = new StringBuilder();
+        StringBuilder reasoning = new StringBuilder();
+        AtomicReference<String> signature = new AtomicReference<>("");
+        List<ToolCall> toolCalls = new ArrayList<>();
+        StreamListener listener = new StreamListener() {
+            @Override
+            public void onTextDelta(String delta) {
+                text.append(delta);
+                observer.onTextDelta(delta);
+            }
+
+            @Override
+            public void onReasoningDelta(String delta) {
+                reasoning.append(delta);
+                observer.onReasoningDelta(delta);
+            }
+
+            @Override
+            public void onReasoningSignature(String value) {
+                signature.set(value);
+            }
+
+            @Override
+            public void onToolCall(ToolCall call) {
+                toolCalls.add(call);
+            }
+
+            @Override
+            public void onUsage(int promptTokens, int completionTokens) {}
+
+            @Override
+            public void onFinish(com.izakji.agent.api.FinishReason reason) {}
+        };
+        provider.stream(
+                        new ChatRequest(profile, messages, tools.schemas(), profile.maxOutputTokens()),
+                        listener,
+                        handle::isCancelled)
+                .join();
+        List<ContentPart> parts = new ArrayList<>();
+        if (!reasoning.isEmpty()) {
+            parts.add(new ReasoningPart(reasoning.toString(), signature.get()));
+        }
+        if (!text.isEmpty()) {
+            parts.add(new TextPart(text.toString()));
+        }
+        return new AssistantMessage(parts, toolCalls);
+    }
+
+    private ToolExecution executeTool(
+            Conversation conversation, ToolCall call, TurnObserver observer, TurnHandle handle) {
+        AgentTool tool = tools.find(call.name()).orElse(null);
+        if (tool == null) {
+            ToolResult result = error(call, "Unknown tool: " + call.name());
+            observer.onToolFinished(result);
+            return new ToolExecution(conversation, toolMessage(result, call.name()));
+        }
+        PermissionDecision decision =
+                permissions.decide(tool, new com.izakji.agent.api.ToolInvocation(
+                        call.id(), call.name(), call.arguments()), conversation);
+        if (decision.kind() == PermissionKind.DENY) {
+            ToolResult result = error(call, "Permission denied: " + decision.reason());
+            observer.onToolFinished(result);
+            return new ToolExecution(conversation, toolMessage(result, call.name()));
+        }
+        if (decision.kind() == PermissionKind.ASK) {
+            ApprovalRequest request = new ApprovalRequest(
+                    null, tool.name(), tool.risk(), call.arguments(), "Run " + tool.name());
+            CompletableFuture<ApprovalChoice> future = new CompletableFuture<>();
+            String key = approvalKey(conversation.id(), request.id());
+            pendingApprovals.put(key, future);
+            observer.onApprovalNeeded(request);
+            ApprovalChoice choice;
+            try {
+                choice = future.get(settings.approvalTimeoutSeconds(), TimeUnit.SECONDS);
+            } catch (TimeoutException timeout) {
+                choice = ApprovalChoice.DENY;
+            } catch (InterruptedException interrupted) {
+                Thread.currentThread().interrupt();
+                choice = ApprovalChoice.DENY;
+            } catch (ExecutionException failure) {
+                choice = ApprovalChoice.DENY;
+            } finally {
+                pendingApprovals.remove(key);
+            }
+            if (choice == ApprovalChoice.DENY) {
+                ToolResult result = error(call, "Permission denied: user denied the tool call");
+                observer.onToolFinished(result);
+                return new ToolExecution(conversation, toolMessage(result, call.name()));
+            }
+            if (choice == ApprovalChoice.ALLOW_CONVERSATION && tool.allowsConversationApproval()) {
+                conversation = conversation.withConversationApproval(tool.name(), clock.instant());
+                conversations.save(conversation);
+            }
+        }
+        if (handle.isCancelled()) {
+            ToolResult result = error(call, "Cancelled");
+            observer.onToolFinished(result);
+            return new ToolExecution(conversation, toolMessage(result, call.name()));
+        }
+        observer.onToolStarted(call);
+        ToolResult result;
+        try {
+            result = tool.execute(
+                            new com.izakji.agent.api.ToolInvocation(
+                                    call.id(), call.name(), call.arguments()),
+                            new ToolContext(conversation.id(), handle::isCancelled))
+                    .get(60, TimeUnit.SECONDS);
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+            result = error(call, "Tool interrupted");
+        } catch (ExecutionException | TimeoutException failure) {
+            result = error(call, "Tool failed: " + failure.getMessage());
+        }
+        observer.onToolFinished(result);
+        com.izakji.agent.api.ToolMessage message = toolMessage(result, call.name());
+        Conversation updated = conversation.withMessage(message, clock.instant());
+        conversations.save(updated);
+        return new ToolExecution(updated, message);
+    }
+
+    private static ToolResult error(ToolCall call, String message) {
+        return new ToolResult(call.id(), message, true, List.of());
+    }
+
+    private static com.izakji.agent.api.ToolMessage toolMessage(ToolResult result, String name) {
+        List<ContentPart> parts = new ArrayList<>();
+        if (!result.content().isBlank()) {
+            parts.add(new TextPart(result.content()));
+        }
+        parts.addAll(result.attachments());
+        return new com.izakji.agent.api.ToolMessage(result.callId(), name, parts, result.error());
     }
 
     private List<String> snapshots(String conversationId, TurnHandle handle) {
@@ -206,6 +334,9 @@ public final class AgentRuntime implements AutoCloseable {
     }
 
     private void cancelTurn(String conversationId, TurnHandle handle) {
+        pendingApprovals.entrySet().stream()
+                .filter(entry -> entry.getKey().startsWith(conversationId + "\u0000"))
+                .forEach(entry -> entry.getValue().complete(ApprovalChoice.DENY));
         if (active.get(conversationId) == handle) {
             handle.complete(new TurnResult(TurnOutcome.CANCELLED, conversationId, "cancelled"));
         }
@@ -223,11 +354,9 @@ public final class AgentRuntime implements AutoCloseable {
         handle.complete(result);
     }
 
-    private static final class InstantHolder {
-        private final java.time.Instant value;
-
-        private InstantHolder(java.time.Instant value) {
-            this.value = value;
-        }
+    private static String approvalKey(String conversationId, String approvalId) {
+        return conversationId + "\u0000" + approvalId;
     }
+
+    private record ToolExecution(Conversation conversation, com.izakji.agent.api.ToolMessage message) {}
 }
