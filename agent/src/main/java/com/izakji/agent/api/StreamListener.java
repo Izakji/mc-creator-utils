@@ -10,6 +10,8 @@ public interface StreamListener {
 
     void onReasoningDelta(String delta);
 
+    default void onReasoningSignature(String signature) {}
+
     void onToolCall(ToolCall call);
 
     void onUsage(int promptTokens, int completionTokens);
