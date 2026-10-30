@@ -15,4 +15,5 @@ plugins {
 
 rootProject.name = 'mc-creator-utils'
 include 'common'
+include 'agent'
 include 'neoforge'

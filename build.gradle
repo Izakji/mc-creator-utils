@@ -39,9 +39,9 @@ tasks.named('wrapper', Wrapper).configure {
     distributionType = Wrapper.DistributionType.BIN
 }
 
-tasks.register('build') { dependsOn ':common:build', ':neoforge:build' }
-tasks.register('spotlessApply') { dependsOn ':common:spotlessApply', ':neoforge:spotlessApply' }
-tasks.register('spotlessCheck') { dependsOn ':common:spotlessCheck', ':neoforge:spotlessCheck' }
+tasks.register('build') { dependsOn ':common:build', ':agent:build', ':neoforge:build' }
+tasks.register('spotlessApply') { dependsOn ':common:spotlessApply', ':agent:spotlessApply', ':neoforge:spotlessApply' }
+tasks.register('spotlessCheck') { dependsOn ':common:spotlessCheck', ':agent:spotlessCheck', ':neoforge:spotlessCheck' }
 tasks.register('runClient') { dependsOn ':neoforge:runClient' }
 tasks.register('runServer') { dependsOn ':neoforge:runServer' }
 tasks.register('runData') { dependsOn ':neoforge:runData' }

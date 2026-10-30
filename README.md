@@ -55,6 +55,7 @@ the Creator Utils jar.
 ## Project layout
 
 - `common/` — loader-neutral rules, commands, search, layout, and tests.
+- `agent/` — loader-neutral LLM agent runtime and extension contracts.
 - `neoforge/` — NeoForge client/server integration, UI panels, mixins, and Rinku adapter.
 
 ## License
