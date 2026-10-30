@@ -31,6 +31,10 @@ public final class ToolRegistry {
         return Optional.ofNullable(tools.get(name));
     }
 
+    public void unregister(String name) {
+        tools.remove(name);
+    }
+
     public List<ToolSchema> schemas() {
         return tools.values().stream()
                 .map(tool -> new ToolSchema(tool.name(), tool.description(), tool.inputSchema()))
