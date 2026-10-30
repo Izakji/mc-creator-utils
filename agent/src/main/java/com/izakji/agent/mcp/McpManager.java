@@ -6,6 +6,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 /**
  * Lifecycle and tool registration for configured MCP servers.
@@ -13,24 +14,27 @@ import java.util.Objects;
  * @author Izakji
  */
 public final class McpManager implements AutoCloseable {
-    private final Map<String, McpClient> clients;
+    private final Map<String, Supplier<McpClient>> factories;
     private final Map<String, McpServerConfig> configs;
+    private final Map<String, McpClient> active = new LinkedHashMap<>();
     private final ToolRegistry tools = new ToolRegistry();
     private final Map<String, List<String>> registered = new LinkedHashMap<>();
 
-    public McpManager(Map<String, McpClient> clients, Map<String, McpServerConfig> configs) {
-        this.clients = Map.copyOf(Objects.requireNonNullElse(clients, Map.of()));
+    public McpManager(Map<String, Supplier<McpClient>> factories, Map<String, McpServerConfig> configs) {
+        this.factories = Map.copyOf(Objects.requireNonNullElse(factories, Map.of()));
         this.configs = Map.copyOf(Objects.requireNonNullElse(configs, Map.of()));
     }
 
     public void start(String serverId) {
-        McpClient client = clients.get(serverId);
-        if (client == null) {
+        Supplier<McpClient> factory = factories.get(serverId);
+        if (factory == null) {
             throw new IllegalArgumentException("Unknown MCP server: " + serverId);
         }
-        if (registered.containsKey(serverId)) {
+        if (active.containsKey(serverId)) {
             stop(serverId);
         }
+        McpClient client = factory.get();
+        active.put(serverId, client);
         McpServerInfo info = client.initialize().join();
         List<String> names = new ArrayList<>();
         for (McpToolDescriptor descriptor : client.listTools().join()) {
@@ -56,7 +60,7 @@ public final class McpManager implements AutoCloseable {
         if (names != null) {
             names.forEach(tools::unregister);
         }
-        McpClient client = clients.get(serverId);
+        McpClient client = active.remove(serverId);
         if (client != null) {
             client.close();
         }
@@ -72,6 +76,6 @@ public final class McpManager implements AutoCloseable {
 
     @Override
     public void close() {
-        List.copyOf(registered.keySet()).forEach(this::stop);
+        List.copyOf(active.keySet()).forEach(this::stop);
     }
 }
