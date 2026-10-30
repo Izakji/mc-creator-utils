@@ -26,11 +26,14 @@ public final class AgentRuntimeTestSupport {
     }
 
     public static AgentRuntime runtime(Path root, LlmProvider provider, List<AgentTool> tools) {
+        return runtime(root, provider, tools, settings());
+    }
+
+    public static AgentRuntime runtime(Path root, LlmProvider provider, List<AgentTool> tools, AgentSettings settings) {
         ProviderRegistry providers = new ProviderRegistry();
         providers.register(provider);
         ToolRegistry registry = new ToolRegistry();
         tools.forEach(registry::register);
-        AgentSettings settings = settings();
         ExecutorService executor = Executors.newSingleThreadExecutor();
         return new AgentRuntime(
                 settings,

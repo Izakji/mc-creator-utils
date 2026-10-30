@@ -101,6 +101,70 @@ class AgentRuntimeToolTest {
     }
 
     @Test
+    void unknownToolPersistsItsErrorResult() throws Exception {
+        FakeProvider provider = new FakeProvider(List.of(
+                new FakeProvider.Turn(
+                        List.of(), List.of(),
+                        List.of(new ToolCall("call-1", "missing", new JsonObject()))),
+                new FakeProvider.Turn(List.of("done"), List.of(), List.of())));
+        try (AgentRuntime runtime =
+                AgentRuntimeTestSupport.runtime(AgentRuntimeTestSupport.root(), provider, List.of())) {
+            Conversation conversation = runtime.createConversation("Chat", "main");
+            runtime.startTurn(conversation.id(), "do it", new RecordingObserver())
+                    .completion()
+                    .get(2, TimeUnit.SECONDS);
+            Conversation loaded = runtime.conversations().load(conversation.id()).orElseThrow();
+            assertTrue(loaded.messages().stream()
+                    .anyMatch(com.izakji.agent.api.ToolMessage.class::isInstance));
+        }
+    }
+
+    @Test
+    void deniedToolPersistsItsErrorResult() throws Exception {
+        FakeProvider provider = new FakeProvider(List.of(
+                new FakeProvider.Turn(List.of(), List.of(), List.of(TestMessages.call("call-1"))),
+                new FakeProvider.Turn(List.of("done"), List.of(), List.of())));
+        FakeTool tool = new FakeTool("mutate", ToolRisk.MUTATING, "ok");
+        try (AgentRuntime runtime = AgentRuntimeTestSupport.runtime(
+                AgentRuntimeTestSupport.root(), provider, List.of(tool))) {
+            Conversation conversation = runtime.createConversation("Chat", "main");
+            RecordingObserver observer = new RecordingObserver();
+            TurnHandle handle = runtime.startTurn(conversation.id(), "do it", observer);
+            observer.awaitApproval();
+            runtime.approve(conversation.id(), observer.approval().id(), ApprovalChoice.DENY);
+            handle.completion().get(2, TimeUnit.SECONDS);
+            Conversation loaded = runtime.conversations().load(conversation.id()).orElseThrow();
+            assertTrue(loaded.messages().stream()
+                    .anyMatch(com.izakji.agent.api.ToolMessage.class::isInstance));
+        }
+    }
+
+    @Test
+    void toolCallLimitPersistsErrorResultsForEveryCall() throws Exception {
+        FakeProvider provider = new FakeProvider(List.of(new FakeProvider.Turn(
+                List.of(),
+                List.of(),
+                List.of(TestMessages.call("call-1"), TestMessages.call("call-2")))));
+        FakeTool tool = new FakeTool("mutate", ToolRisk.READ_ONLY, "ok");
+        com.izakji.agent.config.AgentSettings base = AgentRuntimeTestSupport.settings();
+        com.izakji.agent.config.AgentSettings strict = new com.izakji.agent.config.AgentSettings(
+                base.defaultProfileId(), base.profiles(), base.permissions(), 8, 1, 1);
+        try (AgentRuntime runtime = AgentRuntimeTestSupport.runtime(
+                AgentRuntimeTestSupport.root(), provider, List.of(tool), strict)) {
+            Conversation conversation = runtime.createConversation("Chat", "main");
+            TurnResult result = runtime.startTurn(conversation.id(), "do it", new RecordingObserver())
+                    .completion()
+                    .get(2, TimeUnit.SECONDS);
+            assertEquals(TurnOutcome.MAX_ITERATIONS, result.outcome());
+            Conversation loaded = runtime.conversations().load(conversation.id()).orElseThrow();
+            long toolMessages = loaded.messages().stream()
+                    .filter(com.izakji.agent.api.ToolMessage.class::isInstance)
+                    .count();
+            assertEquals(2, toolMessages);
+        }
+    }
+
+    @Test
     void stopsAtMaxToolRounds() throws Exception {
         List<FakeProvider.Step> steps = new ArrayList<>();
         for (int index = 0; index < 20; index++) {

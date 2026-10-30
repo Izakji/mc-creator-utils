@@ -152,6 +152,10 @@ public final class AgentRuntime implements AutoCloseable {
             int rounds = 0;
             int calls = 0;
             while (rounds < settings.maxToolRounds()) {
+                if (handle.isCancelled()) {
+                    finish(conversationId, handle, observer, TurnOutcome.CANCELLED, "cancelled");
+                    return;
+                }
                 rounds++;
                 AssistantMessage assistant = callProvider(provider, profile, requestMessages, observer, handle);
                 if (handle.isCancelled()) {
@@ -167,6 +171,11 @@ public final class AgentRuntime implements AutoCloseable {
                     return;
                 }
                 if (calls + assistant.toolCalls().size() > settings.maxToolCalls()) {
+                    for (ToolCall call : assistant.toolCalls()) {
+                        ToolResult result = error(call, "Tool-call limit reached");
+                        conversation = conversation.withMessage(toolMessage(result, call.name()), clock.instant());
+                    }
+                    conversations.save(conversation);
                     finish(conversationId, handle, observer, TurnOutcome.MAX_ITERATIONS, "tool-call limit");
                     return;
                 }
@@ -179,6 +188,10 @@ public final class AgentRuntime implements AutoCloseable {
             }
             finish(conversationId, handle, observer, TurnOutcome.MAX_ITERATIONS, "tool-round limit");
         } catch (Exception failure) {
+            if (handle.isCancelled()) {
+                finish(conversationId, handle, observer, TurnOutcome.CANCELLED, "cancelled");
+                return;
+            }
             String message = failure.getMessage() == null ? failure.getClass().getSimpleName() : failure.getMessage();
             String safeMessage = redactor.redact(message);
             observer.onError(new AgentException("Provider failed: " + safeMessage, failure));
@@ -244,16 +257,12 @@ public final class AgentRuntime implements AutoCloseable {
             Conversation conversation, ToolCall call, TurnObserver observer, TurnHandle handle) {
         AgentTool tool = tools.find(call.name()).orElse(null);
         if (tool == null) {
-            ToolResult result = error(call, "Unknown tool: " + call.name());
-            observer.onToolFinished(result);
-            return new ToolExecution(conversation, toolMessage(result, call.name()));
+            return rejected(conversation, call, observer, "Unknown tool: " + call.name());
         }
         PermissionDecision decision = permissions.decide(
                 tool, new com.izakji.agent.api.ToolInvocation(call.id(), call.name(), call.arguments()), conversation);
         if (decision.kind() == PermissionKind.DENY) {
-            ToolResult result = error(call, "Permission denied: " + decision.reason());
-            observer.onToolFinished(result);
-            return new ToolExecution(conversation, toolMessage(result, call.name()));
+            return rejected(conversation, call, observer, "Permission denied: " + decision.reason());
         }
         if (decision.kind() == PermissionKind.ASK) {
             ApprovalRequest request =
@@ -276,9 +285,7 @@ public final class AgentRuntime implements AutoCloseable {
                 pendingApprovals.remove(key);
             }
             if (choice == ApprovalChoice.DENY) {
-                ToolResult result = error(call, "Permission denied: user denied the tool call");
-                observer.onToolFinished(result);
-                return new ToolExecution(conversation, toolMessage(result, call.name()));
+                return rejected(conversation, call, observer, "Permission denied: user denied the tool call");
             }
             if (choice == ApprovalChoice.ALLOW_CONVERSATION && tool.allowsConversationApproval()) {
                 conversation = conversation.withConversationApproval(tool.name(), clock.instant());
@@ -286,9 +293,7 @@ public final class AgentRuntime implements AutoCloseable {
             }
         }
         if (handle.isCancelled()) {
-            ToolResult result = error(call, "Cancelled");
-            observer.onToolFinished(result);
-            return new ToolExecution(conversation, toolMessage(result, call.name()));
+            return rejected(conversation, call, observer, "Cancelled");
         }
         observer.onToolStarted(call);
         ToolResult result;
@@ -308,6 +313,16 @@ public final class AgentRuntime implements AutoCloseable {
         Conversation updated = conversation.withMessage(message, clock.instant());
         conversations.save(updated);
         return new ToolExecution(updated, message);
+    }
+
+    private ToolExecution rejected(
+            Conversation conversation, ToolCall call, TurnObserver observer, String message) {
+        ToolResult result = error(call, message);
+        observer.onToolFinished(result);
+        com.izakji.agent.api.ToolMessage toolMessage = toolMessage(result, call.name());
+        Conversation updated = conversation.withMessage(toolMessage, clock.instant());
+        conversations.save(updated);
+        return new ToolExecution(updated, toolMessage);
     }
 
     private static ToolResult error(ToolCall call, String message) {

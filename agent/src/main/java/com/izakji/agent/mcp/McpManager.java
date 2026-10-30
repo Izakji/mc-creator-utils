@@ -28,20 +28,26 @@ public final class McpManager implements AutoCloseable {
         if (client == null) {
             throw new IllegalArgumentException("Unknown MCP server: " + serverId);
         }
-        stop(serverId);
-        client.initialize().join();
+        if (registered.containsKey(serverId)) {
+            stop(serverId);
+        }
+        McpServerInfo info = client.initialize().join();
         List<String> names = new ArrayList<>();
         for (McpToolDescriptor descriptor : client.listTools().join()) {
             McpTool tool = new McpTool(client, serverId, descriptor);
             tools.register(tool);
             names.add(tool.name());
         }
-        McpResourceTool resourceTool = new McpResourceTool(client, serverId);
-        McpPromptTool promptTool = new McpPromptTool(client, serverId);
-        tools.register(resourceTool);
-        tools.register(promptTool);
-        names.add(resourceTool.name());
-        names.add(promptTool.name());
+        if (info.capabilities().contains("resources")) {
+            McpResourceTool resourceTool = new McpResourceTool(client, serverId);
+            tools.register(resourceTool);
+            names.add(resourceTool.name());
+        }
+        if (info.capabilities().contains("prompts")) {
+            McpPromptTool promptTool = new McpPromptTool(client, serverId);
+            tools.register(promptTool);
+            names.add(promptTool.name());
+        }
         registered.put(serverId, names);
     }
 

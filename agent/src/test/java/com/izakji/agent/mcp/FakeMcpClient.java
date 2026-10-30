@@ -53,6 +53,14 @@ final class FakeMcpClient implements McpClient {
         return CompletableFuture.completedFuture(new McpPromptResult("", List.of()));
     }
 
+    private boolean closed;
+
+    boolean closed() {
+        return closed;
+    }
+
     @Override
-    public void close() {}
+    public void close() {
+        closed = true;
+    }
 }

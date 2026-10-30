@@ -20,6 +20,10 @@ class McpManagerTest {
         AgentTool tool = manager.tools().find("mcp__server__inspect").orElseThrow();
         assertEquals(ToolRisk.READ_ONLY, tool.risk());
         assertEquals("mcp__server__inspect", tool.name());
+        org.junit.jupiter.api.Assertions.assertTrue(
+                manager.tools().find("mcp__server__read_resource").isEmpty());
+        org.junit.jupiter.api.Assertions.assertTrue(
+                manager.tools().find("mcp__server__load_prompt").isEmpty());
     }
 
     @Test
@@ -32,5 +36,15 @@ class McpManagerTest {
         assertEquals(
                 ToolRisk.MUTATING,
                 manager.tools().find("mcp__server__mutate").orElseThrow().risk());
+    }
+
+    @Test
+    void startingAServerDoesNotCloseItsClient() {
+        FakeMcpClient client = new FakeMcpClient(
+                List.of(McpTestSupport.descriptor("inspect", true, false)), List.of(), List.of());
+        McpManager manager = new McpManager(
+                Map.of("server", client), Map.of("server", McpTestSupport.config("server")));
+        manager.start("server");
+        org.junit.jupiter.api.Assertions.assertFalse(client.closed());
     }
 }
