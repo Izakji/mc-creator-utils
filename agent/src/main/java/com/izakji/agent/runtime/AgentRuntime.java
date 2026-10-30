@@ -20,6 +20,7 @@ import com.izakji.agent.config.ProviderProfile;
 import com.izakji.agent.conversation.Conversation;
 import com.izakji.agent.conversation.ConversationStore;
 import com.izakji.agent.provider.ProviderRegistry;
+import com.izakji.agent.util.Redactor;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -52,6 +53,8 @@ public final class AgentRuntime implements AutoCloseable {
     private final Map<String, TurnHandle> active = new ConcurrentHashMap<>();
     private final Map<String, CompletableFuture<ApprovalChoice>> pendingApprovals = new ConcurrentHashMap<>();
     private final SystemPromptBuilder promptBuilder = new SystemPromptBuilder();
+    private final ConversationTruncator truncator = new ConversationTruncator(new TokenEstimator());
+    private final Redactor redactor;
 
     public AgentRuntime(
             AgentSettings settings,
@@ -72,6 +75,14 @@ public final class AgentRuntime implements AutoCloseable {
         this.agentsMarkdown = agentsMarkdown == null ? "" : agentsMarkdown;
         this.executor = Objects.requireNonNull(executor, "executor");
         this.clock = Objects.requireNonNull(clock, "clock");
+        java.util.Set<String> secrets = new java.util.LinkedHashSet<>();
+        settings.profiles().forEach(profile -> {
+            if (!profile.apiKey().isBlank()) {
+                secrets.add(profile.apiKey());
+            }
+            profile.headers().values().forEach(secrets::add);
+        });
+        this.redactor = new Redactor(secrets);
     }
 
     public Conversation createConversation(String title, String profileId) {
@@ -136,7 +147,7 @@ public final class AgentRuntime implements AutoCloseable {
                     settings, List.of(), agentsMarkdown, snapshots(conversationId, handle));
             List<ChatMessage> requestMessages = new ArrayList<>();
             requestMessages.add(new SystemMessage(systemPrompt));
-            requestMessages.addAll(conversation.messages());
+            requestMessages.addAll(truncator.truncate(conversation.messages(), profile.contextWindow()));
 
             int rounds = 0;
             int calls = 0;
@@ -170,8 +181,9 @@ public final class AgentRuntime implements AutoCloseable {
             finish(conversationId, handle, observer, TurnOutcome.MAX_ITERATIONS, "tool-round limit");
         } catch (Exception failure) {
             String message = failure.getMessage() == null ? failure.getClass().getSimpleName() : failure.getMessage();
-            observer.onError(new AgentException("Provider failed: " + message, failure));
-            finish(conversationId, handle, observer, TurnOutcome.ERROR, message);
+            String safeMessage = redactor.redact(message);
+            observer.onError(new AgentException("Provider failed: " + safeMessage, failure));
+            finish(conversationId, handle, observer, TurnOutcome.ERROR, safeMessage);
         }
     }
 
