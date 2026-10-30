@@ -35,6 +35,9 @@ bin/
 ### Local planning documents ###
 docs/superpowers/
 
+### Worktrees ###
+.worktrees/
+
 ### Minecraft Modding ###
 logs/
 run/
