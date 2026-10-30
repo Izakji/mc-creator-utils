@@ -513,7 +513,7 @@ Use `@EventBusSubscriber(modid = McCreatorUtils.MOD_ID, value = Dist.CLIENT)`.
   - Ignore when no pending or expired.
   - If message contains the success key, find the `/tp @s` command with `LocateFeedback`.
     Strip the leading slash and execute it through `ClientCommandRunner`; callback success with
-    `status.mccreatorutils.teleported` and target name, or failure if absent.
+    `status.mccreatorutils.teleport_sent` and target name, or failure if absent.
   - If message contains the failure key, callback failure with
     `status.mccreatorutils.locate_failed` and target name.
   - Never cancel the event.

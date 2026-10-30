@@ -461,8 +461,10 @@ continues. The lane releases the structure-check lock before waiting for a chunk
 ### 7.5 Caches and Locking
 
 - Do not clear `StructureCheck.featureChecks`. Vanilla's cache is useful and is preserved.
-- `StructureCheck.checkStart`, `onStructureLoad`, and `incrementReference` are synchronized with
-  the server thread. The structure lane is the only locate thread that calls them.
+- `StructureCheck.loadedChunks` and `featureChecks` are synchronized with the server thread.
+  `checkStart` releases that lock before region-file reads and `canCreateStructure`, so a server
+  tick never waits on lane I/O. `onStructureLoad`, `incrementReference`, and `storeFullResults`
+  remain synchronized because they only touch those maps.
 - `ChunkGenerator.tryAddReference` is synchronized on the `StructureStart`, matching the
   known-good Async Locator pattern.
 - Placement and ring snapshots are immutable for the lifetime of a request.
@@ -547,9 +549,10 @@ request.
 
 - `ServerStartedEvent`: create the service, executors, and envelope cache; register the tick
   watchdog and config listeners.
-- `ServerStoppingEvent`: stop admission, cancel requests, clear caches, shut down executors.
+- `ServerStoppingEvent`: stop admission, cancel requests, clear caches, and shut down executors
+  without waiting for a lane that may be blocked inside a chunk load.
 - `LevelEvent.Unload`: cancel requests for that level and remove level-specific cache entries.
-- `OnDatapackSyncEvent`: clear envelope and result caches.
+- `OnDatapackSyncEvent`: cancel in-flight requests and clear envelope and result caches.
 - `ServerTickEvent.Post`: check request deadlines and process any pending completion dispatch.
 - Config reload: re-read scalar limits; keep the existing executor threads.
 

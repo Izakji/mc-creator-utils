@@ -1,25 +1,75 @@
+# Creator Utils
 
-Installation information
-=======
+A tool for Minecraft content creators.
 
-This template repository can be directly cloned to get you started with a new
-mod. Simply create a new repository cloned from this one, by following the
-instructions provided by [GitHub](https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-repository-from-a-template).
+Creator Utils adds an in-game control panel for the commands creators use while filming,
+building scenes, and testing content. It targets Minecraft 1.21.1 on NeoForge and keeps its
+loader-neutral logic in a reusable `common` module.
 
-Once you have your clone, simply open the repository in the IDE of your choice. The usual recommendation for an IDE is either IntelliJ IDEA or Eclipse.
+## Features
 
-If at any point you are missing libraries in your IDE, or you've run into problems you can
-run `gradlew --refresh-dependencies` to refresh the local cache. `gradlew clean` to reset everything 
-{this does not affect your code} and then start the process again.
+- **Camera** — CMDCam scene mode and duration controls (requires CMDCam).
+- **World Time** — time presets, exact ticks, freeze time, and weather.
+- **Registry tools** — browse and search Biomes, Structures, Dimensions, Items, and Mobs.
+- **Async locate** — biome and structure searches run off the server tick with cancellation,
+  timeouts, caching, and modded-biome support.
+- **Player** — invincibility, water breathing, effect clearing, and experience commands.
+- **Model previews** — draggable, zoomable item and mob previews.
+- **Explore Mods** — search installed mods and open their CurseForge or Modrinth page.
+- **Browser workspace** — a floating, resizable, multi-tab Chromium browser with a session
+  snapshot and an in-game fullscreen mode (requires Rinku).
 
-Mapping Names:
-============
-By default, the MDK is configured to use the official mapping names from Mojang for methods and fields 
-in the Minecraft codebase. These names are covered by a specific license. All modders should be aware of this
-license. For the latest license text, refer to the mapping file itself, or the reference copy here:
-https://github.com/NeoForged/NeoForm/blob/main/Mojang.md
+## Requirements
 
-Additional Resources: 
-==========
-Community Documentation: https://docs.neoforged.net/  
-NeoForged Discord: https://discord.neoforged.net/
+| Dependency | Required | Purpose |
+| --- | --- | --- |
+| Minecraft 1.21.1 | Yes | Target game version |
+| NeoForge 21.1.265+ | Yes | Mod loader |
+| LDLib2 2.2.44+ | Yes | User interface |
+| Rinku 3.0.4+ | Optional | In-game browser |
+| CMDCam 2.0.0+ | Optional | Camera tool |
+| CreativeCore 2.13.32+ | Optional | CMDCam dependency |
+
+Creator Utils loads normally when optional dependencies are absent; the affected tool shows a
+notice instead of failing.
+
+## Controls
+
+| Key | Action |
+| --- | --- |
+| `.` | Open or close the Creator Utils panel |
+| `]` | Toggle the floating browser |
+| `B` | Focus the browser and release the cursor |
+
+All keybinds are configurable in Minecraft's Controls screen.
+
+## Building
+
+```bash
+./gradlew build
+```
+
+The NeoForge jar is written to `neoforge/build/libs/`. Rinku and Chromium are never embedded in
+the Creator Utils jar.
+
+## Configuration
+
+The Explore Mods CurseForge lookup can use an optional API key in the client config:
+
+```toml
+[exploreMods]
+curseForgeApiKey = ""
+```
+
+The key is read locally, never logged, and must not be committed. Creator Utils does not ship a
+key. Metadata and Modrinth lookup work without one.
+
+## Project layout
+
+- `common/` — loader-neutral rules, commands, search, layout, and tests.
+- `neoforge/` — NeoForge client/server integration, UI panels, mixins, and Rinku adapter.
+- `docs/superpowers/` — design records and implementation plans.
+
+## License
+
+See the mod metadata for the configured license.

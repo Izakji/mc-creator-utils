@@ -1,5 +1,10 @@
 # Explore Mods Design
 
+> **Superseded browser architecture (2026-10-30):** the full-screen
+> `ModBrowserLauncher`/`ModBrowserScreen` viewer described below was replaced by the Rinku-free
+> `BrowserWorkspace`. See `2026-10-29-browser-workspace-design.md`. Page-resolution rules and the
+> optional Rinku dependency remain current.
+
 **Date:** 2026-10-29
 **Status:** Draft for review
 **Target:** Minecraft 1.21.1, NeoForge 21.1.265

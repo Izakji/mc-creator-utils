@@ -133,15 +133,18 @@ New client classes under `com.izakji.mccreatorutils.client.browser`:
   - Enum: `OPENED`, `FOCUSED_EXISTING`, `CAPACITY`, `UNAVAILABLE`, `FAILED`.
 - `BrowserWorkspace`
   - Client singleton, Rinku-free.
-  - Fields: `List<BrowserTabHandle> tabs`, `int activeTabIndex`, `BrowserGeometry windowBounds`,
-    `BrowserGeometry restoreBounds`, `boolean fullscreen`, `boolean windowVisible`,
-    `BrowserEngine engine`.
+  - Fields: `List<BrowserTabHandle> tabs`, `BrowserSession savedSession`, `int activeTabIndex`,
+    `BrowserGeometry windowBounds`, `BrowserGeometry restoreBounds`, `boolean fullscreen`,
+    `boolean windowVisible`, `BrowserEngine engine`.
   - `isAvailable()`: `ModList.isLoaded("rinku")`; does not load Rinku classes.
   - `hasWindow()`.
   - `openPage(String url) -> BrowserOpenResult`: normalizes URL, reuses an existing matching tab,
     otherwise creates a tab if capacity allows, sets it active, makes the window visible, and opens
     focus mode. If the active screen is the Creator Utils screen, it is replaced by the focus screen.
-  - `openNewTab() -> BrowserOpenResult`: opens `about:blank` and focuses it.
+    A closed-window session is restored only when it already contains the requested URL; otherwise
+    the requested page opens alone.
+  - `openNewTab() -> BrowserOpenResult`: opens `BrowserWorkspace.DEFAULT_HOME_URL`
+    (`https://www.curseforge.com/`) and focuses it.
   - `focus()`: opens `BrowserFocusScreen` when a window exists and no other screen is open.
   - `closeTab(int index)`: closes the browser via the handle and updates active index/workspace
     window.
@@ -149,7 +152,8 @@ New client classes under `com.izakji.mccreatorutils.client.browser`:
     focus screen is open.
   - `setWindowBounds`, `toggleFullscreen`: clamp bounds and keep restore bounds.
   - `activeTab()`, `tabs()` returns immutable snapshots for rendering.
-  - `onLogout()`: close all browser resources.
+  - `onLogout()`: close all browser resources and drop the saved tab session, so pages from one
+    server are not restored after joining another server.
   - Lazily creates `RinkuBrowserEngine` only after `isAvailable()` is true.
 - `BrowserWorkspaceRenderer`
   - Rinku-free renderer; uses `BrowserTabHandle.render` for content.
@@ -234,7 +238,9 @@ New client classes under `com.izakji.mccreatorutils.client.browser`:
 ### 5.2 Tab strip
 
 - Active tab highlighted; inactive tabs clickable.
-- `+` button adds a blank tab; disabled at 8 tabs.
+- Tab width shrinks evenly when the strip is narrow, so all eight tabs remain visible and
+  clickable at the minimum window width.
+- `+` button adds a home tab; disabled at 8 tabs.
 - Each tab has an `X` close button.
 - Tab label: host from URL, `New Tab` for `about:blank`, truncated to fit.
 - Closing the active tab chooses the nearest remaining tab.

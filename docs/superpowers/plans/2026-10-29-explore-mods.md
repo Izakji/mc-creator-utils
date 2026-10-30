@@ -1,5 +1,10 @@
 # Explore Mods Implementation Plan
 
+> **Superseded browser architecture (2026-10-30):** the `ModBrowserLauncher`/`ModBrowserScreen`
+> tasks below were replaced by the Rinku-free `BrowserWorkspace`. See
+> `docs/superpowers/specs/2026-10-29-browser-workspace-design.md` and its plan. Page-resolution
+> work remains current.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add an Explore Mods tool that searches installed mods and opens their CurseForge or Modrinth page in an optional Rinku in-game browser.
