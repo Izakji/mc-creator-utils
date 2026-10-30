@@ -53,7 +53,6 @@ final class FakeTool implements AgentTool {
         if (failure != null) {
             return CompletableFuture.failedFuture(failure);
         }
-        return CompletableFuture.completedFuture(
-                new ToolResult(invocation.callId(), result, false, List.of()));
+        return CompletableFuture.completedFuture(new ToolResult(invocation.callId(), result, false, List.of()));
     }
 }

@@ -13,14 +13,10 @@ class PermissionRulesTest {
     @Test
     void copiesSetsAndExposesDefaults() {
         PermissionRules rules = new PermissionRules(
-                true,
-                new LinkedHashSet<>(Set.of("game_snapshot")),
-                Set.of("run_command"),
-                Set.of());
+                true, new LinkedHashSet<>(Set.of("game_snapshot")), Set.of("run_command"), Set.of());
         assertTrue(rules.readOnlyAutoApprove());
         assertEquals(Set.of("game_snapshot"), rules.allowedTools());
         assertThrows(
-                UnsupportedOperationException.class,
-                () -> rules.allowedTools().add("x"));
+                UnsupportedOperationException.class, () -> rules.allowedTools().add("x"));
     }
 }

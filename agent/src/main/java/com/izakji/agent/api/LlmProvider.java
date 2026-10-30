@@ -13,6 +13,5 @@ public interface LlmProvider {
 
     boolean supportsTools();
 
-    CompletableFuture<Void> stream(
-            ChatRequest request, StreamListener listener, CancellationToken cancellationToken);
+    CompletableFuture<Void> stream(ChatRequest request, StreamListener listener, CancellationToken cancellationToken);
 }

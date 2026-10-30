@@ -130,12 +130,13 @@ final class ConversationJson {
         ChatRole role = ChatRole.valueOf(requiredString(object, "role"));
         List<ContentPart> parts = readParts(object);
         return switch (role) {
-            case SYSTEM -> new SystemMessage(
-                    parts.stream().filter(TextPart.class::isInstance)
-                            .map(TextPart.class::cast)
-                            .findFirst()
-                            .map(TextPart::text)
-                            .orElse(""));
+            case SYSTEM ->
+                new SystemMessage(parts.stream()
+                        .filter(TextPart.class::isInstance)
+                        .map(TextPart.class::cast)
+                        .findFirst()
+                        .map(TextPart::text)
+                        .orElse(""));
             case USER -> new UserMessage(parts);
             case ASSISTANT -> {
                 List<ToolCall> calls = new ArrayList<>();
@@ -150,11 +151,12 @@ final class ConversationJson {
                 }
                 yield new AssistantMessage(parts, calls);
             }
-            case TOOL -> new ToolMessage(
-                    requiredString(object, "toolCallId"),
-                    requiredString(object, "name"),
-                    parts,
-                    object.get("error").getAsBoolean());
+            case TOOL ->
+                new ToolMessage(
+                        requiredString(object, "toolCallId"),
+                        requiredString(object, "name"),
+                        parts,
+                        object.get("error").getAsBoolean());
         };
     }
 
@@ -163,16 +165,21 @@ final class ConversationJson {
         for (JsonElement element : requiredArray(object, "parts")) {
             JsonObject part = element.getAsJsonObject();
             String type = requiredString(part, "type");
-            parts.add(switch (type) {
-                case "text" -> new TextPart(requiredString(part, "text"));
-                case "reasoning" -> new ReasoningPart(
-                        requiredString(part, "text"),
-                        part.has("signature") ? part.get("signature").getAsString() : "");
-                case "image" -> new ImagePart(
-                        requiredString(part, "mediaType"),
-                        Base64.getDecoder().decode(requiredString(part, "data")));
-                default -> throw new IllegalArgumentException("Unknown content part: " + type);
-            });
+            parts.add(
+                    switch (type) {
+                        case "text" -> new TextPart(requiredString(part, "text"));
+                        case "reasoning" ->
+                            new ReasoningPart(
+                                    requiredString(part, "text"),
+                                    part.has("signature")
+                                            ? part.get("signature").getAsString()
+                                            : "");
+                        case "image" ->
+                            new ImagePart(
+                                    requiredString(part, "mediaType"),
+                                    Base64.getDecoder().decode(requiredString(part, "data")));
+                        default -> throw new IllegalArgumentException("Unknown content part: " + type);
+                    });
         }
         return parts;
     }

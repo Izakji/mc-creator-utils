@@ -70,9 +70,8 @@ public final class SkillLoader {
             } else if ("description".equals(key)) {
                 description = value;
             } else if ("allowed-tools".equals(key)) {
-                String trimmed = value.startsWith("[") && value.endsWith("]")
-                        ? value.substring(1, value.length() - 1)
-                        : value;
+                String trimmed =
+                        value.startsWith("[") && value.endsWith("]") ? value.substring(1, value.length() - 1) : value;
                 allowed = Arrays.stream(trimmed.split(","))
                         .map(String::strip)
                         .filter(part -> !part.isEmpty())
@@ -82,7 +81,8 @@ public final class SkillLoader {
         if (name.isBlank() || description.isBlank()) {
             return Optional.empty();
         }
-        String body = String.join("\n", Arrays.copyOfRange(lines, end + 1, lines.length)).strip();
+        String body = String.join("\n", Arrays.copyOfRange(lines, end + 1, lines.length))
+                .strip();
         return Optional.of(new Skill(id, name, description, allowed, body, source));
     }
 }

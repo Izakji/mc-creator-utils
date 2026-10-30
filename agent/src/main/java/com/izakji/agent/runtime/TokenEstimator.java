@@ -1,5 +1,6 @@
 package com.izakji.agent.runtime;
 
+import com.izakji.agent.api.AssistantMessage;
 import com.izakji.agent.api.ChatMessage;
 import com.izakji.agent.api.ContentPart;
 import com.izakji.agent.api.ImagePart;
@@ -8,7 +9,6 @@ import com.izakji.agent.api.TextPart;
 import com.izakji.agent.api.ToolCall;
 import com.izakji.agent.api.ToolMessage;
 import com.izakji.agent.api.UserMessage;
-import com.izakji.agent.api.AssistantMessage;
 import java.util.List;
 
 /**
@@ -27,7 +27,9 @@ public final class TokenEstimator {
             case AssistantMessage assistant -> {
                 tokens += partsTokens(assistant.parts());
                 for (ToolCall call : assistant.toolCalls()) {
-                    tokens += 4 + textTokens(call.name()) + textTokens(call.arguments().toString());
+                    tokens += 4
+                            + textTokens(call.name())
+                            + textTokens(call.arguments().toString());
                 }
             }
             case ToolMessage tool -> tokens += partsTokens(tool.parts());

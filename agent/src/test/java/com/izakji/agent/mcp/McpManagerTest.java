@@ -14,8 +14,8 @@ class McpManagerTest {
     void namespacesToolsAndMapsAnnotationsToRisk() {
         McpToolDescriptor descriptor = McpTestSupport.descriptor("inspect", true, false);
         FakeMcpClient client = new FakeMcpClient(List.of(descriptor), List.of(), List.of());
-        McpManager manager = new McpManager(
-                Map.of("server", client), Map.of("server", McpTestSupport.config("server")));
+        McpManager manager =
+                new McpManager(Map.of("server", client), Map.of("server", McpTestSupport.config("server")));
         manager.start("server");
         AgentTool tool = manager.tools().find("mcp__server__inspect").orElseThrow();
         assertEquals(ToolRisk.READ_ONLY, tool.risk());
@@ -26,8 +26,8 @@ class McpManagerTest {
     void missingAnnotationsRequireApproval() {
         McpToolDescriptor descriptor = McpTestSupport.descriptor("mutate", false, false);
         FakeMcpClient client = new FakeMcpClient(List.of(descriptor), List.of(), List.of());
-        McpManager manager = new McpManager(
-                Map.of("server", client), Map.of("server", McpTestSupport.config("server")));
+        McpManager manager =
+                new McpManager(Map.of("server", client), Map.of("server", McpTestSupport.config("server")));
         manager.start("server");
         assertEquals(
                 ToolRisk.MUTATING,

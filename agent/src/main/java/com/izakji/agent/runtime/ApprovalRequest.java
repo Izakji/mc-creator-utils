@@ -15,8 +15,7 @@ import java.util.UUID;
  * @param displayText short user-facing description
  * @author Izakji
  */
-public record ApprovalRequest(
-        String id, String toolName, ToolRisk risk, JsonObject arguments, String displayText) {
+public record ApprovalRequest(String id, String toolName, ToolRisk risk, JsonObject arguments, String displayText) {
     public ApprovalRequest {
         id = Objects.requireNonNullElse(id, UUID.randomUUID().toString());
         toolName = Objects.requireNonNull(toolName, "toolName");

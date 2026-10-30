@@ -18,10 +18,12 @@ class StdioMcpTransportTest {
         StdioMcpTransport transport = new StdioMcpTransport(McpTestSupport.config("server"), builder -> process);
         List<JsonObject> received = new CopyOnWriteArrayList<>();
         CountDownLatch latch = new CountDownLatch(1);
-        transport.start(json -> {
-            received.add(json);
-            latch.countDown();
-        }).get(1, TimeUnit.SECONDS);
+        transport
+                .start(json -> {
+                    received.add(json);
+                    latch.countDown();
+                })
+                .get(1, TimeUnit.SECONDS);
 
         JsonObject request = new JsonObject();
         request.addProperty("jsonrpc", "2.0");

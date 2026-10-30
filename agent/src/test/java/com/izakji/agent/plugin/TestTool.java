@@ -38,7 +38,6 @@ final class TestTool implements AgentTool {
 
     @Override
     public CompletableFuture<ToolResult> execute(ToolInvocation invocation, ToolContext context) {
-        return CompletableFuture.completedFuture(
-                new ToolResult(invocation.callId(), "", false, List.of()));
+        return CompletableFuture.completedFuture(new ToolResult(invocation.callId(), "", false, List.of()));
     }
 }

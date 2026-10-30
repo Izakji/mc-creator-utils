@@ -13,8 +13,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 final class FakeProvider implements LlmProvider {
     sealed interface Step permits Turn, Failure {}
-    record Turn(List<String> textDeltas, List<String> reasoningDeltas, List<ToolCall> toolCalls)
-            implements Step {}
+
+    record Turn(List<String> textDeltas, List<String> reasoningDeltas, List<ToolCall> toolCalls) implements Step {}
+
     record Failure(String message) implements Step {}
 
     private final List<Step> steps;

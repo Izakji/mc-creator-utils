@@ -15,8 +15,8 @@ class AgentRuntimeTextTest {
     @Test
     void streamsTextAndPersistsAssistantMessage() throws Exception {
         Path root = AgentRuntimeTestSupport.root();
-        FakeProvider provider = new FakeProvider(List.of(
-                new FakeProvider.Turn(List.of("Hello ", "world"), List.of(), List.of())));
+        FakeProvider provider =
+                new FakeProvider(List.of(new FakeProvider.Turn(List.of("Hello ", "world"), List.of(), List.of())));
         try (AgentRuntime runtime = AgentRuntimeTestSupport.runtime(root, provider, List.of())) {
             Conversation conversation = runtime.createConversation("Chat", "main");
             RecordingObserver observer = new RecordingObserver();
@@ -26,7 +26,8 @@ class AgentRuntimeTextTest {
 
             assertEquals(TurnOutcome.COMPLETED, result.outcome());
             assertEquals("Hello world", observer.text.toString());
-            Conversation loaded = runtime.conversations().load(conversation.id()).orElseThrow();
+            Conversation loaded =
+                    runtime.conversations().load(conversation.id()).orElseThrow();
             assertEquals(2, loaded.messages().size());
             assertTrue(loaded.messages().get(1) instanceof AssistantMessage);
         }

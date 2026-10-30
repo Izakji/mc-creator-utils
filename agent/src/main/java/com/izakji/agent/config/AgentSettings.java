@@ -26,7 +26,8 @@ public record AgentSettings(
         defaultProfileId = defaultProfileId == null ? "" : defaultProfileId.strip();
         profiles = List.copyOf(Objects.requireNonNullElse(profiles, List.of()));
         permissions = Objects.requireNonNullElseGet(
-                permissions, () -> new PermissionRules(true, java.util.Set.of(), java.util.Set.of(), java.util.Set.of()));
+                permissions,
+                () -> new PermissionRules(true, java.util.Set.of(), java.util.Set.of(), java.util.Set.of()));
         if (maxToolRounds < 1 || maxToolCalls < 1 || approvalTimeoutSeconds < 1) {
             throw new IllegalArgumentException("agent limits must be positive");
         }

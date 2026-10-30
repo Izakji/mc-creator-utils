@@ -17,8 +17,7 @@ class OpenAiCompatibleProviderTest {
 
     @Test
     void streamsTextAndToolCallsWithBearerAuth() throws Exception {
-        try (TestHttpServer server = TestHttpServer.sse(
-                """
+        try (TestHttpServer server = TestHttpServer.sse("""
                 data: {"choices":[{"delta":{"content":"Hi"}}]}
 
                 data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"call-1","function":{"name":"game_snapshot","arguments":"{}"}}]}}]}
@@ -43,14 +42,14 @@ class OpenAiCompatibleProviderTest {
             RecordingListener listener = new RecordingListener();
             new OpenAiCompatibleProvider()
                     .stream(
-                            new ChatRequest(
-                                    profile,
-                                    List.of(new UserMessage(List.of(new TextPart("hi")))),
-                                    List.of(new ToolSchema("game_snapshot", "snapshot", new JsonObject())),
-                                    2048),
-                            listener,
-                            () -> false)
-                    .join();
+                                    new ChatRequest(
+                                            profile,
+                                            List.of(new UserMessage(List.of(new TextPart("hi")))),
+                                            List.of(new ToolSchema("game_snapshot", "snapshot", new JsonObject())),
+                                            2048),
+                                    listener,
+                                    () -> false)
+                            .join();
 
             assertEquals("Hi", listener.text.toString());
             assertEquals("call-1", listener.toolCalls.get(0).id());

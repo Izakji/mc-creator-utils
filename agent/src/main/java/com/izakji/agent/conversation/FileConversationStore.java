@@ -31,8 +31,7 @@ public final class FileConversationStore implements ConversationStore {
     @Override
     public Conversation create(String title, String profileId) {
         Instant now = Instant.now();
-        return new Conversation(
-                UUID.randomUUID().toString(), title, now, now, profileId, List.of(), Set.of());
+        return new Conversation(UUID.randomUUID().toString(), title, now, now, profileId, List.of(), Set.of());
     }
 
     @Override
@@ -74,8 +73,8 @@ public final class FileConversationStore implements ConversationStore {
         }
         try (Stream<Path> files = Files.list(root)) {
             files.filter(path -> path.getFileName().toString().endsWith(".json"))
-                    .forEach(path -> load(idOf(path)).ifPresent(conversation ->
-                            summaries.add(new ConversationSummary(
+                    .forEach(path -> load(idOf(path))
+                            .ifPresent(conversation -> summaries.add(new ConversationSummary(
                                     conversation.id(), conversation.title(), conversation.updated()))));
         } catch (IOException failure) {
             return List.of();

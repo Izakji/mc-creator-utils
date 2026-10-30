@@ -24,12 +24,7 @@ class SystemPromptBuilderTest {
     @Test
     void includesInstructionsSkillIndexAndSnapshots() {
         Skill skill = new Skill(
-                "plains",
-                "Plains",
-                "Answer plains questions",
-                List.of("game_snapshot"),
-                "body",
-                Path.of("SKILL.md"));
+                "plains", "Plains", "Answer plains questions", List.of("game_snapshot"), "body", Path.of("SKILL.md"));
         String prompt = new SystemPromptBuilder()
                 .build(
                         TestSettings.settings(),

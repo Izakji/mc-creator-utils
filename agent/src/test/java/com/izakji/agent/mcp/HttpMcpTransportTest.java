@@ -21,8 +21,7 @@ class HttpMcpTransportTest {
         HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         server.createContext("/mcp", exchange -> {
             exchange.getRequestBody().readAllBytes();
-            byte[] body = "data: {\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{}}\n\n"
-                    .getBytes(StandardCharsets.UTF_8);
+            byte[] body = "data: {\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{}}\n\n".getBytes(StandardCharsets.UTF_8);
             exchange.getResponseHeaders().add("Content-Type", "text/event-stream");
             exchange.sendResponseHeaders(200, body.length);
             exchange.getResponseBody().write(body);
@@ -45,7 +44,8 @@ class HttpMcpTransportTest {
             HttpMcpTransport transport = new HttpMcpTransport(config);
             List<JsonObject> received = new CopyOnWriteArrayList<>();
             CountDownLatch latch = new CountDownLatch(1);
-            transport.start(json -> {
+            transport
+                    .start(json -> {
                         received.add(json);
                         latch.countDown();
                     })

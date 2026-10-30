@@ -57,8 +57,7 @@ public final class McpResourceTool implements AgentTool {
                 ? invocation.arguments().get("uri").getAsString()
                 : "";
         return client.readResource(uri)
-                .thenApply(resource ->
-                        new ToolResult(invocation.callId(), resource.text(), false, List.of()));
+                .thenApply(resource -> new ToolResult(invocation.callId(), resource.text(), false, List.of()));
     }
 
     private static com.google.gson.JsonArray stringArray(String value) {

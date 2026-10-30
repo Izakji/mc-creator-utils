@@ -42,9 +42,8 @@ import java.util.stream.Stream;
  * @author Izakji
  */
 public final class OpenAiCompatibleProvider implements LlmProvider {
-    private final HttpClient client = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(15))
-            .build();
+    private final HttpClient client =
+            HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).build();
 
     @Override
     public ProviderType type() {
@@ -190,7 +189,8 @@ public final class OpenAiCompatibleProvider implements LlmProvider {
         for (ContentPart part : parts) {
             if (part instanceof TextPart text) {
                 values.add(text.text());
-            } else if (part instanceof ReasoningPart reasoning && reasoning.signature().isEmpty()) {
+            } else if (part instanceof ReasoningPart reasoning
+                    && reasoning.signature().isEmpty()) {
                 values.add(reasoning.text());
             }
         }
@@ -208,15 +208,14 @@ public final class OpenAiCompatibleProvider implements LlmProvider {
                     JsonObject chunk = JsonParser.parseString(event.data()).getAsJsonObject();
                     if (chunk.has("usage")) {
                         JsonObject usage = chunk.getAsJsonObject("usage");
-                        listener.onUsage(
-                                intValue(usage, "prompt_tokens"),
-                                intValue(usage, "completion_tokens"));
+                        listener.onUsage(intValue(usage, "prompt_tokens"), intValue(usage, "completion_tokens"));
                     }
                     if (!chunk.has("choices") || chunk.getAsJsonArray("choices").isEmpty()) {
                         continue;
                     }
                     JsonObject choice = chunk.getAsJsonArray("choices").get(0).getAsJsonObject();
-                    if (choice.has("finish_reason") && !choice.get("finish_reason").isJsonNull()) {
+                    if (choice.has("finish_reason")
+                            && !choice.get("finish_reason").isJsonNull()) {
                         String reason = choice.get("finish_reason").getAsString();
                         if ("tool_calls".equals(reason)) {
                             finish = FinishReason.TOOL_CALLS;
@@ -231,7 +230,8 @@ public final class OpenAiCompatibleProvider implements LlmProvider {
                     if (delta.has("content") && !delta.get("content").isJsonNull()) {
                         listener.onTextDelta(delta.get("content").getAsString());
                     }
-                    if (delta.has("reasoning_content") && !delta.get("reasoning_content").isJsonNull()) {
+                    if (delta.has("reasoning_content")
+                            && !delta.get("reasoning_content").isJsonNull()) {
                         listener.onReasoningDelta(delta.get("reasoning_content").getAsString());
                     }
                     if (delta.has("tool_calls")) {
@@ -248,7 +248,8 @@ public final class OpenAiCompatibleProvider implements LlmProvider {
                                     builder.name = function.get("name").getAsString();
                                 }
                                 if (function.has("arguments")) {
-                                    builder.arguments.append(function.get("arguments").getAsString());
+                                    builder.arguments.append(
+                                            function.get("arguments").getAsString());
                                 }
                             }
                         }

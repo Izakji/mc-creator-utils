@@ -46,8 +46,7 @@ class FileConversationStoreTest {
         Path root = Files.createTempDirectory("agent-conversations");
         FileConversationStore store = new FileConversationStore(root, new Gson());
         Conversation created = store.create("Chat", "main");
-        Conversation withUser = created.withMessage(
-                new UserMessage(List.of(new TextPart("hi"))), Instant.now());
+        Conversation withUser = created.withMessage(new UserMessage(List.of(new TextPart("hi"))), Instant.now());
         ToolCall call = new ToolCall("call-1", "mutate", new JsonObject());
         Conversation withAssistant = withUser.withMessage(
                 new AssistantMessage(List.of(new ReasoningPart("why", "sig")), List.of(call)), Instant.now());

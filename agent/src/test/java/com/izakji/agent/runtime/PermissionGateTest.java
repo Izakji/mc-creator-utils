@@ -23,36 +23,44 @@ class PermissionGateTest {
     void readOnlyAutoApprovesWhenEnabled() {
         PermissionGate gate = gate(new PermissionRules(true, Set.of(), Set.of(), Set.of()));
         assertEquals(
-                PermissionKind.ALLOW, gate.decide(readOnlyTool(), invocation("read"), conversation()).kind());
+                PermissionKind.ALLOW,
+                gate.decide(readOnlyTool(), invocation("read"), conversation()).kind());
     }
 
     @Test
     void mutatingAsksAndConversationApprovalAllows() {
         PermissionGate gate = gate(new PermissionRules(true, Set.of(), Set.of(), Set.of()));
         assertEquals(
-                PermissionKind.ASK, gate.decide(mutatingTool(), invocation("mutate"), conversation()).kind());
+                PermissionKind.ASK,
+                gate.decide(mutatingTool(), invocation("mutate"), conversation())
+                        .kind());
         com.izakji.agent.conversation.Conversation approved =
                 conversation().withConversationApproval("mutate", Instant.now());
         assertEquals(
-                PermissionKind.ALLOW, gate.decide(mutatingTool(), invocation("mutate"), approved).kind());
+                PermissionKind.ALLOW,
+                gate.decide(mutatingTool(), invocation("mutate"), approved).kind());
     }
 
     @Test
     void dangerousRequiresExplicitEnable() {
-        assertTrue(PermissionKind.DENY == gate(defaultRules())
-                .decide(dangerousTool(), invocation("danger"), conversation())
-                .kind());
+        assertTrue(PermissionKind.DENY
+                == gate(defaultRules())
+                        .decide(dangerousTool(), invocation("danger"), conversation())
+                        .kind());
         PermissionGate enabled = gate(new PermissionRules(true, Set.of(), Set.of(), Set.of("danger")));
         assertEquals(
-                PermissionKind.ALLOW, enabled.decide(dangerousTool(), invocation("danger"), conversation()).kind());
+                PermissionKind.ALLOW,
+                enabled.decide(dangerousTool(), invocation("danger"), conversation())
+                        .kind());
     }
 
     @Test
     void classifierCanRaiseRiskToDangerous() {
         ToolRiskClassifier classifier = (tool, call, declared) -> ToolRisk.DANGEROUS;
-        PermissionGate gate = new PermissionGate(
-                new PermissionRules(true, Set.of(), Set.of(), Set.of()), List.of(classifier));
+        PermissionGate gate =
+                new PermissionGate(new PermissionRules(true, Set.of(), Set.of(), Set.of()), List.of(classifier));
         assertEquals(
-                PermissionKind.DENY, gate.decide(readOnlyTool(), invocation("read"), conversation()).kind());
+                PermissionKind.DENY,
+                gate.decide(readOnlyTool(), invocation("read"), conversation()).kind());
     }
 }

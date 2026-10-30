@@ -10,9 +10,7 @@ final class FakeMcpClient implements McpClient {
     private final List<McpPromptDescriptor> prompts;
 
     FakeMcpClient(
-            List<McpToolDescriptor> tools,
-            List<McpResourceDescriptor> resources,
-            List<McpPromptDescriptor> prompts) {
+            List<McpToolDescriptor> tools, List<McpResourceDescriptor> resources, List<McpPromptDescriptor> prompts) {
         this.tools = List.copyOf(tools);
         this.resources = List.copyOf(resources);
         this.prompts = List.copyOf(prompts);

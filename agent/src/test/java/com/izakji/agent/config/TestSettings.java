@@ -22,11 +22,6 @@ public final class TestSettings {
                 true,
                 true);
         return new AgentSettings(
-                "main",
-                List.of(profile),
-                new PermissionRules(true, Set.of(), Set.of(), Set.of()),
-                8,
-                32,
-                1);
+                "main", List.of(profile), new PermissionRules(true, Set.of(), Set.of(), Set.of()), 8, 32, 1);
     }
 }

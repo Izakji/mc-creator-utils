@@ -12,8 +12,8 @@ import java.util.regex.Pattern;
  */
 public final class Redactor {
     private static final Pattern BEARER = Pattern.compile("(?i)(bearer\\s+)\\S+");
-    private static final Pattern HEADER = Pattern.compile(
-            "(?i)((?:authorization|api[_-]?key|x-api-key)\\s*[:=]\\s*)[^\\s,;]+");
+    private static final Pattern HEADER =
+            Pattern.compile("(?i)((?:authorization|api[_-]?key|x-api-key)\\s*[:=]\\s*)[^\\s,;]+");
     private final List<String> secrets;
 
     public Redactor(Set<String> secrets) {

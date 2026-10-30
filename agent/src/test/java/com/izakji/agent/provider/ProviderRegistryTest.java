@@ -13,7 +13,6 @@ class ProviderRegistryTest {
         ProviderRegistry registry = new ProviderRegistry();
         registry.register(new OpenAiCompatibleProvider());
         assertTrue(registry.forType(ProviderType.OPENAI_COMPATIBLE).isPresent());
-        assertThrows(
-                IllegalArgumentException.class, () -> registry.register(new OpenAiCompatibleProvider()));
+        assertThrows(IllegalArgumentException.class, () -> registry.register(new OpenAiCompatibleProvider()));
     }
 }

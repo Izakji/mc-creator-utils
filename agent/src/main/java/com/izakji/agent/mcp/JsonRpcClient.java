@@ -66,11 +66,10 @@ public final class JsonRpcClient implements AutoCloseable {
             return;
         }
         if (message.has("error")) {
-            future.completeExceptionally(new IllegalStateException(message.get("error").toString()));
+            future.completeExceptionally(
+                    new IllegalStateException(message.get("error").toString()));
         } else {
-            future.complete(message.has("result")
-                    ? message.getAsJsonObject("result")
-                    : new JsonObject());
+            future.complete(message.has("result") ? message.getAsJsonObject("result") : new JsonObject());
         }
     }
 }

@@ -2,7 +2,6 @@ package com.izakji.agent.runtime;
 
 import com.izakji.agent.api.AssistantMessage;
 import com.izakji.agent.api.ChatMessage;
-import com.izakji.agent.api.SystemMessage;
 import com.izakji.agent.api.ToolMessage;
 import com.izakji.agent.api.UserMessage;
 import java.util.ArrayList;
@@ -63,7 +62,8 @@ public final class ConversationTruncator {
         List<Unit> units = new ArrayList<>();
         for (int index = 0; index < messages.size(); index++) {
             ChatMessage message = messages.get(index);
-            if (message instanceof AssistantMessage assistant && !assistant.toolCalls().isEmpty()) {
+            if (message instanceof AssistantMessage assistant
+                    && !assistant.toolCalls().isEmpty()) {
                 List<ChatMessage> group = new ArrayList<>();
                 group.add(message);
                 int next = index + 1;

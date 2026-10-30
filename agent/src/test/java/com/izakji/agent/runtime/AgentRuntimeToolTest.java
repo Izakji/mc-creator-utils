@@ -20,8 +20,8 @@ class AgentRuntimeToolTest {
                 new FakeProvider.Turn(List.of(), List.of(), List.of(TestMessages.call("call-1"))),
                 new FakeProvider.Turn(List.of("done"), List.of(), List.of())));
         FakeTool tool = new FakeTool("mutate", ToolRisk.MUTATING, "ok");
-        try (AgentRuntime runtime = AgentRuntimeTestSupport.runtime(
-                AgentRuntimeTestSupport.root(), provider, List.of(tool))) {
+        try (AgentRuntime runtime =
+                AgentRuntimeTestSupport.runtime(AgentRuntimeTestSupport.root(), provider, List.of(tool))) {
             Conversation conversation = runtime.createConversation("Chat", "main");
             RecordingObserver observer = new RecordingObserver();
             TurnHandle handle = runtime.startTurn(conversation.id(), "do it", observer);
@@ -41,8 +41,8 @@ class AgentRuntimeToolTest {
                 new FakeProvider.Turn(List.of(), List.of(), List.of(TestMessages.call("call-1"))),
                 new FakeProvider.Turn(List.of("done"), List.of(), List.of())));
         FakeTool tool = new FakeTool("mutate", ToolRisk.MUTATING, "ok");
-        try (AgentRuntime runtime = AgentRuntimeTestSupport.runtime(
-                AgentRuntimeTestSupport.root(), provider, List.of(tool))) {
+        try (AgentRuntime runtime =
+                AgentRuntimeTestSupport.runtime(AgentRuntimeTestSupport.root(), provider, List.of(tool))) {
             Conversation conversation = runtime.createConversation("Chat", "main");
             RecordingObserver observer = new RecordingObserver();
             TurnHandle handle = runtime.startTurn(conversation.id(), "do it", observer);
@@ -64,8 +64,8 @@ class AgentRuntimeToolTest {
                 new FakeProvider.Turn(List.of("done"), List.of(), List.of())));
         FakeTool tool = new FakeTool("mutate", ToolRisk.READ_ONLY, "unused");
         tool.failWith(new IllegalStateException("tool boom"));
-        try (AgentRuntime runtime = AgentRuntimeTestSupport.runtime(
-                AgentRuntimeTestSupport.root(), provider, List.of(tool))) {
+        try (AgentRuntime runtime =
+                AgentRuntimeTestSupport.runtime(AgentRuntimeTestSupport.root(), provider, List.of(tool))) {
             Conversation conversation = runtime.createConversation("Chat", "main");
             RecordingObserver observer = new RecordingObserver();
             TurnResult result = runtime.startTurn(conversation.id(), "do it", observer)
@@ -83,8 +83,7 @@ class AgentRuntimeToolTest {
     void unknownToolBecomesErrorResultAndLoopContinues() throws Exception {
         FakeProvider provider = new FakeProvider(List.of(
                 new FakeProvider.Turn(
-                        List.of(), List.of(),
-                        List.of(new ToolCall("call-1", "missing", new JsonObject()))),
+                        List.of(), List.of(), List.of(new ToolCall("call-1", "missing", new JsonObject()))),
                 new FakeProvider.Turn(List.of("done"), List.of(), List.of())));
         try (AgentRuntime runtime =
                 AgentRuntimeTestSupport.runtime(AgentRuntimeTestSupport.root(), provider, List.of())) {
@@ -105,8 +104,7 @@ class AgentRuntimeToolTest {
     void stopsAtMaxToolRounds() throws Exception {
         List<FakeProvider.Step> steps = new ArrayList<>();
         for (int index = 0; index < 20; index++) {
-            steps.add(new FakeProvider.Turn(
-                    List.of(), List.of(), List.of(TestMessages.call("call-" + index))));
+            steps.add(new FakeProvider.Turn(List.of(), List.of(), List.of(TestMessages.call("call-" + index))));
         }
         FakeTool tool = new FakeTool("mutate", ToolRisk.READ_ONLY, "ok");
         try (AgentRuntime runtime = AgentRuntimeTestSupport.runtime(
@@ -128,8 +126,8 @@ class AgentRuntimeToolTest {
                 new FakeProvider.Turn(List.of(), List.of(), List.of(TestMessages.call("call-1"))),
                 new FakeProvider.Turn(List.of("done"), List.of(), List.of())));
         FakeTool tool = new FakeTool("mutate", ToolRisk.MUTATING, "ok");
-        try (AgentRuntime runtime = AgentRuntimeTestSupport.runtime(
-                AgentRuntimeTestSupport.root(), provider, List.of(tool))) {
+        try (AgentRuntime runtime =
+                AgentRuntimeTestSupport.runtime(AgentRuntimeTestSupport.root(), provider, List.of(tool))) {
             Conversation conversation = runtime.createConversation("Chat", "main");
             RecordingObserver observer = new RecordingObserver();
             TurnHandle handle = runtime.startTurn(conversation.id(), "do it", observer);
@@ -149,8 +147,8 @@ class AgentRuntimeToolTest {
                 new FakeProvider.Turn(List.of(), List.of(), List.of(TestMessages.call("call-1"))),
                 new FakeProvider.Turn(List.of("done"), List.of(), List.of())));
         FakeTool tool = new FakeTool("mutate", ToolRisk.MUTATING, "ok");
-        try (AgentRuntime runtime = AgentRuntimeTestSupport.runtime(
-                AgentRuntimeTestSupport.root(), provider, List.of(tool))) {
+        try (AgentRuntime runtime =
+                AgentRuntimeTestSupport.runtime(AgentRuntimeTestSupport.root(), provider, List.of(tool))) {
             Conversation conversation = runtime.createConversation("Chat", "main");
             RecordingObserver observer = new RecordingObserver();
             TurnResult result = runtime.startTurn(conversation.id(), "do it", observer)

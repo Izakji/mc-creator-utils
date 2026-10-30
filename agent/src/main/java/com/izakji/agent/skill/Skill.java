@@ -15,13 +15,7 @@ import java.util.Objects;
  * @param source source file
  * @author Izakji
  */
-public record Skill(
-        String id,
-        String name,
-        String description,
-        List<String> allowedTools,
-        String body,
-        Path source) {
+public record Skill(String id, String name, String description, List<String> allowedTools, String body, Path source) {
 
     public Skill {
         id = Objects.requireNonNull(id, "id");

@@ -17,8 +17,7 @@ class AnthropicProviderTest {
 
     @Test
     void streamsTextToolUseAndPreservesThinkingSignature() throws Exception {
-        try (TestHttpServer server = TestHttpServer.sse(
-                """
+        try (TestHttpServer server = TestHttpServer.sse("""
                 event: content_block_start
                 data: {"content_block":{"type":"thinking","thinking":"","signature":"sig"}}
 
@@ -65,14 +64,14 @@ class AnthropicProviderTest {
             RecordingListener listener = new RecordingListener();
             new AnthropicProvider()
                     .stream(
-                            new ChatRequest(
-                                    profile,
-                                    List.of(new UserMessage(List.of(new TextPart("hi")))),
-                                    List.of(new ToolSchema("game_snapshot", "snapshot", new JsonObject())),
-                                    2048),
-                            listener,
-                            () -> false)
-                    .join();
+                                    new ChatRequest(
+                                            profile,
+                                            List.of(new UserMessage(List.of(new TextPart("hi")))),
+                                            List.of(new ToolSchema("game_snapshot", "snapshot", new JsonObject())),
+                                            2048),
+                                    listener,
+                                    () -> false)
+                            .join();
 
             assertEquals("Hi", listener.text.toString());
             assertEquals("plan", listener.reasoning.toString());

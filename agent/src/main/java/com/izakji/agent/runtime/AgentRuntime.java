@@ -92,7 +92,8 @@ public final class AgentRuntime implements AutoCloseable {
     }
 
     public TurnHandle startTurn(String conversationId, String userText, TurnObserver observer) {
-        Conversation conversation = conversations.load(conversationId)
+        Conversation conversation = conversations
+                .load(conversationId)
                 .orElseThrow(() -> new IllegalArgumentException("Unknown conversation: " + conversationId));
         TurnHandle handle = new TurnHandle();
         if (active.putIfAbsent(conversationId, handle) != null) {
@@ -122,8 +123,7 @@ public final class AgentRuntime implements AutoCloseable {
         return settings;
     }
 
-    private void runTurn(
-            Conversation loaded, String userText, TurnObserver observer, TurnHandle handle) {
+    private void runTurn(Conversation loaded, String userText, TurnObserver observer, TurnHandle handle) {
         String conversationId = loaded.id();
         try {
             if (handle.isCancelled()) {
@@ -131,8 +131,7 @@ public final class AgentRuntime implements AutoCloseable {
                 return;
             }
             Instant now = clock.instant();
-            Conversation conversation = loaded.withMessage(
-                    new UserMessage(List.of(new TextPart(userText))), now);
+            Conversation conversation = loaded.withMessage(new UserMessage(List.of(new TextPart(userText))), now);
             conversations.save(conversation);
 
             String profileId = conversation.profileId();
@@ -140,11 +139,12 @@ public final class AgentRuntime implements AutoCloseable {
                     .filter(candidate -> candidate.id().equals(profileId))
                     .findFirst()
                     .orElseThrow(() -> new AgentException("Provider profile not found: " + profileId));
-            LlmProvider provider = providers.forType(profile.type())
+            LlmProvider provider = providers
+                    .forType(profile.type())
                     .orElseThrow(() -> new AgentException("Provider not registered: " + profile.type()));
 
-            String systemPrompt = promptBuilder.build(
-                    settings, List.of(), agentsMarkdown, snapshots(conversationId, handle));
+            String systemPrompt =
+                    promptBuilder.build(settings, List.of(), agentsMarkdown, snapshots(conversationId, handle));
             List<ChatMessage> requestMessages = new ArrayList<>();
             requestMessages.add(new SystemMessage(systemPrompt));
             requestMessages.addAll(truncator.truncate(conversation.messages(), profile.contextWindow()));
@@ -153,8 +153,7 @@ public final class AgentRuntime implements AutoCloseable {
             int calls = 0;
             while (rounds < settings.maxToolRounds()) {
                 rounds++;
-                AssistantMessage assistant = callProvider(
-                        provider, profile, requestMessages, observer, handle);
+                AssistantMessage assistant = callProvider(provider, profile, requestMessages, observer, handle);
                 if (handle.isCancelled()) {
                     finish(conversationId, handle, observer, TurnOutcome.CANCELLED, "cancelled");
                     return;
@@ -249,17 +248,16 @@ public final class AgentRuntime implements AutoCloseable {
             observer.onToolFinished(result);
             return new ToolExecution(conversation, toolMessage(result, call.name()));
         }
-        PermissionDecision decision =
-                permissions.decide(tool, new com.izakji.agent.api.ToolInvocation(
-                        call.id(), call.name(), call.arguments()), conversation);
+        PermissionDecision decision = permissions.decide(
+                tool, new com.izakji.agent.api.ToolInvocation(call.id(), call.name(), call.arguments()), conversation);
         if (decision.kind() == PermissionKind.DENY) {
             ToolResult result = error(call, "Permission denied: " + decision.reason());
             observer.onToolFinished(result);
             return new ToolExecution(conversation, toolMessage(result, call.name()));
         }
         if (decision.kind() == PermissionKind.ASK) {
-            ApprovalRequest request = new ApprovalRequest(
-                    null, tool.name(), tool.risk(), call.arguments(), "Run " + tool.name());
+            ApprovalRequest request =
+                    new ApprovalRequest(null, tool.name(), tool.risk(), call.arguments(), "Run " + tool.name());
             CompletableFuture<ApprovalChoice> future = new CompletableFuture<>();
             String key = approvalKey(conversation.id(), request.id());
             pendingApprovals.put(key, future);
@@ -296,8 +294,7 @@ public final class AgentRuntime implements AutoCloseable {
         ToolResult result;
         try {
             result = tool.execute(
-                            new com.izakji.agent.api.ToolInvocation(
-                                    call.id(), call.name(), call.arguments()),
+                            new com.izakji.agent.api.ToolInvocation(call.id(), call.name(), call.arguments()),
                             new ToolContext(conversation.id(), handle::isCancelled))
                     .get(60, TimeUnit.SECONDS);
         } catch (InterruptedException interrupted) {
@@ -355,11 +352,7 @@ public final class AgentRuntime implements AutoCloseable {
     }
 
     private void finish(
-            String conversationId,
-            TurnHandle handle,
-            TurnObserver observer,
-            TurnOutcome outcome,
-            String error) {
+            String conversationId, TurnHandle handle, TurnObserver observer, TurnOutcome outcome, String error) {
         active.remove(conversationId, handle);
         TurnResult result = new TurnResult(outcome, conversationId, error);
         observer.onFinished(result);

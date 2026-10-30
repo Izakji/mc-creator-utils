@@ -14,38 +14,57 @@ public final class ProviderPresets {
     private ProviderPresets() {}
 
     public static ProviderProfile openAi(String apiKey) {
-        return profile("openai", "OpenAI", ProviderType.OPENAI_COMPATIBLE,
-                "https://api.openai.com/v1", "gpt-4o-mini", apiKey);
+        return profile(
+                "openai", "OpenAI", ProviderType.OPENAI_COMPATIBLE, "https://api.openai.com/v1", "gpt-4o-mini", apiKey);
     }
 
     public static ProviderProfile openRouter(String apiKey) {
-        return profile("openrouter", "OpenRouter", ProviderType.OPENAI_COMPATIBLE,
-                "https://openrouter.ai/api/v1", "openai/gpt-4o-mini", apiKey);
+        return profile(
+                "openrouter",
+                "OpenRouter",
+                ProviderType.OPENAI_COMPATIBLE,
+                "https://openrouter.ai/api/v1",
+                "openai/gpt-4o-mini",
+                apiKey);
     }
 
     public static ProviderProfile deepSeek(String apiKey) {
-        return profile("deepseek", "DeepSeek", ProviderType.OPENAI_COMPATIBLE,
-                "https://api.deepseek.com", "deepseek-chat", apiKey);
+        return profile(
+                "deepseek",
+                "DeepSeek",
+                ProviderType.OPENAI_COMPATIBLE,
+                "https://api.deepseek.com",
+                "deepseek-chat",
+                apiKey);
     }
 
     public static ProviderProfile groq(String apiKey) {
-        return profile("groq", "Groq", ProviderType.OPENAI_COMPATIBLE,
-                "https://api.groq.com/openai/v1", "llama-3.3-70b-versatile", apiKey);
+        return profile(
+                "groq",
+                "Groq",
+                ProviderType.OPENAI_COMPATIBLE,
+                "https://api.groq.com/openai/v1",
+                "llama-3.3-70b-versatile",
+                apiKey);
     }
 
     public static ProviderProfile ollama(String apiKey) {
-        return profile("ollama", "Ollama", ProviderType.OPENAI_COMPATIBLE,
-                "http://localhost:11434/v1", "llama3.2", apiKey);
+        return profile(
+                "ollama", "Ollama", ProviderType.OPENAI_COMPATIBLE, "http://localhost:11434/v1", "llama3.2", apiKey);
     }
 
     public static ProviderProfile lmStudio(String apiKey) {
-        return profile("lmstudio", "LM Studio", ProviderType.OPENAI_COMPATIBLE,
-                "http://localhost:1234/v1", "", apiKey);
+        return profile("lmstudio", "LM Studio", ProviderType.OPENAI_COMPATIBLE, "http://localhost:1234/v1", "", apiKey);
     }
 
     public static ProviderProfile anthropic(String apiKey) {
-        return profile("anthropic", "Anthropic", ProviderType.ANTHROPIC,
-                "https://api.anthropic.com", "claude-sonnet-4-5", apiKey);
+        return profile(
+                "anthropic",
+                "Anthropic",
+                ProviderType.ANTHROPIC,
+                "https://api.anthropic.com",
+                "claude-sonnet-4-5",
+                apiKey);
     }
 
     public static ProviderProfile custom(ProviderType type) {

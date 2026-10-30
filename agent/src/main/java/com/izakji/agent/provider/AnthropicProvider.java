@@ -1,7 +1,6 @@
 package com.izakji.agent.provider;
 
 import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.izakji.agent.api.AssistantMessage;
@@ -42,9 +41,8 @@ import java.util.stream.Stream;
  */
 public final class AnthropicProvider implements LlmProvider {
     private static final String DEFAULT_VERSION = "2023-06-01";
-    private final HttpClient client = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(15))
-            .build();
+    private final HttpClient client =
+            HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).build();
 
     @Override
     public ProviderType type() {
@@ -247,11 +245,10 @@ public final class AnthropicProvider implements LlmProvider {
                         case "message_delta" -> {
                             if (data.has("usage")) {
                                 JsonObject usage = data.getAsJsonObject("usage");
-                                listener.onUsage(
-                                        intValue(usage, "input_tokens"),
-                                        intValue(usage, "output_tokens"));
+                                listener.onUsage(intValue(usage, "input_tokens"), intValue(usage, "output_tokens"));
                             }
-                            if (data.has("delta") && data.getAsJsonObject("delta").has("stop_reason")) {
+                            if (data.has("delta")
+                                    && data.getAsJsonObject("delta").has("stop_reason")) {
                                 String reason = data.getAsJsonObject("delta")
                                         .get("stop_reason")
                                         .getAsString();

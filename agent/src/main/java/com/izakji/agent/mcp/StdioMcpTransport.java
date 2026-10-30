@@ -41,7 +41,8 @@ public final class StdioMcpTransport implements McpTransport {
                 ProcessBuilder builder = new ProcessBuilder();
                 builder.command(config.command() == null ? "node" : config.command());
                 builder.command().addAll(config.args());
-                if (config.workingDirectory() != null && !config.workingDirectory().isBlank()) {
+                if (config.workingDirectory() != null
+                        && !config.workingDirectory().isBlank()) {
                     builder.directory(Path.of(config.workingDirectory()).toFile());
                 }
                 Map<String, String> environment = builder.environment();
@@ -91,8 +92,8 @@ public final class StdioMcpTransport implements McpTransport {
     }
 
     private void readStdout() {
-        try (BufferedReader reader = new BufferedReader(
-                new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
+        try (BufferedReader reader =
+                new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 if (!line.isBlank()) {
@@ -105,8 +106,8 @@ public final class StdioMcpTransport implements McpTransport {
     }
 
     private void readStderr() {
-        try (BufferedReader reader = new BufferedReader(
-                new InputStreamReader(process.getErrorStream(), StandardCharsets.UTF_8))) {
+        try (BufferedReader reader =
+                new BufferedReader(new InputStreamReader(process.getErrorStream(), StandardCharsets.UTF_8))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 synchronized (stderr) {

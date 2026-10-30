@@ -19,12 +19,14 @@ class ConversationTruncatorTest {
                 new AssistantMessage(List.of(), List.of(TestMessages.call("old-call"))),
                 new ToolMessage("old-call", "mutate", List.of(new TextPart("result")), false),
                 TestMessages.user("new"));
-        List<ChatMessage> truncated = new ConversationTruncator(new TokenEstimator())
-                .truncate(messages, 10);
-        assertFalse(truncated.stream().anyMatch(message -> message instanceof AssistantMessage assistant
-                && assistant.toolCalls().stream().anyMatch(call -> call.id().equals("old-call"))));
-        assertFalse(truncated.stream().anyMatch(message -> message instanceof ToolMessage tool
-                && tool.toolCallId().equals("old-call")));
+        List<ChatMessage> truncated = new ConversationTruncator(new TokenEstimator()).truncate(messages, 10);
+        assertFalse(truncated.stream()
+                .anyMatch(message -> message instanceof AssistantMessage assistant
+                        && assistant.toolCalls().stream()
+                                .anyMatch(call -> call.id().equals("old-call"))));
+        assertFalse(truncated.stream()
+                .anyMatch(message ->
+                        message instanceof ToolMessage tool && tool.toolCallId().equals("old-call")));
         assertTrue(truncated.stream().anyMatch(message -> message instanceof com.izakji.agent.api.UserMessage));
     }
 }

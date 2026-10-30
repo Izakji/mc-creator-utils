@@ -11,8 +11,7 @@ class SseParserTest {
     void reassemblesSplitDataLinesAndStopsAtDone() {
         SseParser parser = new SseParser();
         assertEquals(List.of(), parser.accept("data: {\"a\":"));
-        assertEquals(
-                List.of(new SseEvent("", "{\"a\":1}")), parser.accept("1}\n\ndata: [DONE]\n\n"));
+        assertEquals(List.of(new SseEvent("", "{\"a\":1}")), parser.accept("1}\n\ndata: [DONE]\n\n"));
         assertEquals(List.of(), parser.accept("data: {\"ignored\":true}\n\n"));
     }
 

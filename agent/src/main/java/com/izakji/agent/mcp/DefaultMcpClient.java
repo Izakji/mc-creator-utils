@@ -1,6 +1,5 @@
 package com.izakji.agent.mcp;
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.izakji.agent.api.AssistantMessage;
 import com.izakji.agent.api.ChatMessage;
@@ -39,15 +38,14 @@ public final class DefaultMcpClient implements McpClient {
         clientInfo.addProperty("version", "1");
         params.add("clientInfo", clientInfo);
         return rpc.request("initialize", params).thenApply(result -> {
-            JsonObject serverInfo = result.has("serverInfo")
-                    ? result.getAsJsonObject("serverInfo")
-                    : new JsonObject();
+            JsonObject serverInfo = result.has("serverInfo") ? result.getAsJsonObject("serverInfo") : new JsonObject();
             Set<String> capabilities = new LinkedHashSet<>();
             if (result.has("capabilities")) {
                 result.getAsJsonObject("capabilities").keySet().forEach(capabilities::add);
             }
             String name = serverInfo.has("name") ? serverInfo.get("name").getAsString() : "unknown";
-            String version = serverInfo.has("version") ? serverInfo.get("version").getAsString() : "";
+            String version =
+                    serverInfo.has("version") ? serverInfo.get("version").getAsString() : "";
             String protocol = result.has("protocolVersion")
                     ? result.get("protocolVersion").getAsString()
                     : "2025-06-18";
@@ -64,9 +62,8 @@ public final class DefaultMcpClient implements McpClient {
             if (result.has("tools")) {
                 for (var element : result.getAsJsonArray("tools")) {
                     JsonObject tool = element.getAsJsonObject();
-                    JsonObject annotations = tool.has("annotations")
-                            ? tool.getAsJsonObject("annotations")
-                            : new JsonObject();
+                    JsonObject annotations =
+                            tool.has("annotations") ? tool.getAsJsonObject("annotations") : new JsonObject();
                     tools.add(new McpToolDescriptor(
                             tool.get("name").getAsString(),
                             tool.has("description") ? tool.get("description").getAsString() : "",
@@ -113,7 +110,9 @@ public final class DefaultMcpClient implements McpClient {
                     resources.add(new McpResourceDescriptor(
                             resource.get("uri").getAsString(),
                             resource.has("name") ? resource.get("name").getAsString() : "",
-                            resource.has("description") ? resource.get("description").getAsString() : "",
+                            resource.has("description")
+                                    ? resource.get("description").getAsString()
+                                    : "",
                             resource.has("mimeType") ? resource.get("mimeType").getAsString() : ""));
                 }
             }
@@ -146,10 +145,10 @@ public final class DefaultMcpClient implements McpClient {
                     JsonObject prompt = element.getAsJsonObject();
                     prompts.add(new McpPromptDescriptor(
                             prompt.get("name").getAsString(),
-                            prompt.has("description") ? prompt.get("description").getAsString() : "",
-                            prompt.has("arguments")
-                                    ? prompt.getAsJsonObject("arguments")
-                                    : new JsonObject()));
+                            prompt.has("description")
+                                    ? prompt.get("description").getAsString()
+                                    : "",
+                            prompt.has("arguments") ? prompt.getAsJsonObject("arguments") : new JsonObject()));
                 }
             }
             return List.copyOf(prompts);
@@ -167,19 +166,18 @@ public final class DefaultMcpClient implements McpClient {
                 for (var element : result.getAsJsonArray("messages")) {
                     JsonObject message = element.getAsJsonObject();
                     String role = message.has("role") ? message.get("role").getAsString() : "user";
-                    String text = message.has("content") && message.get("content").isJsonObject()
-                            ? message.getAsJsonObject("content")
-                                    .get("text")
-                                    .getAsString()
+                    String text = message.has("content")
+                                    && message.get("content").isJsonObject()
+                            ? message.getAsJsonObject("content").get("text").getAsString()
                             : "";
-                    messages.add("assistant".equals(role)
-                            ? new AssistantMessage(List.of(new TextPart(text)), List.of())
-                            : new UserMessage(List.of(new TextPart(text))));
+                    messages.add(
+                            "assistant".equals(role)
+                                    ? new AssistantMessage(List.of(new TextPart(text)), List.of())
+                                    : new UserMessage(List.of(new TextPart(text))));
                 }
             }
             return new McpPromptResult(
-                    result.has("description") ? result.get("description").getAsString() : "",
-                    messages);
+                    result.has("description") ? result.get("description").getAsString() : "", messages);
         });
     }
 

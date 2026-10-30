@@ -22,8 +22,7 @@ public final class PermissionGate {
         this.classifiers = List.copyOf(Objects.requireNonNullElse(classifiers, List.of()));
     }
 
-    public PermissionDecision decide(
-            AgentTool tool, ToolInvocation invocation, Conversation conversation) {
+    public PermissionDecision decide(AgentTool tool, ToolInvocation invocation, Conversation conversation) {
         ToolRisk risk = tool.risk();
         for (ToolRiskClassifier classifier : classifiers) {
             risk = higher(risk, classifier.classify(tool, invocation, risk));

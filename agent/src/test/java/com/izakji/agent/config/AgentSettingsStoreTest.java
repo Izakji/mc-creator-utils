@@ -27,8 +27,7 @@ class AgentSettingsStoreTest {
     void rejectsMalformedJsonWithoutEchoingFileContents() throws Exception {
         Path file = Files.createTempFile("agent-settings", ".json");
         Files.writeString(file, "{\"apiKey\":\"sk-secret\"");
-        AgentException error = assertThrows(
-                AgentException.class, () -> new AgentSettingsStore().load(file));
+        AgentException error = assertThrows(AgentException.class, () -> new AgentSettingsStore().load(file));
         assertFalse(error.getMessage().contains("sk-secret"));
     }
 }

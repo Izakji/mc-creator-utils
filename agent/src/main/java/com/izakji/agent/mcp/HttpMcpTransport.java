@@ -19,9 +19,8 @@ import java.util.function.Consumer;
  */
 public final class HttpMcpTransport implements McpTransport {
     protected final McpServerConfig config;
-    private final HttpClient client = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(15))
-            .build();
+    private final HttpClient client =
+            HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).build();
     private volatile Consumer<JsonObject> listener = ignored -> {};
     private volatile String sessionId = "";
 
@@ -49,17 +48,16 @@ public final class HttpMcpTransport implements McpTransport {
         if (!sessionId.isBlank()) {
             builder.header("Mcp-Session-Id", sessionId);
         }
-        client.sendAsync(builder.build(), HttpResponse.BodyHandlers.ofString())
-                .thenAccept(response -> {
-                    String session = response.headers().firstValue("Mcp-Session-Id").orElse("");
-                    if (!session.isBlank()) {
-                        sessionId = session;
-                    }
-                    if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                        return;
-                    }
-                    dispatch(response.body());
-                });
+        client.sendAsync(builder.build(), HttpResponse.BodyHandlers.ofString()).thenAccept(response -> {
+            String session = response.headers().firstValue("Mcp-Session-Id").orElse("");
+            if (!session.isBlank()) {
+                sessionId = session;
+            }
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                return;
+            }
+            dispatch(response.body());
+        });
     }
 
     protected void dispatch(String body) {

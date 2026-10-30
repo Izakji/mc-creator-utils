@@ -12,8 +12,6 @@ class ToolRegistryTest {
         ToolRegistry registry = new ToolRegistry();
         registry.register(PermissionTestSupport.readOnlyTool());
         assertEquals("read", registry.schemas().get(0).name());
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> registry.register(PermissionTestSupport.readOnlyTool()));
+        assertThrows(IllegalArgumentException.class, () -> registry.register(PermissionTestSupport.readOnlyTool()));
     }
 }
