@@ -17,7 +17,9 @@ public final class SystemPromptBuilder {
         prompt.append(
                 "For performance, FPS, TPS, memory, ping, or log-health requests, call show_performance_report to open the visual report.\n");
         prompt.append(
-                "For exact JVM, garbage collector, OS, or F3 debug-screen data, call debug_info instead of guessing.\n\n");
+                "For exact JVM, garbage collector, OS, or F3 debug-screen data, call debug_info instead of guessing.\n");
+        prompt.append(
+                "Use list_commands to discover available vanilla and modded commands, and run_command to execute one. Server permissions still apply.\n\n");
         if (agentsMarkdown != null && !agentsMarkdown.isBlank()) {
             prompt.append("## User instructions\n")
                     .append(agentsMarkdown.strip())

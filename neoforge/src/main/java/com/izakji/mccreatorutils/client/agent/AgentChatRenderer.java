@@ -34,6 +34,7 @@ public final class AgentChatRenderer {
     private static final int HEADING_TEXT = 0xFF62C45A;
     private static final int SUBTITLE_TEXT = 0xFFF7700C;
     private static final int CODE_TEXT = 0xFF0CC4F7;
+    private static final int AGENT_TEXT = 0xFFE55FFF;
     private static final float TEXT_SCALE = 7f / 9f;
     private static final int LINE_HEIGHT = 8;
     private static CachedTranscript cache;
@@ -280,6 +281,7 @@ public final class AgentChatRenderer {
     private static int color(AgentChatModel.Kind kind) {
         return switch (kind) {
             case USER -> USER_TEXT;
+            case ASSISTANT -> AGENT_TEXT;
             case ERROR -> ERROR_TEXT;
             case TOOL -> TOOL_TEXT;
             case REASONING -> REASONING_TEXT;

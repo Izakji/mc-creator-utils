@@ -42,7 +42,7 @@ public final class McCreatorUtilsClient {
     public static final KeyMapping OPEN_AGENT_CHAT = new KeyMapping(
             "key.mccreatorutils.agent_chat",
             InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_G,
+            GLFW.GLFW_KEY_BACKSLASH,
             "key.categories.mccreatorutils");
 
     @SubscribeEvent

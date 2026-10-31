@@ -27,17 +27,20 @@ import com.izakji.agent.skill.SkillLoader;
 import com.izakji.agent.skill.SkillRegistry;
 import com.izakji.mccreatorutils.client.agent.context.BlockInfoTool;
 import com.izakji.mccreatorutils.client.agent.context.ClientLogReader;
+import com.izakji.mccreatorutils.client.agent.context.CommandRiskClassifier;
 import com.izakji.mccreatorutils.client.agent.context.DebugInfoTool;
 import com.izakji.mccreatorutils.client.agent.context.EntityInfoTool;
 import com.izakji.mccreatorutils.client.agent.context.GameSnapshotProvider;
 import com.izakji.mccreatorutils.client.agent.context.GameSnapshotTool;
 import com.izakji.mccreatorutils.client.agent.context.InventoryTool;
+import com.izakji.mccreatorutils.client.agent.context.ListCommandsTool;
 import com.izakji.mccreatorutils.client.agent.context.LogSummaryTool;
 import com.izakji.mccreatorutils.client.agent.context.LogsTailTool;
 import com.izakji.mccreatorutils.client.agent.context.ModListTool;
 import com.izakji.mccreatorutils.client.agent.context.NetworkStatsTool;
 import com.izakji.mccreatorutils.client.agent.context.RecipeLookupTool;
 import com.izakji.mccreatorutils.client.agent.context.RegistrySearchTool;
+import com.izakji.mccreatorutils.client.agent.context.RunCommandTool;
 import com.izakji.mccreatorutils.client.agent.context.ScreenshotTool;
 import com.izakji.mccreatorutils.client.agent.context.SearchLogsTool;
 import com.izakji.mccreatorutils.client.agent.context.ShowPerformanceReportTool;
@@ -368,6 +371,8 @@ public final class AgentClientService implements AutoCloseable, AgentTurnPort {
         tools.register(new LogSummaryTool(logReader));
         tools.register(new ShowPerformanceReportTool(logReader));
         tools.register(new ScreenshotTool(gameDirectory, ioExecutor));
+        tools.register(new ListCommandsTool());
+        tools.register(new RunCommandTool());
         tools.register(new ModListTool());
         tools.register(new InventoryTool());
         tools.register(new BlockInfoTool());
@@ -379,7 +384,7 @@ public final class AgentClientService implements AutoCloseable, AgentTurnPort {
                 providers,
                 tools,
                 conversations,
-                new PermissionGate(settings.permissions(), List.of()),
+                new PermissionGate(settings.permissions(), List.of(new CommandRiskClassifier())),
                 List.of(gameSnapshotProvider),
                 instructions,
                 skills,
