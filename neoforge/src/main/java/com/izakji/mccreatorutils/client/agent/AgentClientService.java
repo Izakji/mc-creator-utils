@@ -38,7 +38,7 @@ import net.neoforged.fml.loading.FMLPaths;
  *
  * @author Izakji
  */
-public final class AgentClientService implements AutoCloseable {
+public final class AgentClientService implements AutoCloseable, AgentTurnPort {
     private static volatile AgentClientService instance;
 
     private final AgentPaths paths;
