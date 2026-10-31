@@ -1,6 +1,7 @@
 package com.izakji.mccreatorutils.client;
 
 import com.izakji.mccreatorutils.McCreatorUtils;
+import com.izakji.mccreatorutils.client.agent.AgentChatWindow;
 import com.izakji.mccreatorutils.client.browser.BrowserWorkspace;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.KeyMapping;
@@ -37,12 +38,18 @@ public final class McCreatorUtilsClient {
             InputConstants.Type.KEYSYM,
             GLFW.GLFW_KEY_RIGHT_BRACKET,
             "key.categories.mccreatorutils");
+    public static final KeyMapping OPEN_AGENT_CHAT = new KeyMapping(
+            "key.mccreatorutils.agent_chat",
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_G,
+            "key.categories.mccreatorutils");
 
     @SubscribeEvent
     static void registerKeyMappings(RegisterKeyMappingsEvent event) {
         event.register(OPEN_GUI);
         event.register(FOCUS_BROWSER);
         event.register(TOGGLE_BROWSER);
+        event.register(OPEN_AGENT_CHAT);
     }
 
     @SubscribeEvent
@@ -61,6 +68,11 @@ public final class McCreatorUtilsClient {
         while (FOCUS_BROWSER.consumeClick()) {
             if (minecraft.screen == null && BrowserWorkspace.instance().hasWindow()) {
                 BrowserWorkspace.instance().focus();
+            }
+        }
+        while (OPEN_AGENT_CHAT.consumeClick()) {
+            if (minecraft.screen == null) {
+                AgentChatWindow.instance().focusOrOpen();
             }
         }
     }

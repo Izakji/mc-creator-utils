@@ -12,6 +12,7 @@ import com.izakji.agent.runtime.TurnHandle;
 import com.izakji.agent.runtime.TurnObserver;
 import com.izakji.agent.runtime.TurnOutcome;
 import com.izakji.agent.runtime.TurnResult;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Executor;
 import net.minecraft.client.Minecraft;
@@ -78,6 +79,14 @@ public final class AgentChatSession {
 
     public AgentChatModel model() {
         return model;
+    }
+
+    public List<ProviderProfile> profiles() {
+        return port.settings().profiles();
+    }
+
+    public String settingsDefaultProfile() {
+        return port.settings().defaultProfileId();
     }
 
     public boolean busy() {
