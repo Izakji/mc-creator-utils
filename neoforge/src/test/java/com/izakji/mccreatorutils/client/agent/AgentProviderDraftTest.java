@@ -41,4 +41,24 @@ class AgentProviderDraftTest {
                 "sk-new",
                 draft.withApiKey("sk-new").toProfile("openai", "sk-existing").apiKey());
     }
+
+    @Test
+    void toStringRedactsKeysAndHeaders() {
+        AgentProviderDraft draft = new AgentProviderDraft(
+                        "OpenAI",
+                        ProviderType.OPENAI_COMPATIBLE,
+                        "https://api.openai.com/v1",
+                        "gpt-4o-mini",
+                        "sk-secret",
+                        0.7,
+                        2048,
+                        128000,
+                        true,
+                        0,
+                        Map.of("Authorization", "Bearer header-secret"))
+                .withApiKey("sk-secret");
+        String text = draft.toString();
+        assertTrue(!text.contains("sk-secret"));
+        assertTrue(!text.contains("header-secret"));
+    }
 }

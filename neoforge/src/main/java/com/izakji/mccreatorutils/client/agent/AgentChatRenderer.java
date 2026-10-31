@@ -32,6 +32,7 @@ public final class AgentChatRenderer {
     private static final int TOOL_TEXT = 0xFFFFD45A;
     private static final int REASONING_TEXT = 0xFFB8A6FF;
     private static final int LINE_HEIGHT = 10;
+    private static CachedTranscript cache;
 
     private AgentChatRenderer() {}
 
@@ -157,8 +158,50 @@ public final class AgentChatRenderer {
             boolean hud) {
         AgentChatGeometry area = layout.transcript();
         int textWidth = Math.max(1, area.width() - 10);
+        List<Line> lines = cachedLines(font, session, screenState, textWidth);
+        int contentHeight = lines.size() * LINE_HEIGHT;
+        int maxOffset = Math.max(0, contentHeight - Math.max(1, area.height() - 6));
+        screenState.onContentMeasured(contentHeight);
+        screenState.clampToContent(maxOffset);
+        int startY = contentHeight <= area.height() - 6
+                ? area.y() + 4
+                : area.bottom() - contentHeight + screenState.scrollOffset();
+        graphics.enableScissor(area.x() + 1, area.y() + 1, area.right() - 1, area.bottom() - 1);
+        List<EntryHit> visibleHits = new ArrayList<>();
+        int firstLine = Math.max(0, (area.y() - startY) / LINE_HEIGHT - 1);
+        int lastLine = Math.min(lines.size(), (area.bottom() - startY) / LINE_HEIGHT + 2);
+        for (int index = firstLine; index < lastLine; index++) {
+            Line line = lines.get(index);
+            int y = startY + index * LINE_HEIGHT;
+            if (line.header() && line.entryIndex() >= 0) {
+                visibleHits.add(new EntryHit(
+                        line.entryIndex(), new AgentChatGeometry(area.x() + 4, y, textWidth, LINE_HEIGHT)));
+            }
+            graphics.drawString(font, line.text(), area.x() + 5, y, TEXT, false);
+        }
+        graphics.disableScissor();
+        return hud ? List.of() : visibleHits;
+    }
+
+    private static List<Line> cachedLines(
+            Font font, AgentChatSession session, AgentChatScreenState screenState, int textWidth) {
+        long modelRevision = session.model().revision();
+        long collapseRevision = screenState.collapsedRevision();
+        CachedTranscript current = cache;
+        if (current != null
+                && current.modelRevision() == modelRevision
+                && current.collapseRevision() == collapseRevision
+                && current.textWidth() == textWidth) {
+            return current.lines();
+        }
+        List<Line> lines = buildLines(font, session, screenState, textWidth);
+        cache = new CachedTranscript(modelRevision, collapseRevision, textWidth, lines);
+        return lines;
+    }
+
+    private static List<Line> buildLines(
+            Font font, AgentChatSession session, AgentChatScreenState screenState, int textWidth) {
         List<Line> lines = new ArrayList<>();
-        List<EntryHit> hits = new ArrayList<>();
         List<AgentChatModel.Entry> entries = session.model().entries();
         for (int index = 0; index < entries.size(); index++) {
             AgentChatModel.Entry entry = entries.get(index);
@@ -167,7 +210,6 @@ public final class AgentChatRenderer {
             boolean collapsed = collapsible && screenState.isCollapsed(index);
             String marker = collapsible ? (collapsed ? "[+] " : "[-] ") : "";
             String header = marker + header(entry);
-            hits.add(new EntryHit(index, new AgentChatGeometry(area.x() + 4, 0, textWidth, LINE_HEIGHT)));
             if (!header.isBlank()) {
                 lines.add(new Line(styled(header, color(entry.kind())).getVisualOrderText(), true, index));
             }
@@ -181,29 +223,7 @@ public final class AgentChatRenderer {
             }
             lines.add(new Line(FormattedCharSequence.EMPTY, false, -1));
         }
-
-        int contentHeight = lines.size() * LINE_HEIGHT;
-        int startY = contentHeight <= area.height() - 6
-                ? area.y() + 4
-                : area.bottom() - contentHeight + screenState.scrollOffset();
-        graphics.enableScissor(area.x() + 1, area.y() + 1, area.right() - 1, area.bottom() - 1);
-        List<EntryHit> visibleHits = new ArrayList<>();
-        int y = startY;
-        for (Line line : lines) {
-            if (y + LINE_HEIGHT >= area.y() && y <= area.bottom()) {
-                if (line.header() && line.entryIndex() >= 0 && line.entryIndex() < hits.size()) {
-                    EntryHit hit = hits.get(line.entryIndex());
-                    visibleHits.add(new EntryHit(
-                            line.entryIndex(),
-                            new AgentChatGeometry(
-                                    hit.bounds().x(), y, hit.bounds().width(), LINE_HEIGHT)));
-                }
-                graphics.drawString(font, line.text(), area.x() + 5, y, TEXT, false);
-            }
-            y += LINE_HEIGHT;
-        }
-        graphics.disableScissor();
-        return hud ? List.of() : visibleHits;
+        return List.copyOf(lines);
     }
 
     private static String header(AgentChatModel.Entry entry) {
@@ -272,4 +292,6 @@ public final class AgentChatRenderer {
     public record EntryHit(int entryIndex, AgentChatGeometry bounds) {}
 
     private record Line(FormattedCharSequence text, boolean header, int entryIndex) {}
+
+    private record CachedTranscript(long modelRevision, long collapseRevision, int textWidth, List<Line> lines) {}
 }

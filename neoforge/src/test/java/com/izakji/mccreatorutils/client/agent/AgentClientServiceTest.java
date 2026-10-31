@@ -101,4 +101,55 @@ class AgentClientServiceTest {
             assertEquals("second", service.settings().defaultProfileId());
         }
     }
+
+    @Test
+    void corruptSettingsAreQuarantinedAndDefaultsLoad() throws Exception {
+        Path root = Files.createTempDirectory("agent-config");
+        AgentPaths paths = AgentPaths.at(root);
+        Files.createDirectories(paths.root());
+        Files.writeString(paths.settingsFile(), "{broken");
+        try (AgentClientService service = AgentClientService.forConfig(root)) {
+            assertEquals("openai", service.settings().defaultProfileId());
+            assertTrue(Files.list(paths.root())
+                    .anyMatch(path -> path.getFileName().toString().contains("agent.json.corrupt-")));
+        }
+    }
+
+    @Test
+    void loadsInstructionsAndSkills() throws Exception {
+        Path root = Files.createTempDirectory("agent-config");
+        AgentPaths paths = AgentPaths.at(root);
+        paths.ensureDirectories();
+        Files.writeString(paths.agentsMarkdown(), "Be concise.");
+        Path skill = paths.skillsDir().resolve("demo");
+        Files.createDirectories(skill);
+        Files.writeString(skill.resolve("SKILL.md"), """
+                ---
+                name: Demo
+                description: Demo skill
+                ---
+                Use the demo.
+                """);
+        try (AgentClientService service = AgentClientService.forConfig(root)) {
+            assertEquals("Be concise.", service.instructions());
+            assertEquals(1, service.skills().size());
+            assertEquals("demo", service.skills().get(0).id());
+        }
+    }
+
+    @Test
+    void ioExecutorRunsOffTheCallingThread() throws Exception {
+        Path root = Files.createTempDirectory("agent-config");
+        try (AgentClientService service = AgentClientService.forConfig(root)) {
+            java.util.concurrent.CountDownLatch done = new java.util.concurrent.CountDownLatch(1);
+            java.util.concurrent.atomic.AtomicReference<Thread> thread =
+                    new java.util.concurrent.atomic.AtomicReference<>();
+            service.ioExecutor().execute(() -> {
+                thread.set(Thread.currentThread());
+                done.countDown();
+            });
+            assertTrue(done.await(2, java.util.concurrent.TimeUnit.SECONDS));
+            assertNotSame(Thread.currentThread(), thread.get());
+        }
+    }
 }

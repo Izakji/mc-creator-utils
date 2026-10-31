@@ -35,6 +35,7 @@ public final class AgentChatScreen extends Screen {
     private AgentChatLayout layout;
     private List<AgentChatRenderer.EntryHit> hits = List.of();
     private String selectedProfile = "";
+    private String lastConversationId = "";
     private boolean dragging;
     private boolean resizing;
     private int dragOffsetX;
@@ -77,7 +78,7 @@ public final class AgentChatScreen extends Screen {
         stopButton = addButton("stop", session::stop);
         newButton = addButton("new", this::newChat);
         profileButton = addButton("profile", this::cycleProfile);
-        closeButton = addButton("close", this::onClose);
+        closeButton = addButton("close", chatWindow::hide);
         fullscreenButton = addButton("fullscreen", this::toggleFullscreen);
         approveOnceButton = addApprovalButton("approve_once", ApprovalChoice.APPROVE_ONCE);
         allowConversationButton = addApprovalButton("allow_conversation", ApprovalChoice.ALLOW_CONVERSATION);
@@ -163,12 +164,18 @@ public final class AgentChatScreen extends Screen {
         fullscreenButton.setWidth(layout.fullscreenButton().width());
         fullscreenButton.setHeight(layout.fullscreenButton().height());
 
+        if (!session.conversationId().equals(lastConversationId)) {
+            lastConversationId = session.conversationId();
+            if (!session.profileId().isBlank()) {
+                selectedProfile = session.profileId();
+            }
+        }
         profileButton.setMessage(
                 Component.translatable("screen.mccreatorutils.agent_chat.profile", profileName(selectedProfile)));
-        sendButton.active = !session.busy();
+        sendButton.active = session.ready();
         stopButton.active = session.busy();
-        newButton.active = !session.busy();
-        profileButton.active = !session.busy();
+        newButton.active = session.ready();
+        profileButton.active = session.ready();
         closeButton.setMessage(Component.literal("X"));
         fullscreenButton.setMessage(Component.literal(chatWindow.state().fullscreen() ? "-" : "+"));
 
@@ -183,7 +190,7 @@ public final class AgentChatScreen extends Screen {
         allowConversationButton.visible = approvalVisible;
         denyButton.visible = approvalVisible;
         if (approvalVisible) {
-            int widthEach = Math.max(1, layout.inputBar().width() / 3);
+            int widthEach = Math.max(1, (layout.inputBar().width() - AgentChatLayout.RESIZE_GRIP - 4) / 3);
             placeApprovalButton(approveOnceButton, 0, widthEach);
             placeApprovalButton(allowConversationButton, 1, widthEach);
             placeApprovalButton(denyButton, 2, widthEach);
@@ -235,13 +242,16 @@ public final class AgentChatScreen extends Screen {
         }
         if (session.send(text)) {
             input.setValue("");
+            screenState.scrollToTail();
         }
         input.setFocused(true);
     }
 
     private void newChat() {
-        session.newConversation(selectedProfile);
-        input.setValue("");
+        if (session.newConversation(selectedProfile)) {
+            input.setValue("");
+            screenState.reset();
+        }
     }
 
     private void cycleProfile() {
@@ -290,15 +300,15 @@ public final class AgentChatScreen extends Screen {
             onClose();
             return true;
         }
-        if (super.mouseClicked(mouseX, mouseY, button)) {
-            return true;
-        }
         if (in(layout.resizeGrip(), mouseX, mouseY) && !chatWindow.state().fullscreen()) {
             resizing = true;
             resizeStartWidth = layout.window().width();
             resizeStartHeight = layout.window().height();
             resizeStartX = mouseX;
             resizeStartY = mouseY;
+            return true;
+        }
+        if (super.mouseClicked(mouseX, mouseY, button)) {
             return true;
         }
         if (in(layout.titleBar(), mouseX, mouseY)

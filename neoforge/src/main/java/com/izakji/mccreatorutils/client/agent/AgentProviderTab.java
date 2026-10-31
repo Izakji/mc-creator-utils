@@ -14,6 +14,7 @@ import com.lowdragmc.lowdraglib2.gui.ui.utils.UIElementProvider;
 import dev.vfyjxf.taffy.style.FlexDirection;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 
@@ -85,6 +86,7 @@ public final class AgentProviderTab extends UIElement {
         addRow("Base URL", baseUrl, 14);
         addRow("Model", model, 14);
         addRow("API key", apiKey, 14);
+        apiKey.setFormatter(value -> Component.literal("•".repeat(value == null ? 0 : value.length())));
 
         var numbers = new UIElement();
         numbers.layout(layout -> layout.widthPercent(100)
@@ -224,12 +226,22 @@ public final class AgentProviderTab extends UIElement {
         }
         String id = selectedId.isBlank() ? UUID.randomUUID().toString() : selectedId;
         String existingKey = service.profile(id).map(ProviderProfile::apiKey).orElse("");
+        ProviderProfile profile = draft.toProfile(id, existingKey);
         AgentChatSession.instance().stop();
-        service.upsertProfile(draft.toProfile(id, existingKey));
-        selectedId = id;
-        refreshProfiles();
-        status.setText(Component.literal("Provider saved."));
-        status.textStyle(style -> style.textColor(ColorPattern.GREEN.color));
+        status.setText(Component.literal("Saving provider..."));
+        status.textStyle(style -> style.textColor(ColorPattern.YELLOW.color));
+        CompletableFuture.runAsync(() -> service.upsertProfile(profile), service.ioExecutor())
+                .whenComplete((ignored, failure) -> Minecraft.getInstance().execute(() -> {
+                    if (failure != null) {
+                        showError("Could not save the provider profile.");
+                        return;
+                    }
+                    selectedId = id;
+                    apiKey.setText("");
+                    refreshProfiles();
+                    status.setText(Component.literal("Provider saved."));
+                    status.textStyle(style -> style.textColor(ColorPattern.GREEN.color));
+                }));
     }
 
     private void test() {
@@ -272,15 +284,22 @@ public final class AgentProviderTab extends UIElement {
             return;
         }
         deleteArmed = false;
+        String id = selectedId;
         AgentChatSession.instance().stop();
-        service.deleteProfile(selectedId);
-        selectedId = "";
-        refreshProfiles();
-        if (!service.settings().profiles().isEmpty()) {
-            fill(service.settings().profiles().get(0));
-        } else {
-            applyPreset(PRESETS.get(0));
-        }
+        CompletableFuture.runAsync(() -> service.deleteProfile(id), service.ioExecutor())
+                .whenComplete((ignored, failure) -> Minecraft.getInstance().execute(() -> {
+                    if (failure != null) {
+                        showError("Could not delete the provider profile.");
+                        return;
+                    }
+                    selectedId = "";
+                    refreshProfiles();
+                    if (!service.settings().profiles().isEmpty()) {
+                        fill(service.settings().profiles().get(0));
+                    } else {
+                        applyPreset(PRESETS.get(0));
+                    }
+                }));
     }
 
     private AgentProviderDraft draft() {

@@ -26,7 +26,13 @@ public final class AgentChatHudOverlay {
         if (!window.visible()) {
             return;
         }
+        AgentChatSession session;
+        try {
+            session = AgentChatSession.instance();
+        } catch (RuntimeException failure) {
+            return;
+        }
         AgentChatRenderer.renderWithHits(
-                event.getGuiGraphics(), AgentChatSession.instance(), window.state(), new AgentChatScreenState(), true);
+                event.getGuiGraphics(), session, window.state(), new AgentChatScreenState(), true);
     }
 }

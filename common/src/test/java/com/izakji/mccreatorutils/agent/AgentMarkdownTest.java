@@ -22,6 +22,9 @@ class AgentMarkdownTest {
     @Test
     void leavesUnmatchedMarkersLiteral() {
         assertEquals(List.of(new AgentMarkdown.Span("a ** b", false, false, false)), AgentMarkdown.parseLine("a ** b"));
+        assertEquals(List.of(new AgentMarkdown.Span("a ` b", false, false, false)), AgentMarkdown.parseLine("a ` b"));
+        assertEquals(
+                List.of(new AgentMarkdown.Span("**bold*", false, false, false)), AgentMarkdown.parseLine("**bold*"));
     }
 
     @Test

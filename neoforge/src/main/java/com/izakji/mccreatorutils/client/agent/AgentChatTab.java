@@ -10,6 +10,8 @@ import com.lowdragmc.lowdraglib2.gui.ui.elements.TextField;
 import com.lowdragmc.lowdraglib2.gui.ui.utils.UIElementProvider;
 import dev.vfyjxf.taffy.style.FlexDirection;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 
 /**
@@ -89,7 +91,21 @@ public final class AgentChatTab extends UIElement {
     private void refresh() {
         ConversationSummary selected = conversations.getValue();
         String selectedId = selected == null ? "" : selected.id();
-        List<ConversationSummary> loaded = AgentClientService.instance().listConversations();
+        status.setText(Component.literal("Loading conversations..."));
+        CompletableFuture.supplyAsync(
+                        () -> AgentClientService.instance().listConversations(),
+                        AgentClientService.instance().ioExecutor())
+                .whenComplete((loaded, failure) -> Minecraft.getInstance().execute(() -> {
+                    if (failure != null) {
+                        status.setText(Component.literal("Could not load conversations."));
+                        status.textStyle(style -> style.textColor(ColorPattern.RED.color));
+                        return;
+                    }
+                    applyConversations(loaded, selectedId);
+                }));
+    }
+
+    private void applyConversations(List<ConversationSummary> loaded, String selectedId) {
         conversations.setCandidates(loaded);
         if (!selectedId.isBlank()) {
             loaded.stream()
@@ -103,15 +119,34 @@ public final class AgentChatTab extends UIElement {
         if (current == null) {
             renameField.setText("");
             deleteButton.setActive(false);
-            status.setText(Component.translatable("tool.mccreatorutils.agent.no_conversations"));
+            String warning = AgentClientService.instance().startupWarning();
+            status.setText(
+                    warning.isBlank()
+                            ? Component.translatable("tool.mccreatorutils.agent.no_conversations")
+                            : Component.literal(warning));
+            if (!warning.isBlank()) {
+                status.textStyle(style -> style.textColor(ColorPattern.YELLOW.color));
+            }
         } else {
             renameField.setText(current.title());
-            deleteButton.setActive(true);
+            deleteButton.setActive(session.ready());
             status.setText(Component.literal(""));
         }
     }
 
+    private boolean readyForAction() {
+        if (session.ready()) {
+            return true;
+        }
+        status.setText(Component.literal("Wait for the current agent turn to finish."));
+        status.textStyle(style -> style.textColor(ColorPattern.RED.color));
+        return false;
+    }
+
     private void newChat() {
+        if (!readyForAction()) {
+            return;
+        }
         String profile = session.profileId();
         if (profile.isBlank()) {
             profile = session.settingsDefaultProfile();
@@ -130,6 +165,9 @@ public final class AgentChatTab extends UIElement {
     }
 
     private void renameSelected() {
+        if (!readyForAction()) {
+            return;
+        }
         ConversationSummary selected = conversations.getValue();
         if (selected == null) {
             return;
@@ -140,23 +178,49 @@ public final class AgentChatTab extends UIElement {
             status.textStyle(style -> style.textColor(ColorPattern.RED.color));
             return;
         }
-        AgentClientService.instance().renameConversation(selected.id(), title);
-        refresh();
+        String id = selected.id();
+        CompletableFuture.runAsync(
+                        () -> AgentClientService.instance().renameConversation(id, title),
+                        AgentClientService.instance().ioExecutor())
+                .whenComplete((ignored, failure) -> Minecraft.getInstance().execute(() -> {
+                    if (failure != null) {
+                        status.setText(Component.literal("Could not rename the conversation."));
+                        status.textStyle(style -> style.textColor(ColorPattern.RED.color));
+                    } else {
+                        refresh();
+                    }
+                }));
     }
 
     private void deleteSelected() {
+        if (!readyForAction()) {
+            return;
+        }
         ConversationSummary selected = conversations.getValue();
         if (selected == null) {
             return;
         }
-        AgentClientService.instance().deleteConversation(selected.id());
-        if (selected.id().equals(session.conversationId())) {
-            session.onLogout();
-        }
-        refresh();
+        String id = selected.id();
+        CompletableFuture.runAsync(
+                        () -> AgentClientService.instance().deleteConversation(id),
+                        AgentClientService.instance().ioExecutor())
+                .whenComplete((ignored, failure) -> Minecraft.getInstance().execute(() -> {
+                    if (failure != null) {
+                        status.setText(Component.literal("Could not delete the conversation."));
+                        status.textStyle(style -> style.textColor(ColorPattern.RED.color));
+                        return;
+                    }
+                    if (id.equals(session.conversationId())) {
+                        session.onLogout();
+                    }
+                    refresh();
+                }));
     }
 
     private void openSelected() {
+        if (!readyForAction()) {
+            return;
+        }
         ConversationSummary selected = conversations.getValue();
         if (selected == null) {
             return;

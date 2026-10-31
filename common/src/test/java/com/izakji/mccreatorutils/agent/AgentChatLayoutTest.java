@@ -1,8 +1,10 @@
 package com.izakji.mccreatorutils.agent;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class AgentChatLayoutTest {
@@ -27,5 +29,21 @@ class AgentChatLayoutTest {
         assertTrue(layout.sendButton().right() <= layout.inputBar().right());
         assertTrue(layout.stopButton().right() <= layout.inputBar().right());
         assertTrue(layout.newButton().right() <= layout.inputBar().right());
+    }
+
+    @Test
+    void resizeGripDoesNotIntersectInputButtons() {
+        AgentChatLayout layout = AgentChatLayout.of(new AgentChatGeometry(10, 20, 360, 240));
+        for (AgentChatGeometry button :
+                List.of(layout.sendButton(), layout.stopButton(), layout.newButton(), layout.profileButton())) {
+            assertFalse(intersects(layout.resizeGrip(), button));
+        }
+    }
+
+    private static boolean intersects(AgentChatGeometry left, AgentChatGeometry right) {
+        return left.x() < right.right()
+                && left.right() > right.x()
+                && left.y() < right.bottom()
+                && left.bottom() > right.y();
     }
 }

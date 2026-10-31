@@ -151,7 +151,7 @@ public final class AgentChatModel {
         add(
                 Kind.APPROVAL,
                 request.toolName(),
-                request.displayText() + "\n" + request.arguments(),
+                request.displayText() + "\nRisk: " + request.risk() + "\n" + request.arguments(),
                 request.risk() == com.izakji.agent.api.ToolRisk.DANGEROUS,
                 request.id());
     }

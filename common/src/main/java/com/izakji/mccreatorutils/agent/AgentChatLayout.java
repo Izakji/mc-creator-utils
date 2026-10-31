@@ -66,8 +66,9 @@ public record AgentChatLayout(
         int inputButtonHeight = Math.max(1, INPUT_HEIGHT - ROW_PADDING * 2);
         AgentChatGeometry profile = new AgentChatGeometry(window.x() + 4, inputY, PROFILE_WIDTH, inputButtonHeight);
         int actionY = input.y() + ROW_PADDING;
-        AgentChatGeometry send =
-                new AgentChatGeometry(window.right() - ACTION_WIDTH - 4, actionY, ACTION_WIDTH, inputButtonHeight);
+        int actionRightInset = RESIZE_GRIP + 4;
+        AgentChatGeometry send = new AgentChatGeometry(
+                window.right() - ACTION_WIDTH - actionRightInset, actionY, ACTION_WIDTH, inputButtonHeight);
         AgentChatGeometry stop =
                 new AgentChatGeometry(send.x() - ACTION_WIDTH - 4, actionY, ACTION_WIDTH, inputButtonHeight);
         AgentChatGeometry newChat =

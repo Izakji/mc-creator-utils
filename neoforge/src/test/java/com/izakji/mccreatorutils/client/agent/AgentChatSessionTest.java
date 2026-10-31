@@ -19,6 +19,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -63,6 +64,7 @@ class AgentChatSessionTest {
         port.observer.onTextDelta("partial");
         session.stop();
         assertFalse(session.busy());
+        assertFalse(session.ready());
         assertEquals("partial", session.model().entries().get(1).text());
         assertTrue(port.handle.isCancelled());
     }
@@ -112,6 +114,142 @@ class AgentChatSessionTest {
         assertTrue(session.conversationId().isEmpty());
     }
 
+    @Test
+    void lateCallbacksFromStoppedTurnAreIgnored() {
+        FakePort port = FakePort.withProfile();
+        AgentChatSession session = new AgentChatSession(port, Runnable::run);
+        session.presenter(new FakePresenter());
+        session.newConversation("openai");
+        session.send("first");
+        TurnObserver old = port.observer;
+        session.stop();
+        old.onTextDelta("late");
+        assertTrue(session.model().entries().stream()
+                .noneMatch(entry -> entry.text().contains("late")));
+    }
+
+    @Test
+    void lateCallbacksAfterLogoutAreIgnored() {
+        FakePort port = FakePort.withProfile();
+        AgentChatSession session = new AgentChatSession(port, Runnable::run);
+        session.presenter(new FakePresenter());
+        session.newConversation("openai");
+        session.send("first");
+        TurnObserver old = port.observer;
+        session.onLogout();
+        old.onTextDelta("late");
+        old.onApprovalNeeded(
+                new ApprovalRequest("approval-1", "run_command", ToolRisk.MUTATING, new JsonObject(), "Run"));
+        assertTrue(session.model().entries().isEmpty());
+    }
+
+    @Test
+    void switchingConversationCancelsThePreviousTurn() {
+        FakePort port = FakePort.withProfile();
+        AgentChatSession session = new AgentChatSession(port, Runnable::run);
+        session.presenter(new FakePresenter());
+        session.newConversation("openai");
+        session.send("first");
+        TurnObserver old = port.observer;
+        session.newConversation("openai");
+        old.onTextDelta("late");
+        assertTrue(port.handle.isCancelled());
+        assertTrue(session.model().entries().stream()
+                .noneMatch(entry -> entry.text().contains("late")));
+    }
+
+    @Test
+    void sendWhilePreviousTurnStopsIsRejectedWithGuidance() {
+        FakePort port = FakePort.withProfile();
+        AgentChatSession session = new AgentChatSession(port, Runnable::run);
+        session.presenter(new FakePresenter());
+        session.newConversation("openai");
+        session.send("first");
+        session.stop();
+        assertFalse(session.send("second"));
+        assertEquals(1, port.started);
+        assertTrue(session.model().entries().stream().anyMatch(entry -> entry.kind() == AgentChatModel.Kind.ERROR));
+    }
+
+    @Test
+    void errorsAreNotDuplicatedOnFinish() {
+        FakePort port = FakePort.withProfile();
+        AgentChatSession session = new AgentChatSession(port, Runnable::run);
+        session.presenter(new FakePresenter());
+        session.newConversation("openai");
+        session.send("hello");
+        port.observer.onError(new com.izakji.agent.api.AgentException("boom", null));
+        port.observer.onFinished(new com.izakji.agent.runtime.TurnResult(
+                com.izakji.agent.runtime.TurnOutcome.ERROR, session.conversationId(), "boom"));
+        assertEquals(
+                1,
+                session.model().entries().stream()
+                        .filter(entry -> entry.kind() == AgentChatModel.Kind.ERROR)
+                        .count());
+    }
+
+    @Test
+    void blankRemoteKeyReturnsAnActionableErrorBeforeStarting() {
+        FakePort port = FakePort.withBlankKeyProfile();
+        AgentChatSession session = new AgentChatSession(port, Runnable::run);
+        session.presenter(new FakePresenter());
+        assertTrue(session.newConversation("openai"));
+        assertFalse(session.send("hello"));
+        assertEquals(0, port.started);
+        assertTrue(session.model().entries().stream()
+                .anyMatch(entry -> entry.kind() == AgentChatModel.Kind.ERROR
+                        && entry.text().contains("API key")));
+    }
+
+    @Test
+    void deletedConversationProfileDoesNotSilentlyCreateANewChat() {
+        FakePort port = FakePort.withProfile();
+        String conversationId = port.storeConversation("missing");
+        AgentChatSession session = new AgentChatSession(port, Runnable::run);
+        session.presenter(new FakePresenter());
+        assertTrue(session.open(conversationId));
+        assertFalse(session.send("hello"));
+        assertEquals(0, port.started);
+        assertEquals(conversationId, session.conversationId());
+        assertTrue(session.model().entries().stream()
+                .anyMatch(entry -> entry.kind() == AgentChatModel.Kind.ERROR
+                        && entry.text().contains("profile")));
+    }
+
+    @Test
+    void denyingAnApprovalClearsTheCardAndKeepsTheTurnUsable() {
+        FakePort port = FakePort.withProfile();
+        AgentChatSession session = new AgentChatSession(port, Runnable::run);
+        session.presenter(new FakePresenter());
+        session.newConversation("openai");
+        session.send("hello");
+        port.observer.onApprovalNeeded(
+                new ApprovalRequest("approval-1", "run_command", ToolRisk.MUTATING, new JsonObject(), "Run"));
+        session.approve("approval-1", ApprovalChoice.DENY);
+        assertTrue(session.model().pendingApproval().isEmpty());
+        port.observer.onFinished(new com.izakji.agent.runtime.TurnResult(
+                com.izakji.agent.runtime.TurnOutcome.COMPLETED, session.conversationId(), ""));
+        assertFalse(session.busy());
+    }
+
+    @Test
+    void approvalTimeoutResultClearsTheCardAndKeepsTheTurnUsable() {
+        FakePort port = FakePort.withProfile();
+        AgentChatSession session = new AgentChatSession(port, Runnable::run);
+        session.presenter(new FakePresenter());
+        session.newConversation("openai");
+        session.send("hello");
+        port.observer.onApprovalNeeded(
+                new ApprovalRequest("approval-1", "run_command", ToolRisk.MUTATING, new JsonObject(), "Run"));
+        port.observer.onToolFinished(
+                new com.izakji.agent.api.ToolResult("call-1", "Permission denied", true, List.of()));
+        assertTrue(session.model().pendingApproval().isEmpty());
+        port.observer.onFinished(new com.izakji.agent.runtime.TurnResult(
+                com.izakji.agent.runtime.TurnOutcome.COMPLETED, session.conversationId(), ""));
+        assertFalse(session.busy());
+        assertTrue(session.model().entries().stream().noneMatch(entry -> entry.kind() == AgentChatModel.Kind.APPROVAL));
+    }
+
     private static final class FakePresenter implements AgentChatPresenter {
         private boolean focused;
         private int refreshes;
@@ -140,12 +278,40 @@ class AgentChatSessionTest {
         }
 
         static FakePort withProfile() {
+            return new FakePort(new AgentSettings(
+                    "openai",
+                    List.of(new com.izakji.agent.config.ProviderProfile(
+                            "openai",
+                            "OpenAI",
+                            com.izakji.agent.config.ProviderType.OPENAI_COMPATIBLE,
+                            "https://api.openai.com/v1",
+                            "gpt-4o-mini",
+                            "sk-test",
+                            Map.of(),
+                            0.7,
+                            2048,
+                            128000,
+                            true,
+                            true)),
+                    new PermissionRules(true, Set.of(), Set.of(), Set.of()),
+                    8,
+                    32,
+                    1));
+        }
+
+        static FakePort withBlankKeyProfile() {
             return new FakePort(AgentDefaults.settings());
         }
 
         static FakePort withoutProfile() {
             return new FakePort(new AgentSettings(
                     "", List.of(), new PermissionRules(true, Set.of(), Set.of(), Set.of()), 8, 32, 1));
+        }
+
+        String storeConversation(String profileId) {
+            Conversation conversation = conversations.create("Old Chat", profileId);
+            conversations.save(conversation);
+            return conversation.id();
         }
 
         @Override

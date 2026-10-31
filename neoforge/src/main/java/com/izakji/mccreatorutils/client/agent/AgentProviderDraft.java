@@ -90,6 +90,14 @@ public record AgentProviderDraft(
                 profile.headers());
     }
 
+    @Override
+    public String toString() {
+        return "AgentProviderDraft[displayName=" + displayName + ", type=" + type + ", baseUrl=" + baseUrl
+                + ", model=" + model + ", temperature=" + temperature + ", maxOutputTokens=" + maxOutputTokens
+                + ", contextWindow=" + contextWindow + ", tools=" + tools + ", thinkingBudgetTokens="
+                + thinkingBudgetTokens + ", apiKey=<redacted>, headers=<redacted>]";
+    }
+
     public AgentProviderDraft withApiKey(String value) {
         return new AgentProviderDraft(
                 displayName,

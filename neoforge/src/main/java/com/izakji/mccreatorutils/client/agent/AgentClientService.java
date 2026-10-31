@@ -31,6 +31,7 @@ import java.nio.file.Path;
 import java.time.Clock;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -49,9 +50,11 @@ public final class AgentClientService implements AutoCloseable, AgentTurnPort {
     private final ProviderRegistry providers = new ProviderRegistry();
     private final ConversationStore conversations;
     private final InstructionsLoader instructionsLoader = new InstructionsLoader();
+    private final ExecutorService ioExecutor = Executors.newSingleThreadExecutor(daemonThreads("io"));
     private AgentSettings settings;
     private List<Skill> skills = List.of();
     private String instructions = "";
+    private String startupWarning = "";
     private AgentRuntime runtime;
 
     private AgentClientService(Path configDir) {
@@ -110,6 +113,14 @@ public final class AgentClientService implements AutoCloseable, AgentTurnPort {
 
     public ProviderRegistry providers() {
         return providers;
+    }
+
+    public ExecutorService ioExecutor() {
+        return ioExecutor;
+    }
+
+    public String startupWarning() {
+        return startupWarning;
     }
 
     public List<Skill> skills() {
@@ -274,6 +285,7 @@ public final class AgentClientService implements AutoCloseable, AgentTurnPort {
         if (current != null) {
             current.close();
         }
+        ioExecutor.shutdownNow();
         if (instance == this) {
             instance = null;
         }
@@ -292,7 +304,26 @@ public final class AgentClientService implements AutoCloseable, AgentTurnPort {
         try {
             return settingsStore.load(paths.settingsFile());
         } catch (AgentException failure) {
-            throw new IllegalStateException(failure.getMessage(), failure);
+            quarantineSettings();
+            AgentSettings defaults = AgentDefaults.settings();
+            try {
+                settingsStore.save(paths.settingsFile(), defaults);
+            } catch (AgentException saveFailure) {
+                throw new IllegalStateException(saveFailure.getMessage(), saveFailure);
+            }
+            startupWarning = "Agent settings were unreadable; defaults were loaded.";
+            return defaults;
+        }
+    }
+
+    private void quarantineSettings() {
+        try {
+            Files.move(
+                    paths.settingsFile(),
+                    paths.settingsFile().resolveSibling("agent.json.corrupt-" + System.currentTimeMillis()),
+                    java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException ignored) {
+            // Fall back to defaults even when the corrupt file cannot be moved.
         }
     }
 
@@ -309,7 +340,7 @@ public final class AgentClientService implements AutoCloseable, AgentTurnPort {
                 instructions,
                 skills,
                 List.of(),
-                Executors.newFixedThreadPool(2, daemonThreads()),
+                Executors.newFixedThreadPool(2, daemonThreads("runtime")),
                 Clock.systemUTC());
     }
 
@@ -331,10 +362,10 @@ public final class AgentClientService implements AutoCloseable, AgentTurnPort {
         }
     }
 
-    private static ThreadFactory daemonThreads() {
+    private static ThreadFactory daemonThreads(String kind) {
         AtomicInteger next = new AtomicInteger();
         return task -> {
-            Thread thread = new Thread(task, "creator-utils-agent-" + next.incrementAndGet());
+            Thread thread = new Thread(task, "creator-utils-agent-" + kind + "-" + next.incrementAndGet());
             thread.setDaemon(true);
             return thread;
         };

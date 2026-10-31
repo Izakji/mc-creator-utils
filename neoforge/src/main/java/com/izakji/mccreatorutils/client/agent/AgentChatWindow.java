@@ -1,5 +1,6 @@
 package com.izakji.mccreatorutils.client.agent;
 
+import com.izakji.mccreatorutils.McCreatorUtils;
 import com.izakji.mccreatorutils.agent.AgentChatWindowState;
 import net.minecraft.client.Minecraft;
 
@@ -45,8 +46,15 @@ public final class AgentChatWindow implements AgentChatPresenter {
      * Shows and focuses the chat, leaving any other screen alone.
      */
     public void focusOrOpen() {
+        AgentChatSession session;
+        try {
+            session = AgentChatSession.instance();
+        } catch (RuntimeException failure) {
+            McCreatorUtils.LOGGER.error("Could not open Agent Chat", failure);
+            return;
+        }
         show();
-        AgentChatSession.instance().presenter(this);
+        session.presenter(this);
         Minecraft minecraft = Minecraft.getInstance();
         if (!(minecraft.screen instanceof AgentChatScreen)) {
             minecraft.setScreen(new AgentChatScreen());
