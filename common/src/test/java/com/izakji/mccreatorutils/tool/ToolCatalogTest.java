@@ -39,8 +39,18 @@ class ToolCatalogTest {
                         ToolId.ITEMS,
                         ToolId.MOBS,
                         ToolId.PLAYER,
-                        ToolId.EXPLORE_MODS),
+                        ToolId.EXPLORE_MODS,
+                        ToolId.AGENT),
                 ToolCatalog.tools().stream().map(ToolDescriptor::id).toList());
+    }
+
+    @Test
+    void agentDescriptorHasExpectedMetadata() {
+        var agent = ToolCatalog.AGENT;
+        assertEquals(ToolId.AGENT, agent.id());
+        assertEquals("agent", agent.id().id());
+        assertEquals("tool.mccreatorutils.agent", agent.translationKey());
+        assertFalse(agent.hasRequiredMod());
     }
 
     @Test

@@ -16,7 +16,8 @@ public enum ToolId {
     ITEMS("items"),
     MOBS("mobs"),
     PLAYER("player"),
-    EXPLORE_MODS("explore_mods");
+    EXPLORE_MODS("explore_mods"),
+    AGENT("agent");
 
     private final String id;
 

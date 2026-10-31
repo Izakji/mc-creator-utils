@@ -1,5 +1,6 @@
 package com.izakji.mccreatorutils.client;
 
+import com.izakji.mccreatorutils.client.agent.AgentToolPanel;
 import com.izakji.mccreatorutils.client.explore.ExploreModsToolPanel;
 import com.izakji.mccreatorutils.tool.ToolCatalog;
 import com.izakji.mccreatorutils.tool.ToolDescriptor;
@@ -137,6 +138,7 @@ public final class CreatorToolsUi {
             case MOBS -> new MobsToolPanel();
             case PLAYER -> new PlayerToolPanel();
             case EXPLORE_MODS -> new ExploreModsToolPanel();
+            case AGENT -> new AgentToolPanel();
         };
     }
 }
