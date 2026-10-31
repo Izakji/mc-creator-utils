@@ -87,8 +87,21 @@ dependencies {
     implementation "de.keksuccino:rinku-neoforge:${rinku_version}"
     rinkuDist "de.keksuccino:rinku-neoforge:${rinku_version}"
 
+    implementation project(':agent')
     commonJava project(path: ':common', configuration: 'commonJava')
     commonResources project(path: ':common', configuration: 'commonResources')
+
+    testImplementation platform('org.junit:junit-bom:5.11.4')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+jar {
+    from(project(':agent').sourceSets.main.output)
 }
 
 def rinkuModJar = layout.buildDirectory.file('rinku/rinku-mod.jar')
