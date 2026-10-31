@@ -115,10 +115,10 @@ public final class AgentProviderTab extends UIElement {
                 .height(16)
                 .flexDirection(FlexDirection.ROW)
                 .gapAll(3));
-        var newButton = button("Add Profile", this::newProfile);
-        var saveButton = button("Save", this::save);
-        var deleteButton = button("Delete", this::delete);
-        var testButton = button("Test Connection", this::test);
+        var newButton = button("tool.mccreatorutils.agent.provider.add", this::newProfile);
+        var saveButton = button("tool.mccreatorutils.agent.provider.save", this::save);
+        var deleteButton = button("tool.mccreatorutils.agent.provider.delete", this::delete);
+        var testButton = button("tool.mccreatorutils.agent.provider.test", this::test);
         buttons.addChildren(newButton, saveButton, deleteButton, testButton);
         addChild(buttons);
 
@@ -140,9 +140,9 @@ public final class AgentProviderTab extends UIElement {
         return field;
     }
 
-    private static Button button(String label, Runnable action) {
+    private static Button button(String translationKey, Runnable action) {
         var button = new Button();
-        button.setText(Component.literal(label));
+        button.setText(Component.translatable(translationKey));
         button.layout(layout -> layout.flex(1).height(16));
         button.setOnClick(event -> action.run());
         return button;

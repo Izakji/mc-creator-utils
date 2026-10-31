@@ -98,6 +98,20 @@ class AgentChatSessionTest {
         assertFalse(session.busy());
     }
 
+    @Test
+    void logoutStopsTheTurnAndClearsTheVisibleModel() {
+        FakePort port = FakePort.withProfile();
+        AgentChatSession session = new AgentChatSession(port, Runnable::run);
+        session.presenter(new FakePresenter());
+        session.newConversation("openai");
+        session.send("hello");
+        session.onLogout();
+        assertFalse(session.busy());
+        assertTrue(port.handle.isCancelled());
+        assertTrue(session.model().entries().isEmpty());
+        assertTrue(session.conversationId().isEmpty());
+    }
+
     private static final class FakePresenter implements AgentChatPresenter {
         private boolean focused;
         private int refreshes;

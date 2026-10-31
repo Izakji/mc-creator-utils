@@ -18,6 +18,9 @@ loader-neutral logic in a reusable `common` module.
 - **Explore Mods** — search installed mods and open their CurseForge or Modrinth page.
 - **Browser workspace** — a floating, resizable, multi-tab Chromium browser with a session
   snapshot and an in-game fullscreen mode (requires Rinku).
+- **Agent** — an in-game LLM chat with provider profiles, named conversations, streaming
+  replies, reasoning blocks, tool cards, and approval cards. API keys are stored locally and
+  masked in the GUI; agent tools arrive in later plans.
 
 ## Requirements
 
@@ -40,8 +43,11 @@ notice instead of failing.
 | `.` | Open or close the Creator Utils panel |
 | `]` | Toggle the floating browser |
 | `B` | Focus the browser and release the cursor |
+| `G` | Open and focus Agent Chat |
 
-All keybinds are configurable in Minecraft's Controls screen.
+All keybinds are configurable in Minecraft's Controls screen. Agent settings, conversations,
+skills, and instructions live under `config/mccreatorutils/agent/`. API keys stay local and are
+masked in the Provider tab.
 
 ## Building
 

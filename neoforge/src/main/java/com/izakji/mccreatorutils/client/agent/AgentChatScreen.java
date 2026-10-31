@@ -70,6 +70,8 @@ public final class AgentChatScreen extends Screen {
         input.setMaxLength(4096);
         input.setHint(Component.translatable("screen.mccreatorutils.agent_chat.input"));
         addRenderableWidget(input);
+        setFocused(input);
+        input.setFocused(true);
 
         sendButton = addButton("send", this::send);
         stopButton = addButton("stop", session::stop);

@@ -120,7 +120,10 @@ public final class AgentChatRenderer {
                     false);
             graphics.drawString(
                     minecraft.font,
-                    truncate(minecraft.font, session.model().entries().isEmpty() ? "Ask the agent..." : "", 180),
+                    truncate(
+                            minecraft.font,
+                            session.profileId().isBlank() ? "Ask the agent..." : session.profileId(),
+                            100),
                     layout.profileButton().x() + 4,
                     layout.profileButton().y() + 5,
                     MUTED_TEXT,

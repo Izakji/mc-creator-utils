@@ -1,6 +1,7 @@
 package com.izakji.mccreatorutils.client;
 
 import com.izakji.mccreatorutils.McCreatorUtils;
+import com.izakji.mccreatorutils.client.agent.AgentChatSession;
 import com.izakji.mccreatorutils.client.agent.AgentChatWindow;
 import com.izakji.mccreatorutils.client.browser.BrowserWorkspace;
 import com.mojang.blaze3d.platform.InputConstants;
@@ -80,5 +81,9 @@ public final class McCreatorUtilsClient {
     @SubscribeEvent
     static void onLogout(ClientPlayerNetworkEvent.LoggingOut event) {
         BrowserWorkspace.instance().onLogout();
+        if (AgentChatWindow.instance().visible()) {
+            AgentChatSession.instance().onLogout();
+            AgentChatWindow.instance().hide();
+        }
     }
 }
