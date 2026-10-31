@@ -39,6 +39,7 @@ import com.izakji.mccreatorutils.client.agent.context.RecipeLookupTool;
 import com.izakji.mccreatorutils.client.agent.context.RegistrySearchTool;
 import com.izakji.mccreatorutils.client.agent.context.ScreenshotTool;
 import com.izakji.mccreatorutils.client.agent.context.SearchLogsTool;
+import com.izakji.mccreatorutils.client.agent.context.ShowPerformanceReportTool;
 import com.izakji.mccreatorutils.client.agent.context.SystemStatsTool;
 import com.izakji.mccreatorutils.client.agent.context.TickStatsTool;
 import java.io.IOException;
@@ -139,6 +140,10 @@ public final class AgentClientService implements AutoCloseable, AgentTurnPort {
 
     public ExecutorService ioExecutor() {
         return ioExecutor;
+    }
+
+    public ClientLogReader logReader() {
+        return logReader;
     }
 
     public String startupWarning() {
@@ -359,6 +364,7 @@ public final class AgentClientService implements AutoCloseable, AgentTurnPort {
         tools.register(new LogsTailTool(logReader));
         tools.register(new SearchLogsTool(logReader));
         tools.register(new LogSummaryTool(logReader));
+        tools.register(new ShowPerformanceReportTool(logReader));
         tools.register(new ScreenshotTool(gameDirectory, ioExecutor));
         tools.register(new ModListTool());
         tools.register(new InventoryTool());

@@ -25,6 +25,7 @@ public final class ClientContextTelemetry {
     static void onClientTickPost(ClientTickEvent.Post event) {
         Minecraft minecraft = Minecraft.getInstance();
         TickDiagnostics.instance().endTick();
+        FrameDiagnostics.instance().sampleIfDue(minecraft);
         SystemDiagnostics.instance().sampleIfDue();
         NetworkDiagnostics.instance().sampleIfDue(minecraft);
     }

@@ -1,6 +1,7 @@
 package com.izakji.mccreatorutils.client.agent;
 
 import com.izakji.agent.conversation.ConversationSummary;
+import com.izakji.mccreatorutils.client.agent.context.PerformanceReportSource;
 import com.lowdragmc.lowdraglib2.gui.ColorPattern;
 import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Button;
@@ -81,6 +82,12 @@ public final class AgentChatTab extends UIElement {
         openButton.setOnClick(event -> openSelected());
         buttonRow.addChildren(newButton, deleteButton, openButton);
         addChild(buttonRow);
+
+        var reportButton = new Button();
+        reportButton.setText(Component.literal("Performance report"));
+        reportButton.layout(layout -> layout.widthPercent(100).height(16));
+        reportButton.setOnClick(event -> openReport());
+        addChild(reportButton);
 
         status.layout(layout -> layout.widthPercent(100));
         addChild(status);
@@ -231,6 +238,19 @@ public final class AgentChatTab extends UIElement {
             status.setText(Component.literal("Could not open the conversation."));
             status.textStyle(style -> style.textColor(ColorPattern.RED.color));
         }
+    }
+
+    private void openReport() {
+        AgentClientService service = AgentClientService.instance();
+        PerformanceReportSource.build(service.logReader())
+                .whenComplete((data, failure) -> Minecraft.getInstance().execute(() -> {
+                    if (failure != null) {
+                        status.setText(Component.literal("Could not build the performance report."));
+                        status.textStyle(style -> style.textColor(ColorPattern.RED.color));
+                        return;
+                    }
+                    AgentReportScreen.open(data, () -> PerformanceReportSource.build(service.logReader()));
+                }));
     }
 
     private static Component candidateLabel(ConversationSummary summary) {

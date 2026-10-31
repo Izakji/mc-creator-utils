@@ -49,6 +49,11 @@ public final class ClientLogReader {
         return CompletableFuture.supplyAsync(() -> summaryBlocking(groups), ioExecutor);
     }
 
+    public CompletableFuture<LogSummary> summaryData(int maxGroups) {
+        int groups = Math.max(1, Math.min(50, maxGroups));
+        return CompletableFuture.supplyAsync(() -> summaryDataBlocking(groups), ioExecutor);
+    }
+
     private String tailBlocking(int lines) {
         try {
             String text = readLast(TAIL_LIMIT);
@@ -136,6 +141,15 @@ public final class ClientLogReader {
             return LogSummaryReport.format(text, maxGroups);
         } catch (IOException failure) {
             return "Could not summarize the client log: " + failure.getClass().getSimpleName();
+        }
+    }
+
+    private LogSummary summaryDataBlocking(int maxGroups) {
+        try {
+            String text = readLast(SEARCH_LIMIT);
+            return LogSummary.parse(text == null ? "" : text, maxGroups);
+        } catch (IOException failure) {
+            return LogSummary.parse("", maxGroups);
         }
     }
 

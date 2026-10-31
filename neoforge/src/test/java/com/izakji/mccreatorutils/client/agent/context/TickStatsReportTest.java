@@ -8,13 +8,15 @@ class TickStatsReportTest {
 
     @Test
     void reportsTpsAndMsptWindows() {
+        long[] times = new long[200];
         long[] durations = new long[200];
         long[] intervals = new long[200];
         for (int index = 0; index < durations.length; index++) {
+            times[index] = index * 1_000L;
             durations[index] = 1_000_000;
             intervals[index] = index == 0 ? 0 : 50_000_000;
         }
-        String report = TickStatsReport.format(new TickDiagnostics.Snapshot(durations, intervals));
+        String report = TickStatsReport.format(new TickDiagnostics.Snapshot(times, durations, intervals));
         assertTrue(report.contains("20.00 TPS"));
         assertTrue(report.contains("MSPT avg 1.00"));
         assertTrue(report.contains("max 1.00"));

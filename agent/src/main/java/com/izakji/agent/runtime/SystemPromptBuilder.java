@@ -13,7 +13,9 @@ public final class SystemPromptBuilder {
     public String build(AgentSettings settings, List<Skill> skills, String agentsMarkdown, List<String> snapshots) {
         StringBuilder prompt = new StringBuilder();
         prompt.append("You are the Creator Utils in-game Minecraft agent.\n");
-        prompt.append("Use tools when exact game data is needed. Do not invent state.\n\n");
+        prompt.append("Use tools when exact game data is needed. Do not invent state.\n");
+        prompt.append(
+                "For performance, FPS, TPS, memory, ping, or log-health requests, call show_performance_report to open the visual report.\n\n");
         if (agentsMarkdown != null && !agentsMarkdown.isBlank()) {
             prompt.append("## User instructions\n")
                     .append(agentsMarkdown.strip())
