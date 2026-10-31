@@ -15,7 +15,9 @@ public final class SystemPromptBuilder {
         prompt.append("You are the Creator Utils in-game Minecraft agent.\n");
         prompt.append("Use tools when exact game data is needed. Do not invent state.\n");
         prompt.append(
-                "For performance, FPS, TPS, memory, ping, or log-health requests, call show_performance_report to open the visual report.\n\n");
+                "For performance, FPS, TPS, memory, ping, or log-health requests, call show_performance_report to open the visual report.\n");
+        prompt.append(
+                "For exact JVM, garbage collector, OS, or F3 debug-screen data, call debug_info instead of guessing.\n\n");
         if (agentsMarkdown != null && !agentsMarkdown.isBlank()) {
             prompt.append("## User instructions\n")
                     .append(agentsMarkdown.strip())

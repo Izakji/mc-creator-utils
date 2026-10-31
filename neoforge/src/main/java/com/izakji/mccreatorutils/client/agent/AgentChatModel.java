@@ -35,7 +35,12 @@ public final class AgentChatModel {
     private int assistantIndex = -1;
     private int reasoningIndex = -1;
     private ApprovalRequest pendingApproval;
+    private String userName = "You";
     private long revision;
+
+    public void setUserName(String value) {
+        userName = value == null || value.isBlank() ? "You" : value.strip();
+    }
 
     public long revision() {
         return revision;
@@ -88,7 +93,7 @@ public final class AgentChatModel {
     public void addUser(String text) {
         assistantIndex = -1;
         reasoningIndex = -1;
-        add(Kind.USER, "You", text, false, "");
+        add(Kind.USER, userName, text, false, "");
     }
 
     public void appendAssistant(String delta) {

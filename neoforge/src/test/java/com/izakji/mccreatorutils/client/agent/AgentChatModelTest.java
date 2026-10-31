@@ -51,6 +51,14 @@ class AgentChatModelTest {
     }
 
     @Test
+    void labelsUserMessagesWithThePlayerName() {
+        AgentChatModel model = new AgentChatModel();
+        model.setUserName("Steve");
+        model.addUser("hi");
+        assertEquals("Steve", model.entries().get(0).title());
+    }
+
+    @Test
     void keepsPendingApprovalUntilCleared() {
         AgentChatModel model = new AgentChatModel();
         model.addApproval(

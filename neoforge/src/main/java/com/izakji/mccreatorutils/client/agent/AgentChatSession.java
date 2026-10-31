@@ -18,6 +18,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Executor;
+import java.util.function.Supplier;
 import net.minecraft.client.Minecraft;
 
 /**
@@ -31,6 +32,7 @@ public final class AgentChatSession {
     private final AgentTurnPort port;
     private final Executor uiExecutor;
     private final Executor ioExecutor;
+    private final Supplier<String> playerNames;
     private final AgentChatModel model = new AgentChatModel();
     private AgentChatPresenter presenter = new AgentChatPresenter() {
         @Override
@@ -48,13 +50,19 @@ public final class AgentChatSession {
     private volatile long turnGeneration;
 
     public AgentChatSession(AgentTurnPort port, Executor uiExecutor) {
-        this(port, uiExecutor, uiExecutor);
+        this(port, uiExecutor, uiExecutor, () -> "You");
     }
 
     public AgentChatSession(AgentTurnPort port, Executor uiExecutor, Executor ioExecutor) {
+        this(port, uiExecutor, ioExecutor, () -> ClientPlayerNames.current());
+    }
+
+    public AgentChatSession(
+            AgentTurnPort port, Executor uiExecutor, Executor ioExecutor, Supplier<String> playerNames) {
         this.port = port;
         this.uiExecutor = uiExecutor;
         this.ioExecutor = ioExecutor;
+        this.playerNames = playerNames;
     }
 
     /**
@@ -238,6 +246,7 @@ public final class AgentChatSession {
         long generation = ++turnGeneration;
         Conversation existing = conversation;
         boolean firstMessage = existing == null || existing.messages().isEmpty();
+        model.setUserName(playerName());
         model.addUser(text);
         busy = true;
         presenter.refresh();
@@ -378,6 +387,7 @@ public final class AgentChatSession {
         conversation = loaded;
         conversationId = loaded.id();
         profileId = loaded.profileId();
+        model.setUserName(playerName());
         model.load(loaded);
     }
 
@@ -411,6 +421,15 @@ public final class AgentChatSession {
         return settings.profiles().stream()
                 .filter(profile -> profile.id().equals(id))
                 .findFirst();
+    }
+
+    private String playerName() {
+        try {
+            String name = playerNames.get();
+            return name == null || name.isBlank() ? "You" : name;
+        } catch (LinkageError | RuntimeException unavailable) {
+            return "You";
+        }
     }
 
     private static boolean hasCredential(ProviderProfile profile) {

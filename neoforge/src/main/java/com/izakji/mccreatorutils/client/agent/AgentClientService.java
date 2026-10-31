@@ -27,6 +27,7 @@ import com.izakji.agent.skill.SkillLoader;
 import com.izakji.agent.skill.SkillRegistry;
 import com.izakji.mccreatorutils.client.agent.context.BlockInfoTool;
 import com.izakji.mccreatorutils.client.agent.context.ClientLogReader;
+import com.izakji.mccreatorutils.client.agent.context.DebugInfoTool;
 import com.izakji.mccreatorutils.client.agent.context.EntityInfoTool;
 import com.izakji.mccreatorutils.client.agent.context.GameSnapshotProvider;
 import com.izakji.mccreatorutils.client.agent.context.GameSnapshotTool;
@@ -360,6 +361,7 @@ public final class AgentClientService implements AutoCloseable, AgentTurnPort {
         tools.register(new GameSnapshotTool(gameSnapshotProvider));
         tools.register(new TickStatsTool());
         tools.register(new SystemStatsTool());
+        tools.register(new DebugInfoTool());
         tools.register(new NetworkStatsTool());
         tools.register(new LogsTailTool(logReader));
         tools.register(new SearchLogsTool(logReader));
