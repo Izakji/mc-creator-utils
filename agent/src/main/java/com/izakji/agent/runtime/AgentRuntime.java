@@ -430,7 +430,9 @@ public final class AgentRuntime implements AutoCloseable {
                 .toList();
         return new ToolResult(
                 result.callId(),
-                result.content() + "\nImage attachment omitted: image input is disabled for this provider profile.",
+                result.content()
+                        + "\nImage attachment omitted: image input is disabled for this provider profile. "
+                        + "Enable Image input in provider settings and use a vision-capable model.",
                 result.error(),
                 kept);
     }

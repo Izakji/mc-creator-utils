@@ -31,6 +31,9 @@ public final class AgentChatRenderer {
     private static final int ERROR_TEXT = 0xFFFF7777;
     private static final int TOOL_TEXT = 0xFFFFD45A;
     private static final int REASONING_TEXT = 0xFFB8A6FF;
+    private static final int HEADING_TEXT = 0xFF62C45A;
+    private static final int SUBTITLE_TEXT = 0xFFF7700C;
+    private static final int CODE_TEXT = 0xFF0CC4F7;
     private static final float TEXT_SCALE = 7f / 9f;
     private static final int LINE_HEIGHT = 8;
     private static CachedTranscript cache;
@@ -290,22 +293,38 @@ public final class AgentChatRenderer {
     }
 
     private static Component markdown(String line) {
+        List<AgentMarkdown.Span> spans = AgentMarkdown.parseLine(line);
+        boolean heading = isWholeLineBold(spans);
         MutableComponent result = Component.empty();
-        for (AgentMarkdown.Span span : AgentMarkdown.parseLine(line)) {
+        for (AgentMarkdown.Span span : spans) {
             MutableComponent part = Component.literal(span.text());
             Style style = Style.EMPTY;
             if (span.bold()) {
-                style = style.withBold(true);
+                style = style.withBold(true).withColor(heading ? HEADING_TEXT : SUBTITLE_TEXT);
             }
             if (span.italic()) {
                 style = style.withItalic(true);
             }
             if (span.code()) {
-                style = style.withColor(0xFFB0B0B0);
+                style = style.withColor(CODE_TEXT);
             }
             result.append(part.withStyle(style));
         }
         return result;
+    }
+
+    private static boolean isWholeLineBold(List<AgentMarkdown.Span> spans) {
+        boolean sawBold = false;
+        for (AgentMarkdown.Span span : spans) {
+            if (span.text().isBlank()) {
+                continue;
+            }
+            if (!span.bold()) {
+                return false;
+            }
+            sawBold = true;
+        }
+        return sawBold;
     }
 
     private static String truncate(Font font, String value, int maxWidth) {

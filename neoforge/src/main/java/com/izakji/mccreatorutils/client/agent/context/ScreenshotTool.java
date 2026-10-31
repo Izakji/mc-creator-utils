@@ -71,7 +71,7 @@ public final class ScreenshotTool implements AgentTool {
                                 + captured.width()
                                 + "x"
                                 + captured.height()
-                                + "). A downscaled JPEG was prepared for visual analysis.",
+                                + "). The PNG contains the world view without HUD or chat overlays; a downscaled JPEG was prepared for visual analysis.",
                         false,
                         List.of(new ImagePart("image/jpeg", captured.jpeg()))))
                 .exceptionally(failure -> {
