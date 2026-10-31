@@ -52,6 +52,7 @@ neoForge {
     mods {
         "${mod_id}" {
             sourceSet(sourceSets.main)
+            sourceSet(project(':agent').sourceSets.main)
         }
     }
 }
