@@ -184,6 +184,10 @@ public final class AgentProviderTab extends UIElement {
         baseUrl.setText(profile.baseUrl());
         model.setText(profile.model());
         apiKey.setText("");
+        apiKey.textFieldStyle(style -> style.placeholder(Component.literal(
+                profile.apiKey().isBlank()
+                        ? "Leave blank to keep the existing key"
+                        : "Key saved - leave blank to keep it")));
         temperature.setText(Double.toString(profile.temperature()));
         maxOutput.setText(Integer.toString(profile.maxOutputTokens()));
         contextWindow.setText(Integer.toString(profile.contextWindow()));
@@ -198,6 +202,7 @@ public final class AgentProviderTab extends UIElement {
         baseUrl.setText(preset.baseUrl());
         model.setText(preset.model());
         apiKey.setText("");
+        apiKey.textFieldStyle(style -> style.placeholder(Component.literal("Leave blank to keep the existing key")));
         temperature.setText(Double.toString(preset.temperature()));
         maxOutput.setText(Integer.toString(preset.maxOutputTokens()));
         contextWindow.setText(Integer.toString(preset.contextWindow()));

@@ -300,6 +300,43 @@ public final class AgentChatSession {
         presenter.refresh();
     }
 
+    /**
+     * Selects the provider profile used by the current or next conversation.
+     *
+     * @param id profile id
+     * @return true when the selection was applied
+     */
+    public boolean selectProfile(String id) {
+        if (!ready() || !hasProfile(id)) {
+            return false;
+        }
+        profileId = id;
+        Conversation current = conversation;
+        if (current != null && !current.profileId().equals(id)) {
+            Conversation updated = new Conversation(
+                    current.id(),
+                    current.title(),
+                    current.created(),
+                    Instant.now(),
+                    id,
+                    current.messages(),
+                    current.conversationApprovals());
+            conversation = updated;
+            ioExecutor.execute(() -> {
+                try {
+                    port.conversations().save(updated);
+                } catch (RuntimeException failure) {
+                    uiExecutor.execute(() -> {
+                        model.addError("Could not save the provider selection.");
+                        presenter.refresh();
+                    });
+                }
+            });
+        }
+        presenter.refresh();
+        return true;
+    }
+
     public void approve(String approvalId, ApprovalChoice choice) {
         if (!conversationId.isBlank()) {
             port.approve(conversationId, approvalId, choice);

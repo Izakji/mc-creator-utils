@@ -266,7 +266,10 @@ public final class AgentChatScreen extends Screen {
                 break;
             }
         }
-        selectedProfile = profiles.get((current + 1) % profiles.size()).id();
+        String candidate = profiles.get((current + 1) % profiles.size()).id();
+        if (session.selectProfile(candidate)) {
+            selectedProfile = candidate;
+        }
         updateWidgets();
     }
 

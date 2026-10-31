@@ -129,6 +129,28 @@ class AgentChatSessionTest {
     }
 
     @Test
+    void explicitProfileSelectionIsUsedForNewConversation() {
+        FakePort port = FakePort.withTwoProfiles();
+        AgentChatSession session = new AgentChatSession(port, Runnable::run);
+        session.presenter(new FakePresenter());
+        assertTrue(session.selectProfile("deepseek"));
+        assertTrue(session.send("hello"));
+        assertEquals("deepseek", port.conversation.profileId());
+    }
+
+    @Test
+    void selectingAProfileUpdatesAnExistingConversation() {
+        FakePort port = FakePort.withTwoProfiles();
+        String conversationId = port.storeConversation("openai");
+        AgentChatSession session = new AgentChatSession(port, Runnable::run);
+        session.presenter(new FakePresenter());
+        assertTrue(session.open(conversationId));
+        assertTrue(session.selectProfile("deepseek"));
+        assertTrue(session.send("hello"));
+        assertEquals("deepseek", port.conversation.profileId());
+    }
+
+    @Test
     void lateCallbacksAfterLogoutAreIgnored() {
         FakePort port = FakePort.withProfile();
         AgentChatSession session = new AgentChatSession(port, Runnable::run);
@@ -280,19 +302,19 @@ class AgentChatSessionTest {
         static FakePort withProfile() {
             return new FakePort(new AgentSettings(
                     "openai",
-                    List.of(new com.izakji.agent.config.ProviderProfile(
-                            "openai",
-                            "OpenAI",
-                            com.izakji.agent.config.ProviderType.OPENAI_COMPATIBLE,
-                            "https://api.openai.com/v1",
-                            "gpt-4o-mini",
-                            "sk-test",
-                            Map.of(),
-                            0.7,
-                            2048,
-                            128000,
-                            true,
-                            true)),
+                    List.of(profile("openai", "OpenAI", "gpt-4o-mini", "sk-test")),
+                    new PermissionRules(true, Set.of(), Set.of(), Set.of()),
+                    8,
+                    32,
+                    1));
+        }
+
+        static FakePort withTwoProfiles() {
+            return new FakePort(new AgentSettings(
+                    "openai",
+                    List.of(
+                            profile("openai", "OpenAI", "gpt-4o-mini", ""),
+                            profile("deepseek", "DeepSeek", "deepseek-flash", "sk-deepseek")),
                     new PermissionRules(true, Set.of(), Set.of(), Set.of()),
                     8,
                     32,
@@ -301,6 +323,23 @@ class AgentChatSessionTest {
 
         static FakePort withBlankKeyProfile() {
             return new FakePort(AgentDefaults.settings());
+        }
+
+        private static com.izakji.agent.config.ProviderProfile profile(
+                String id, String name, String model, String key) {
+            return new com.izakji.agent.config.ProviderProfile(
+                    id,
+                    name,
+                    com.izakji.agent.config.ProviderType.OPENAI_COMPATIBLE,
+                    "https://api.openai.com/v1",
+                    model,
+                    key,
+                    Map.of(),
+                    0.7,
+                    2048,
+                    128000,
+                    true,
+                    true);
         }
 
         static FakePort withoutProfile() {
