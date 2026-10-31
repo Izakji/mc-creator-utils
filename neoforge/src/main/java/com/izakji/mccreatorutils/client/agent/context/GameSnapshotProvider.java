@@ -88,7 +88,7 @@ public final class GameSnapshotProvider implements ContextProvider {
                 screen,
                 minecraft.getFps(),
                 ping(minecraft, player),
-                Runtime.getRuntime().totalMemory() / (1024 * 1024),
+                (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / (1024 * 1024),
                 Runtime.getRuntime().maxMemory() / (1024 * 1024),
                 minecraft.options.renderDistance().get(),
                 ModList.get().size());
