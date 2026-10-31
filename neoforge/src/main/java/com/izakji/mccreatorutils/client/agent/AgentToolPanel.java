@@ -2,7 +2,6 @@ package com.izakji.mccreatorutils.client.agent;
 
 import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Button;
-import com.lowdragmc.lowdraglib2.gui.ui.elements.Label;
 import com.lowdragmc.lowdraglib2.gui.ui.styletemplate.Sprites;
 import dev.vfyjxf.taffy.style.FlexDirection;
 import net.minecraft.network.chat.Component;
@@ -17,7 +16,7 @@ public final class AgentToolPanel extends UIElement {
     private final Button providerTab = tab("tool.mccreatorutils.agent.tab.provider");
     private final UIElement content = new UIElement();
     private final AgentChatTab chat = new AgentChatTab();
-    private final UIElement providerPlaceholder = new UIElement();
+    private final AgentProviderTab provider = new AgentProviderTab();
     private boolean chatSelected = true;
 
     public AgentToolPanel() {
@@ -37,10 +36,6 @@ public final class AgentToolPanel extends UIElement {
         addChild(tabs);
 
         content.layout(layout -> layout.widthPercent(100).flex(1));
-        providerPlaceholder.layout(layout -> layout.widthPercent(100).heightPercent(100));
-        var placeholder = new Label();
-        placeholder.setText(Component.translatable("tool.mccreatorutils.agent.provider_placeholder"));
-        providerPlaceholder.addChild(placeholder);
         addChild(content);
         select(true);
     }
@@ -57,6 +52,6 @@ public final class AgentToolPanel extends UIElement {
         chatTab.buttonStyle(style -> style.baseTexture(chatSelected ? Sprites.RECT_RD_LIGHT : Sprites.RECT_RD));
         providerTab.buttonStyle(style -> style.baseTexture(chatSelected ? Sprites.RECT_RD : Sprites.RECT_RD_LIGHT));
         content.clearAllChildren();
-        content.addChild(chatSelected ? chat : providerPlaceholder);
+        content.addChild(chatSelected ? chat : provider);
     }
 }

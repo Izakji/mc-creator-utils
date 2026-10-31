@@ -2,8 +2,11 @@ package com.izakji.mccreatorutils.client.agent;
 
 import com.google.gson.Gson;
 import com.izakji.agent.api.AgentException;
+import com.izakji.agent.api.LlmProvider;
 import com.izakji.agent.config.AgentSettings;
 import com.izakji.agent.config.AgentSettingsStore;
+import com.izakji.agent.config.ProviderProfile;
+import com.izakji.agent.config.ProviderType;
 import com.izakji.agent.conversation.Conversation;
 import com.izakji.agent.conversation.ConversationStore;
 import com.izakji.agent.conversation.ConversationSummary;
@@ -131,6 +134,75 @@ public final class AgentClientService implements AutoCloseable, AgentTurnPort {
 
     public Optional<Conversation> conversation(String id) {
         return conversations.load(id);
+    }
+
+    public Optional<ProviderProfile> profile(String id) {
+        return settings.profiles().stream()
+                .filter(profile -> profile.id().equals(id))
+                .findFirst();
+    }
+
+    /**
+     * Adds or replaces a provider profile and persists the settings.
+     *
+     * @param profile new profile
+     */
+    public void upsertProfile(ProviderProfile profile) {
+        List<ProviderProfile> profiles = new java.util.ArrayList<>(settings.profiles());
+        boolean replaced = false;
+        for (int index = 0; index < profiles.size(); index++) {
+            if (profiles.get(index).id().equals(profile.id())) {
+                profiles.set(index, profile);
+                replaced = true;
+                break;
+            }
+        }
+        if (!replaced) {
+            profiles.add(profile);
+        }
+        String defaultId = settings.defaultProfileId();
+        String selectedDefault = defaultId;
+        if (selectedDefault.isBlank()
+                || profiles.stream().noneMatch(item -> item.id().equals(selectedDefault))) {
+            defaultId = profile.id();
+        }
+        saveSettings(new AgentSettings(
+                defaultId,
+                profiles,
+                settings.permissions(),
+                settings.maxToolRounds(),
+                settings.maxToolCalls(),
+                settings.approvalTimeoutSeconds()));
+    }
+
+    /**
+     * Deletes a profile and chooses a remaining profile as default.
+     *
+     * @param id profile id
+     */
+    public void deleteProfile(String id) {
+        List<ProviderProfile> profiles = settings.profiles().stream()
+                .filter(profile -> !profile.id().equals(id))
+                .toList();
+        String defaultId = settings.defaultProfileId();
+        String selectedDefault = defaultId;
+        if (selectedDefault.equals(id)
+                || profiles.stream().noneMatch(profile -> profile.id().equals(selectedDefault))) {
+            defaultId = profiles.isEmpty() ? "" : profiles.get(0).id();
+        }
+        saveSettings(new AgentSettings(
+                defaultId,
+                profiles,
+                settings.permissions(),
+                settings.maxToolRounds(),
+                settings.maxToolCalls(),
+                settings.approvalTimeoutSeconds()));
+    }
+
+    public LlmProvider providerFor(ProviderType type) {
+        return providers
+                .forType(type)
+                .orElseThrow(() -> new IllegalArgumentException("Provider not registered: " + type));
     }
 
     public Conversation createConversation(String profileId) {

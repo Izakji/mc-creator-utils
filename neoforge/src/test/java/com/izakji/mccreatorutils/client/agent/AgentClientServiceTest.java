@@ -79,4 +79,26 @@ class AgentClientServiceTest {
                     .anyMatch(path -> path.getFileName().toString().contains(".corrupt-")));
         }
     }
+
+    @Test
+    void deletingTheDefaultProfileSelectsTheNextProfile() throws Exception {
+        Path root = Files.createTempDirectory("agent-config");
+        try (AgentClientService service = AgentClientService.forConfig(root)) {
+            service.upsertProfile(new ProviderProfile(
+                    "second",
+                    "Second",
+                    ProviderType.OPENAI_COMPATIBLE,
+                    "https://example.invalid/v1",
+                    "model",
+                    "",
+                    Map.of(),
+                    0.7,
+                    2048,
+                    128000,
+                    true,
+                    true));
+            service.deleteProfile("openai");
+            assertEquals("second", service.settings().defaultProfileId());
+        }
+    }
 }
