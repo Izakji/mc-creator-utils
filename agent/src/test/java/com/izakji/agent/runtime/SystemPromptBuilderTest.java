@@ -36,6 +36,7 @@ class SystemPromptBuilderTest {
         assertTrue(prompt.contains("game_snapshot"));
         assertTrue(prompt.contains("player=Steve"));
         assertTrue(prompt.contains("fps=60"));
+        assertTrue(prompt.contains("authoritative"));
         assertTrue(prompt.contains("untrusted") || prompt.contains("tool output"));
     }
 }

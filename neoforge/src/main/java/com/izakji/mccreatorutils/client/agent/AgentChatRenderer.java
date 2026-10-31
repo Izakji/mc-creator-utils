@@ -159,17 +159,20 @@ public final class AgentChatRenderer {
         AgentChatGeometry area = layout.transcript();
         int textWidth = Math.max(1, area.width() - 10);
         List<Line> lines = cachedLines(font, session, screenState, textWidth);
+        int loaderHeight = session.busy() ? 18 : 0;
+        int viewportBottom = area.bottom() - loaderHeight;
+        int viewportHeight = Math.max(1, viewportBottom - area.y() - 6);
         int contentHeight = lines.size() * LINE_HEIGHT;
-        int maxOffset = Math.max(0, contentHeight - Math.max(1, area.height() - 6));
+        int maxOffset = Math.max(0, contentHeight - viewportHeight);
         screenState.onContentMeasured(contentHeight);
         screenState.clampToContent(maxOffset);
-        int startY = contentHeight <= area.height() - 6
+        int startY = contentHeight <= viewportHeight
                 ? area.y() + 4
-                : area.bottom() - contentHeight + screenState.scrollOffset();
-        graphics.enableScissor(area.x() + 1, area.y() + 1, area.right() - 1, area.bottom() - 1);
+                : viewportBottom - contentHeight + screenState.scrollOffset();
+        graphics.enableScissor(area.x() + 1, area.y() + 1, area.right() - 1, viewportBottom);
         List<EntryHit> visibleHits = new ArrayList<>();
         int firstLine = Math.max(0, (area.y() - startY) / LINE_HEIGHT - 1);
-        int lastLine = Math.min(lines.size(), (area.bottom() - startY) / LINE_HEIGHT + 2);
+        int lastLine = Math.min(lines.size(), (viewportBottom - startY) / LINE_HEIGHT + 2);
         for (int index = firstLine; index < lastLine; index++) {
             Line line = lines.get(index);
             int y = startY + index * LINE_HEIGHT;
@@ -180,6 +183,9 @@ public final class AgentChatRenderer {
             graphics.drawString(font, line.text(), area.x() + 5, y, TEXT, false);
         }
         graphics.disableScissor();
+        if (session.busy()) {
+            drawWalkingPig(graphics, area.x() + 5, area.bottom() - 15);
+        }
         return hud ? List.of() : visibleHits;
     }
 
@@ -205,8 +211,10 @@ public final class AgentChatRenderer {
         List<AgentChatModel.Entry> entries = session.model().entries();
         for (int index = 0; index < entries.size(); index++) {
             AgentChatModel.Entry entry = entries.get(index);
-            boolean collapsible =
-                    entry.kind() == AgentChatModel.Kind.REASONING || entry.kind() == AgentChatModel.Kind.TOOL;
+            if (entry.kind() == AgentChatModel.Kind.REASONING) {
+                continue;
+            }
+            boolean collapsible = entry.kind() == AgentChatModel.Kind.TOOL;
             boolean collapsed = collapsible && screenState.isCollapsed(index);
             String marker = collapsible ? (collapsed ? "[+] " : "[-] ") : "";
             String header = marker + header(entry);
@@ -224,6 +232,28 @@ public final class AgentChatRenderer {
             lines.add(new Line(FormattedCharSequence.EMPTY, false, -1));
         }
         return List.copyOf(lines);
+    }
+
+    private static void drawWalkingPig(GuiGraphics graphics, int x, int y) {
+        int frame = AgentPigAnimation.frame(System.currentTimeMillis());
+        int body = 0xFFF2A7A3;
+        int dark = 0xFFD98C88;
+        int snout = 0xFFE89B97;
+        int hoof = 0xFF5A403D;
+        int eye = 0xFF2B1C1C;
+        graphics.fill(x + 2, y + 4, x + 12, y + 10, body);
+        graphics.fill(x + 11, y + 3, x + 16, y + 9, body);
+        graphics.fill(x + 12, y + 1, x + 14, y + 4, dark);
+        graphics.fill(x + 15, y + 6, x + 17, y + 8, snout);
+        graphics.fill(x + 13, y + 5, x + 14, y + 6, eye);
+        graphics.fill(x + 1, y + 4, x + 2, y + 6, dark);
+        int shift = frame % 2;
+        graphics.fill(x + 3 + shift, y + 10, x + 5 + shift, y + 13, dark);
+        graphics.fill(x + 6 - shift, y + 10, x + 8 - shift, y + 12, dark);
+        graphics.fill(x + 9 + shift, y + 10, x + 11 + shift, y + 13, dark);
+        graphics.fill(x + 12 - shift, y + 10, x + 14 - shift, y + 12, dark);
+        graphics.fill(x + 3 + shift, y + 12, x + 5 + shift, y + 13, hoof);
+        graphics.fill(x + 9 + shift, y + 12, x + 11 + shift, y + 13, hoof);
     }
 
     private static String header(AgentChatModel.Entry entry) {

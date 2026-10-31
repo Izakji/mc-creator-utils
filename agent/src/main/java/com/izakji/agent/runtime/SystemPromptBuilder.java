@@ -43,6 +43,7 @@ public final class SystemPromptBuilder {
                 .append("; mutating tools require approval; dangerous tools are denied unless enabled.\n\n");
         if (snapshots != null && !snapshots.isEmpty()) {
             prompt.append("## Live game snapshot\n");
+            prompt.append("The live game snapshot is authoritative for the current player and world state.\n");
             snapshots.stream()
                     .filter(value -> value != null && !value.isBlank())
                     .forEach(value -> prompt.append(value.strip()).append('\n'));

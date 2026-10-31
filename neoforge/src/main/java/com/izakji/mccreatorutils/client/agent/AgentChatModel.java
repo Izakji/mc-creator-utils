@@ -4,7 +4,6 @@ import com.google.gson.JsonObject;
 import com.izakji.agent.api.AssistantMessage;
 import com.izakji.agent.api.ChatMessage;
 import com.izakji.agent.api.ContentPart;
-import com.izakji.agent.api.ReasoningPart;
 import com.izakji.agent.api.TextPart;
 import com.izakji.agent.api.ToolCall;
 import com.izakji.agent.api.ToolMessage;
@@ -66,9 +65,7 @@ public final class AgentChatModel {
                 case UserMessage user -> addUser(text(user.parts()));
                 case AssistantMessage assistant -> {
                     for (ContentPart part : assistant.parts()) {
-                        if (part instanceof ReasoningPart reasoning) {
-                            appendReasoning(reasoning.text());
-                        } else if (part instanceof TextPart text) {
+                        if (part instanceof TextPart text) {
                             appendAssistant(text.text());
                         }
                     }

@@ -46,13 +46,9 @@ class AgentChatModelTest {
         AgentChatModel model = new AgentChatModel();
         model.load(conversation);
         assertEquals(
-                List.of(
-                        AgentChatModel.Kind.USER,
-                        AgentChatModel.Kind.REASONING,
-                        AgentChatModel.Kind.ASSISTANT,
-                        AgentChatModel.Kind.TOOL),
+                List.of(AgentChatModel.Kind.USER, AgentChatModel.Kind.ASSISTANT, AgentChatModel.Kind.TOOL),
                 model.entries().stream().map(AgentChatModel.Entry::kind).toList());
-        assertTrue(model.entries().get(3).error());
+        assertTrue(model.entries().get(2).error());
     }
 
     @Test

@@ -25,6 +25,8 @@ import com.izakji.agent.skill.LoadSkillTool;
 import com.izakji.agent.skill.Skill;
 import com.izakji.agent.skill.SkillLoader;
 import com.izakji.agent.skill.SkillRegistry;
+import com.izakji.mccreatorutils.client.agent.context.GameSnapshotProvider;
+import com.izakji.mccreatorutils.client.agent.context.GameSnapshotTool;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -50,6 +52,7 @@ public final class AgentClientService implements AutoCloseable, AgentTurnPort {
     private final ProviderRegistry providers = new ProviderRegistry();
     private final ConversationStore conversations;
     private final InstructionsLoader instructionsLoader = new InstructionsLoader();
+    private final GameSnapshotProvider gameSnapshotProvider = new GameSnapshotProvider();
     private final ExecutorService ioExecutor = Executors.newSingleThreadExecutor(daemonThreads("io"));
     private AgentSettings settings;
     private List<Skill> skills = List.of();
@@ -330,13 +333,14 @@ public final class AgentClientService implements AutoCloseable, AgentTurnPort {
     private AgentRuntime buildRuntime(SkillRegistry registry) {
         ToolRegistry tools = new ToolRegistry();
         tools.register(new LoadSkillTool(registry));
+        tools.register(new GameSnapshotTool(gameSnapshotProvider));
         return new AgentRuntime(
                 settings,
                 providers,
                 tools,
                 conversations,
                 new PermissionGate(settings.permissions(), List.of()),
-                List.of(),
+                List.of(gameSnapshotProvider),
                 instructions,
                 skills,
                 List.of(),

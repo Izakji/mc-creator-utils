@@ -456,13 +456,7 @@ public final class AgentChatSession {
 
             @Override
             public void onReasoningDelta(String delta) {
-                uiExecutor.execute(() -> {
-                    if (stale()) {
-                        return;
-                    }
-                    model.appendReasoning(delta);
-                    presenter.refresh();
-                });
+                // Reasoning stays internal; the chat shows the pig loader instead.
             }
 
             @Override
