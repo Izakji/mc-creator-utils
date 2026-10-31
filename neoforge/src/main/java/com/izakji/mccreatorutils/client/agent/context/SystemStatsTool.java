@@ -10,25 +10,20 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Read-only client performance history tool.
+ * Read-only CPU, heap, and garbage-collection tool.
  *
  * @author Izakji
  */
-public final class PerformanceTool implements AgentTool {
-    private final PerformanceMonitor monitor;
-
-    public PerformanceTool(PerformanceMonitor monitor) {
-        this.monitor = monitor;
-    }
+public final class SystemStatsTool implements AgentTool {
 
     @Override
     public String name() {
-        return "performance";
+        return "system_stats";
     }
 
     @Override
     public String description() {
-        return "Read recent client FPS, memory, ping, and render-distance history";
+        return "Read process and system CPU load, heap usage, and garbage-collection pauses";
     }
 
     @Override
@@ -46,7 +41,10 @@ public final class PerformanceTool implements AgentTool {
 
     @Override
     public CompletableFuture<ToolResult> execute(ToolInvocation invocation, ToolContext context) {
-        return CompletableFuture.completedFuture(
-                new ToolResult(invocation.callId(), PerformanceReport.format(monitor.samples()), false, List.of()));
+        return CompletableFuture.completedFuture(new ToolResult(
+                invocation.callId(),
+                SystemStatsReport.format(SystemDiagnostics.instance().snapshot()),
+                false,
+                List.of()));
     }
 }

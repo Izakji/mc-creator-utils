@@ -31,7 +31,8 @@ public final class AgentChatRenderer {
     private static final int ERROR_TEXT = 0xFFFF7777;
     private static final int TOOL_TEXT = 0xFFFFD45A;
     private static final int REASONING_TEXT = 0xFFB8A6FF;
-    private static final int LINE_HEIGHT = 10;
+    private static final float TEXT_SCALE = 7f / 9f;
+    private static final int LINE_HEIGHT = 8;
     private static CachedTranscript cache;
 
     private AgentChatRenderer() {}
@@ -180,7 +181,11 @@ public final class AgentChatRenderer {
                 visibleHits.add(new EntryHit(
                         line.entryIndex(), new AgentChatGeometry(area.x() + 4, y, textWidth, LINE_HEIGHT)));
             }
-            graphics.drawString(font, line.text(), area.x() + 5, y, TEXT, false);
+            graphics.pose().pushPose();
+            graphics.pose().translate(area.x() + 5, y, 0);
+            graphics.pose().scale(TEXT_SCALE, TEXT_SCALE, 1f);
+            graphics.drawString(font, line.text(), 0, 0, TEXT, false);
+            graphics.pose().popPose();
         }
         graphics.disableScissor();
         if (session.busy()) {
@@ -222,9 +227,10 @@ public final class AgentChatRenderer {
                 lines.add(new Line(styled(header, color(entry.kind())).getVisualOrderText(), true, index));
             }
             if (!collapsed) {
+                int scaledWidth = Math.max(1, Math.round(textWidth / TEXT_SCALE));
                 for (String raw : entry.text().split("\\n", -1)) {
                     Component line = markdown(raw);
-                    for (FormattedCharSequence sequence : font.split(line, textWidth)) {
+                    for (FormattedCharSequence sequence : font.split(line, scaledWidth)) {
                         lines.add(new Line(sequence, false, -1));
                     }
                 }

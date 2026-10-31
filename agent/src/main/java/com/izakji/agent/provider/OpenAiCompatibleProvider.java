@@ -89,7 +89,17 @@ public final class OpenAiCompatibleProvider implements LlmProvider {
         body.addProperty("temperature", profile.temperature());
         body.addProperty("max_tokens", request.maxOutputTokens());
         JsonArray messages = new JsonArray();
-        request.messages().forEach(message -> messages.add(messageBody(message)));
+        for (ChatMessage message : request.messages()) {
+            messages.add(messageBody(message));
+            if (profile.imageInput() && message instanceof ToolMessage tool) {
+                List<ContentPart> images = tool.parts().stream()
+                        .filter(ImagePart.class::isInstance)
+                        .toList();
+                if (!images.isEmpty()) {
+                    messages.add(toolImageMessage(tool, images));
+                }
+            }
+        }
         body.add("messages", messages);
         if (!request.tools().isEmpty()) {
             JsonArray tools = new JsonArray();
@@ -151,6 +161,16 @@ public final class OpenAiCompatibleProvider implements LlmProvider {
             }
         }
         return object;
+    }
+
+    private JsonObject toolImageMessage(ToolMessage tool, List<ContentPart> images) {
+        List<ContentPart> parts = new ArrayList<>();
+        parts.add(new TextPart("Images returned by tool '" + tool.name() + "'."));
+        parts.addAll(images);
+        JsonObject message = new JsonObject();
+        message.addProperty("role", "user");
+        message.add("content", content(parts));
+        return message;
     }
 
     private JsonObject toolBody(ToolSchema tool) {

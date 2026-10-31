@@ -31,13 +31,16 @@ import com.izakji.mccreatorutils.client.agent.context.EntityInfoTool;
 import com.izakji.mccreatorutils.client.agent.context.GameSnapshotProvider;
 import com.izakji.mccreatorutils.client.agent.context.GameSnapshotTool;
 import com.izakji.mccreatorutils.client.agent.context.InventoryTool;
+import com.izakji.mccreatorutils.client.agent.context.LogSummaryTool;
 import com.izakji.mccreatorutils.client.agent.context.LogsTailTool;
 import com.izakji.mccreatorutils.client.agent.context.ModListTool;
-import com.izakji.mccreatorutils.client.agent.context.PerformanceMonitor;
-import com.izakji.mccreatorutils.client.agent.context.PerformanceTool;
+import com.izakji.mccreatorutils.client.agent.context.NetworkStatsTool;
 import com.izakji.mccreatorutils.client.agent.context.RecipeLookupTool;
 import com.izakji.mccreatorutils.client.agent.context.RegistrySearchTool;
+import com.izakji.mccreatorutils.client.agent.context.ScreenshotTool;
 import com.izakji.mccreatorutils.client.agent.context.SearchLogsTool;
+import com.izakji.mccreatorutils.client.agent.context.SystemStatsTool;
+import com.izakji.mccreatorutils.client.agent.context.TickStatsTool;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -66,6 +69,7 @@ public final class AgentClientService implements AutoCloseable, AgentTurnPort {
     private final GameSnapshotProvider gameSnapshotProvider = new GameSnapshotProvider();
     private final ExecutorService ioExecutor = Executors.newSingleThreadExecutor(daemonThreads("io"));
     private final ClientLogReader logReader;
+    private final Path gameDirectory;
     private AgentSettings settings;
     private List<Skill> skills = List.of();
     private String instructions = "";
@@ -74,8 +78,9 @@ public final class AgentClientService implements AutoCloseable, AgentTurnPort {
 
     private AgentClientService(Path configDir) {
         this.paths = AgentPaths.at(configDir);
-        this.logReader = new ClientLogReader(
-                configDir.toAbsolutePath().resolveSibling("logs").resolve("latest.log"), ioExecutor);
+        Path parent = configDir.toAbsolutePath().getParent();
+        this.gameDirectory = parent == null ? configDir.toAbsolutePath() : parent;
+        this.logReader = new ClientLogReader(gameDirectory.resolve("logs").resolve("latest.log"), ioExecutor);
         try {
             paths.ensureDirectories();
         } catch (IOException failure) {
@@ -348,9 +353,13 @@ public final class AgentClientService implements AutoCloseable, AgentTurnPort {
         ToolRegistry tools = new ToolRegistry();
         tools.register(new LoadSkillTool(registry));
         tools.register(new GameSnapshotTool(gameSnapshotProvider));
-        tools.register(new PerformanceTool(PerformanceMonitor.instance()));
+        tools.register(new TickStatsTool());
+        tools.register(new SystemStatsTool());
+        tools.register(new NetworkStatsTool());
         tools.register(new LogsTailTool(logReader));
         tools.register(new SearchLogsTool(logReader));
+        tools.register(new LogSummaryTool(logReader));
+        tools.register(new ScreenshotTool(gameDirectory, ioExecutor));
         tools.register(new ModListTool());
         tools.register(new InventoryTool());
         tools.register(new BlockInfoTool());

@@ -118,7 +118,11 @@ public final class AnthropicProvider implements LlmProvider {
                     JsonObject block = new JsonObject();
                     block.addProperty("type", "tool_result");
                     block.addProperty("tool_use_id", tool.toolCallId());
-                    block.addProperty("content", text(tool.parts()));
+                    if (profile.imageInput() && tool.parts().stream().anyMatch(ImagePart.class::isInstance)) {
+                        block.add("content", blocks(tool.parts()));
+                    } else {
+                        block.addProperty("content", text(tool.parts()));
+                    }
                     block.addProperty("is_error", tool.error());
                     JsonArray blocks = new JsonArray();
                     blocks.add(block);

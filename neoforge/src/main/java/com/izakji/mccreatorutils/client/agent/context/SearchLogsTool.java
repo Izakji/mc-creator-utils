@@ -28,7 +28,7 @@ public final class SearchLogsTool implements AgentTool {
 
     @Override
     public String description() {
-        return "Search the recent client latest.log case-insensitively";
+        return "Search the recent client latest.log by text, level, and context lines";
     }
 
     @Override
@@ -44,6 +44,19 @@ public final class SearchLogsTool implements AgentTool {
         limit.addProperty("minimum", 1);
         limit.addProperty("maximum", 200);
         properties.add("limit", limit);
+        JsonObject level = new JsonObject();
+        level.addProperty("type", "string");
+        com.google.gson.JsonArray levels = new com.google.gson.JsonArray();
+        for (String value : List.of("ERROR", "WARN", "INFO", "DEBUG", "TRACE", "FATAL")) {
+            levels.add(value);
+        }
+        level.add("enum", levels);
+        properties.add("level", level);
+        JsonObject context = new JsonObject();
+        context.addProperty("type", "integer");
+        context.addProperty("minimum", 0);
+        context.addProperty("maximum", 5);
+        properties.add("context", context);
         schema.add("properties", properties);
         com.google.gson.JsonArray required = new com.google.gson.JsonArray();
         required.add("query");
@@ -64,7 +77,14 @@ public final class SearchLogsTool implements AgentTool {
         int limit = invocation.arguments() != null && invocation.arguments().has("limit")
                 ? invocation.arguments().get("limit").getAsInt()
                 : 100;
-        return reader.search(query, limit)
+        String level = invocation.arguments() != null && invocation.arguments().has("level")
+                ? invocation.arguments().get("level").getAsString()
+                : "";
+        int surrounding =
+                invocation.arguments() != null && invocation.arguments().has("context")
+                        ? invocation.arguments().get("context").getAsInt()
+                        : 0;
+        return reader.search(query, limit, level, surrounding)
                 .thenApply(text -> new ToolResult(invocation.callId(), text, false, List.of()));
     }
 }

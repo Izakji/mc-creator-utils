@@ -6,6 +6,7 @@ import com.izakji.agent.api.AssistantMessage;
 import com.izakji.agent.api.ChatMessage;
 import com.izakji.agent.api.ChatRequest;
 import com.izakji.agent.api.ContentPart;
+import com.izakji.agent.api.ImagePart;
 import com.izakji.agent.api.LlmProvider;
 import com.izakji.agent.api.ReasoningPart;
 import com.izakji.agent.api.StreamListener;
@@ -261,7 +262,7 @@ public final class AgentRuntime implements AutoCloseable {
                 }
                 for (ToolCall call : assistant.toolCalls()) {
                     calls++;
-                    ToolExecution execution = executeTool(conversation, call, observer, handle);
+                    ToolExecution execution = executeTool(conversation, call, observer, handle, profile);
                     conversation = execution.conversation();
                 }
             }
@@ -344,7 +345,11 @@ public final class AgentRuntime implements AutoCloseable {
     }
 
     private ToolExecution executeTool(
-            Conversation conversation, ToolCall call, TurnObserver observer, TurnHandle handle) {
+            Conversation conversation,
+            ToolCall call,
+            TurnObserver observer,
+            TurnHandle handle,
+            ProviderProfile profile) {
         AgentTool tool = tools.find(call.name()).orElse(null);
         if (tool == null) {
             return rejected(conversation, call, observer, "Unknown tool: " + call.name());
@@ -408,11 +413,26 @@ public final class AgentRuntime implements AutoCloseable {
         }
         result = new ToolResult(
                 result.callId(), redactor.redact(result.content()), result.error(), result.attachments());
+        result = gateImages(result, profile);
         observer.onToolFinished(result);
         com.izakji.agent.api.ToolMessage message = toolMessage(result, call.name());
         Conversation updated = conversation.withMessage(message, clock.instant());
         conversations.save(updated);
         return new ToolExecution(updated, message);
+    }
+
+    private static ToolResult gateImages(ToolResult result, ProviderProfile profile) {
+        if (profile.imageInput() || result.attachments().stream().noneMatch(ImagePart.class::isInstance)) {
+            return result;
+        }
+        List<ContentPart> kept = result.attachments().stream()
+                .filter(part -> !(part instanceof ImagePart))
+                .toList();
+        return new ToolResult(
+                result.callId(),
+                result.content() + "\nImage attachment omitted: image input is disabled for this provider profile.",
+                result.error(),
+                kept);
     }
 
     private ToolExecution rejected(Conversation conversation, ToolCall call, TurnObserver observer, String message) {

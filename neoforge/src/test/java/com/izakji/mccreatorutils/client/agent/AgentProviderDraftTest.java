@@ -55,7 +55,8 @@ class AgentProviderDraftTest {
                         128000,
                         true,
                         0,
-                        Map.of("Authorization", "Bearer header-secret"))
+                        Map.of("Authorization", "Bearer header-secret"),
+                        false)
                 .withApiKey("sk-secret");
         String text = draft.toString();
         assertTrue(!text.contains("sk-secret"));

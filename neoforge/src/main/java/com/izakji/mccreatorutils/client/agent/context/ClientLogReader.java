@@ -35,8 +35,18 @@ public final class ClientLogReader {
     }
 
     public CompletableFuture<String> search(String query, int limit) {
+        return search(query, limit, "", 0);
+    }
+
+    public CompletableFuture<String> search(String query, int limit, String level, int context) {
         int count = Math.max(1, Math.min(200, limit));
-        return CompletableFuture.supplyAsync(() -> searchBlocking(query, count), ioExecutor);
+        int surrounding = Math.max(0, Math.min(5, context));
+        return CompletableFuture.supplyAsync(() -> searchBlocking(query, count, level, surrounding), ioExecutor);
+    }
+
+    public CompletableFuture<String> summary(int maxGroups) {
+        int groups = Math.max(1, Math.min(50, maxGroups));
+        return CompletableFuture.supplyAsync(() -> summaryBlocking(groups), ioExecutor);
     }
 
     private String tailBlocking(int lines) {
@@ -57,38 +67,75 @@ public final class ClientLogReader {
         }
     }
 
-    private String searchBlocking(String query, int limit) {
+    private String searchBlocking(String query, int limit, String level, int context) {
         if (query == null || query.isBlank()) {
             return "Log search query is empty.";
+        }
+        String normalizedLevel = LogSummaryReport.normalizedLevel(level);
+        if (level != null && !level.isBlank() && normalizedLevel.isEmpty()) {
+            return "Unknown log level: " + level;
         }
         try {
             String text = readLast(SEARCH_LIMIT);
             if (text == null) {
                 return missing();
             }
+            String[] lines = text.split("\\R", -1);
             String needle = query.toLowerCase(java.util.Locale.ROOT);
-            List<String> matches = new ArrayList<>();
-            for (String line : text.split("\\R")) {
-                if (line.toLowerCase(java.util.Locale.ROOT).contains(needle)) {
-                    matches.add(line);
+            List<Integer> matches = new ArrayList<>();
+            for (int index = 0; index < lines.length; index++) {
+                String line = lines[index];
+                if (!line.toLowerCase(java.util.Locale.ROOT).contains(needle)) {
+                    continue;
                 }
+                if (!normalizedLevel.isEmpty() && !normalizedLevel.equals(LogSummaryReport.levelOf(line))) {
+                    continue;
+                }
+                matches.add(index);
             }
             if (matches.isEmpty()) {
                 return "No matching log lines in the last " + (SEARCH_LIMIT / 1024) + " KiB.";
             }
             int start = Math.max(0, matches.size() - limit);
+            boolean[] selected = new boolean[lines.length];
+            boolean[] matched = new boolean[lines.length];
+            for (int index = start; index < matches.size(); index++) {
+                int line = matches.get(index);
+                matched[line] = true;
+                int from = Math.max(0, line - context);
+                int to = Math.min(lines.length - 1, line + context);
+                for (int selectedLine = from; selectedLine <= to; selectedLine++) {
+                    selected[selectedLine] = true;
+                }
+            }
             StringBuilder result = new StringBuilder();
             result.append("Matches: ")
                     .append(matches.size())
                     .append(", showing the newest ")
                     .append(matches.size() - start)
                     .append('\n');
-            for (int index = start; index < matches.size(); index++) {
-                result.append(matches.get(index)).append('\n');
+            for (int index = 0; index < lines.length; index++) {
+                if (selected[index]) {
+                    result.append(matched[index] ? "> " : "  ")
+                            .append(lines[index])
+                            .append('\n');
+                }
             }
             return bounded(result.toString());
         } catch (IOException failure) {
             return "Could not search the client log: " + failure.getClass().getSimpleName();
+        }
+    }
+
+    private String summaryBlocking(int maxGroups) {
+        try {
+            String text = readLast(SEARCH_LIMIT);
+            if (text == null) {
+                return missing();
+            }
+            return LogSummaryReport.format(text, maxGroups);
+        } catch (IOException failure) {
+            return "Could not summarize the client log: " + failure.getClass().getSimpleName();
         }
     }
 

@@ -163,6 +163,63 @@ class AgentRuntimeToolTest {
     }
 
     @Test
+    void stripsImagesWhenProfileDisablesImageInput() throws Exception {
+        FakeProvider provider = new FakeProvider(List.of(
+                new FakeProvider.Turn(List.of(), List.of(), List.of(TestMessages.call("call-1"))),
+                new FakeProvider.Turn(List.of("done"), List.of(), List.of())));
+        FakeTool tool = new FakeTool("mutate", ToolRisk.READ_ONLY, "captured");
+        tool.withAttachments(List.of(new com.izakji.agent.api.ImagePart("image/jpeg", new byte[] {1, 2})));
+        try (AgentRuntime runtime =
+                AgentRuntimeTestSupport.runtime(AgentRuntimeTestSupport.root(), provider, List.of(tool))) {
+            Conversation conversation = runtime.createConversation("Chat", "main");
+            RecordingObserver observer = new RecordingObserver();
+            runtime.startTurn(conversation.id(), "look", observer).completion().get(2, TimeUnit.SECONDS);
+            assertEquals(1, tool.executions.size());
+            assertTrue(observer.toolResults.get(0).attachments().isEmpty());
+            assertTrue(
+                    observer.toolResults.get(0).content().contains("Image attachment omitted"),
+                    observer.toolResults.get(0).content());
+        }
+    }
+
+    @Test
+    void keepsImagesWhenProfileEnablesImageInput() throws Exception {
+        FakeProvider provider = new FakeProvider(List.of(
+                new FakeProvider.Turn(List.of(), List.of(), List.of(TestMessages.call("call-1"))),
+                new FakeProvider.Turn(List.of("done"), List.of(), List.of())));
+        FakeTool tool = new FakeTool("mutate", ToolRisk.READ_ONLY, "captured");
+        tool.withAttachments(List.of(new com.izakji.agent.api.ImagePart("image/jpeg", new byte[] {1, 2})));
+        com.izakji.agent.config.AgentSettings base = AgentRuntimeTestSupport.settings();
+        com.izakji.agent.config.ProviderProfile profile = base.profiles().get(0);
+        com.izakji.agent.config.ProviderProfile vision = new com.izakji.agent.config.ProviderProfile(
+                profile.id(),
+                profile.displayName(),
+                profile.type(),
+                profile.baseUrl(),
+                profile.model(),
+                profile.apiKey(),
+                profile.headers(),
+                profile.temperature(),
+                profile.maxOutputTokens(),
+                profile.contextWindow(),
+                profile.stream(),
+                profile.tools(),
+                profile.thinkingBudgetTokens(),
+                true);
+        com.izakji.agent.config.AgentSettings settings = new com.izakji.agent.config.AgentSettings(
+                base.defaultProfileId(), List.of(vision), base.permissions(), 8, 32, 1);
+        try (AgentRuntime runtime =
+                AgentRuntimeTestSupport.runtime(AgentRuntimeTestSupport.root(), provider, List.of(tool), settings)) {
+            Conversation conversation = runtime.createConversation("Chat", "main");
+            RecordingObserver observer = new RecordingObserver();
+            runtime.startTurn(conversation.id(), "look", observer).completion().get(2, TimeUnit.SECONDS);
+            assertEquals(1, observer.toolResults.get(0).attachments().size());
+            org.junit.jupiter.api.Assertions.assertFalse(
+                    observer.toolResults.get(0).content().contains("Image attachment omitted"));
+        }
+    }
+
+    @Test
     void redactsConfiguredSecretsFromToolResults() throws Exception {
         FakeProvider provider = new FakeProvider(List.of(
                 new FakeProvider.Turn(List.of(), List.of(), List.of(TestMessages.call("call-1"))),

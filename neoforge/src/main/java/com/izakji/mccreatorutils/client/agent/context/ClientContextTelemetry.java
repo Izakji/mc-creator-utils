@@ -8,7 +8,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 
 /**
- * Feeds the low-frequency performance sampler.
+ * Feeds the low-frequency client diagnostics samplers.
  *
  * @author Izakji
  */
@@ -17,7 +17,15 @@ public final class ClientContextTelemetry {
     private ClientContextTelemetry() {}
 
     @SubscribeEvent
-    static void onClientTick(ClientTickEvent.Post event) {
-        PerformanceMonitor.instance().tick(Minecraft.getInstance());
+    static void onClientTickPre(ClientTickEvent.Pre event) {
+        TickDiagnostics.instance().beginTick();
+    }
+
+    @SubscribeEvent
+    static void onClientTickPost(ClientTickEvent.Post event) {
+        Minecraft minecraft = Minecraft.getInstance();
+        TickDiagnostics.instance().endTick();
+        SystemDiagnostics.instance().sampleIfDue();
+        NetworkDiagnostics.instance().sampleIfDue(minecraft);
     }
 }

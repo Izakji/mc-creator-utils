@@ -5,7 +5,6 @@ import com.izakji.agent.api.AssistantMessage;
 import com.izakji.agent.api.ChatMessage;
 import com.izakji.agent.api.ContentPart;
 import com.izakji.agent.api.TextPart;
-import com.izakji.agent.api.ToolCall;
 import com.izakji.agent.api.ToolMessage;
 import com.izakji.agent.api.UserMessage;
 import com.izakji.agent.conversation.Conversation;
@@ -69,11 +68,16 @@ public final class AgentChatModel {
                             appendAssistant(text.text());
                         }
                     }
-                    for (ToolCall call : assistant.toolCalls()) {
-                        addToolStarted(call.name(), call.arguments());
+                    if (!assistant.toolCalls().isEmpty()) {
+                        assistantIndex = -1;
+                        reasoningIndex = -1;
                     }
                 }
-                case ToolMessage tool -> addToolFinished(tool.name(), tool.error(), text(tool.parts()));
+                case ToolMessage tool -> {
+                    // Tool activity stays internal; only assistant answers are shown.
+                    assistantIndex = -1;
+                    reasoningIndex = -1;
+                }
                 default -> {
                     // System messages are prompt material, not transcript entries.
                 }
@@ -134,13 +138,11 @@ public final class AgentChatModel {
     public void addToolStarted(String name, JsonObject arguments) {
         assistantIndex = -1;
         reasoningIndex = -1;
-        add(Kind.TOOL, name, arguments == null ? "{}" : arguments.toString(), false, "");
     }
 
     public void addToolFinished(String name, boolean error, String content) {
         assistantIndex = -1;
         reasoningIndex = -1;
-        add(Kind.TOOL, name, content, error, "");
     }
 
     public void addApproval(ApprovalRequest request) {

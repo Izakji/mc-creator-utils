@@ -461,13 +461,7 @@ public final class AgentChatSession {
 
             @Override
             public void onToolStarted(ToolCall call) {
-                uiExecutor.execute(() -> {
-                    if (stale()) {
-                        return;
-                    }
-                    model.addToolStarted(call.name(), call.arguments());
-                    presenter.refresh();
-                });
+                // Tool activity stays internal; only the final answer is shown.
             }
 
             @Override
@@ -476,7 +470,6 @@ public final class AgentChatSession {
                     if (stale()) {
                         return;
                     }
-                    model.addToolFinished("Tool", result.error(), result.content());
                     model.clearApproval();
                     presenter.refresh();
                 });

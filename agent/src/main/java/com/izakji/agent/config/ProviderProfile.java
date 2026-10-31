@@ -22,6 +22,7 @@ import java.util.Objects;
  * @param stream whether to request streaming responses
  * @param tools whether the model supports tool calling
  * @param thinkingBudgetTokens extended-thinking budget, or zero to disable
+ * @param imageInput whether the model accepts image input
  * @author Izakji
  */
 public record ProviderProfile(
@@ -37,7 +38,39 @@ public record ProviderProfile(
         int contextWindow,
         boolean stream,
         boolean tools,
-        int thinkingBudgetTokens) {
+        int thinkingBudgetTokens,
+        boolean imageInput) {
+
+    public ProviderProfile(
+            String id,
+            String displayName,
+            ProviderType type,
+            String baseUrl,
+            String model,
+            String apiKey,
+            Map<String, String> headers,
+            double temperature,
+            int maxOutputTokens,
+            int contextWindow,
+            boolean stream,
+            boolean tools,
+            int thinkingBudgetTokens) {
+        this(
+                id,
+                displayName,
+                type,
+                baseUrl,
+                model,
+                apiKey,
+                headers,
+                temperature,
+                maxOutputTokens,
+                contextWindow,
+                stream,
+                tools,
+                thinkingBudgetTokens,
+                false);
+    }
 
     public ProviderProfile(
             String id,
@@ -65,7 +98,8 @@ public record ProviderProfile(
                 contextWindow,
                 stream,
                 tools,
-                0);
+                0,
+                false);
     }
 
     public ProviderProfile {
@@ -88,7 +122,7 @@ public record ProviderProfile(
                 + ", baseUrl=" + baseUrl + ", model=" + model + ", temperature=" + temperature
                 + ", maxOutputTokens=" + maxOutputTokens + ", contextWindow=" + contextWindow
                 + ", stream=" + stream + ", tools=" + tools + ", thinkingBudgetTokens="
-                + thinkingBudgetTokens + ", apiKey=<redacted>]";
+                + thinkingBudgetTokens + ", imageInput=" + imageInput + ", apiKey=<redacted>]";
     }
 
     private static String required(String value, String name) {

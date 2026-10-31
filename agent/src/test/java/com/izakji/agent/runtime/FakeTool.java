@@ -2,6 +2,7 @@ package com.izakji.agent.runtime;
 
 import com.google.gson.JsonObject;
 import com.izakji.agent.api.AgentTool;
+import com.izakji.agent.api.ContentPart;
 import com.izakji.agent.api.ToolContext;
 import com.izakji.agent.api.ToolInvocation;
 import com.izakji.agent.api.ToolResult;
@@ -19,6 +20,7 @@ final class FakeTool implements AgentTool {
     private final java.util.concurrent.CountDownLatch started = new java.util.concurrent.CountDownLatch(1);
     private RuntimeException failure;
     private boolean neverCompletes;
+    private List<ContentPart> attachments = List.of();
 
     FakeTool(String name, ToolRisk risk, String result) {
         this.name = name;
@@ -32,6 +34,10 @@ final class FakeTool implements AgentTool {
 
     void neverCompletes() {
         this.neverCompletes = true;
+    }
+
+    void withAttachments(List<ContentPart> attachments) {
+        this.attachments = List.copyOf(attachments);
     }
 
     boolean awaitExecution() throws InterruptedException {
@@ -68,6 +74,6 @@ final class FakeTool implements AgentTool {
         if (failure != null) {
             return CompletableFuture.failedFuture(failure);
         }
-        return CompletableFuture.completedFuture(new ToolResult(invocation.callId(), result, false, List.of()));
+        return CompletableFuture.completedFuture(new ToolResult(invocation.callId(), result, false, attachments));
     }
 }

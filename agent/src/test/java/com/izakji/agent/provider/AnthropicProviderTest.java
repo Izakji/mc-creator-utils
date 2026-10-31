@@ -83,6 +83,65 @@ class AnthropicProviderTest {
     }
 
     @Test
+    void sendsToolImagesInsideToolResult() throws Exception {
+        try (TestHttpServer server = TestHttpServer.sse("""
+                event: message_stop
+                data: {}
+
+                """)) {
+            ProviderProfile profile = new ProviderProfile(
+                    "main",
+                    "Anthropic",
+                    ProviderType.ANTHROPIC,
+                    server.baseUrl(),
+                    "claude-sonnet-4-5",
+                    "sk-ant",
+                    Map.of(),
+                    0.7,
+                    2048,
+                    128000,
+                    true,
+                    true,
+                    0,
+                    true);
+            com.izakji.agent.api.ToolMessage tool = new com.izakji.agent.api.ToolMessage(
+                    "call-1",
+                    "screenshot",
+                    List.of(new TextPart("captured"), new com.izakji.agent.api.ImagePart("image/jpeg", new byte[] {1, 2
+                    })),
+                    false);
+            new AnthropicProvider()
+                    .stream(
+                                    new ChatRequest(profile, List.of(tool), List.of(), 2048),
+                                    new RecordingListener(),
+                                    () -> false)
+                            .join();
+
+            com.google.gson.JsonArray messages = com.google.gson.JsonParser.parseString(server.lastBody())
+                    .getAsJsonObject()
+                    .getAsJsonArray("messages");
+            com.google.gson.JsonArray resultContent = messages.get(0)
+                    .getAsJsonObject()
+                    .getAsJsonArray("content")
+                    .get(0)
+                    .getAsJsonObject()
+                    .getAsJsonArray("content");
+            assertEquals(
+                    "text", resultContent.get(0).getAsJsonObject().get("type").getAsString());
+            assertEquals(
+                    "image", resultContent.get(1).getAsJsonObject().get("type").getAsString());
+            assertEquals(
+                    "base64",
+                    resultContent
+                            .get(1)
+                            .getAsJsonObject()
+                            .getAsJsonObject("source")
+                            .get("type")
+                            .getAsString());
+        }
+    }
+
+    @Test
     void sendsThinkingBudgetAndOnlyReplaysSignedOrRedactedBlocks() throws Exception {
         try (TestHttpServer server = TestHttpServer.sse("""
                 event: message_stop

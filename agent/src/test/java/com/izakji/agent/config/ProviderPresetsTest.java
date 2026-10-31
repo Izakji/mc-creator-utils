@@ -13,12 +13,15 @@ class ProviderPresetsTest {
         assertEquals(ProviderType.OPENAI_COMPATIBLE, profile.type());
         assertEquals("https://api.deepseek.com", profile.baseUrl());
         assertEquals("deepseek-chat", profile.model());
+        assertFalse(profile.imageInput());
         assertFalse(profile.toString().contains("sk-secret"));
     }
 
     @Test
     void anthropicUsesNativeAdapter() {
-        assertEquals(ProviderType.ANTHROPIC, ProviderPresets.anthropic("key").type());
+        ProviderProfile profile = ProviderPresets.anthropic("key");
+        assertEquals(ProviderType.ANTHROPIC, profile.type());
+        assertEquals(true, profile.imageInput());
     }
 
     @Test

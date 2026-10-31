@@ -30,7 +30,7 @@ class AgentChatModelTest {
     }
 
     @Test
-    void loadsPersistedMessagesAndKeepsToolErrors() {
+    void loadsPersistedMessagesAndHidesToolActivity() {
         Conversation conversation = new Conversation(
                 "id",
                 "Chat",
@@ -46,9 +46,8 @@ class AgentChatModelTest {
         AgentChatModel model = new AgentChatModel();
         model.load(conversation);
         assertEquals(
-                List.of(AgentChatModel.Kind.USER, AgentChatModel.Kind.ASSISTANT, AgentChatModel.Kind.TOOL),
+                List.of(AgentChatModel.Kind.USER, AgentChatModel.Kind.ASSISTANT),
                 model.entries().stream().map(AgentChatModel.Entry::kind).toList());
-        assertTrue(model.entries().get(2).error());
     }
 
     @Test

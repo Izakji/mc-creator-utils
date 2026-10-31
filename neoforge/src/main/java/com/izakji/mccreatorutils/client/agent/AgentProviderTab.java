@@ -46,6 +46,7 @@ public final class AgentProviderTab extends UIElement {
     private final TextField contextWindow = field("Context window");
     private final TextField thinkingBudget = field("Thinking budget");
     private final Switch tools = new Switch();
+    private final Switch imageInput = new Switch();
     private final Label status = new Label();
     private String selectedId = "";
     private boolean deleteArmed;
@@ -100,17 +101,8 @@ public final class AgentProviderTab extends UIElement {
         numbers.addChildren(temperature, maxOutput, contextWindow, thinkingBudget);
         addRow("Limits", numbers, 14);
 
-        var toolsRow = new UIElement();
-        toolsRow.layout(layout -> layout.widthPercent(100)
-                .height(16)
-                .flexDirection(FlexDirection.ROW)
-                .gapAll(4));
-        var toolsLabel = new Label();
-        toolsLabel.setText(Component.literal("Tool calling"));
-        toolsLabel.layout(layout -> layout.width(100).height(14));
-        tools.layout(layout -> layout.width(30).height(14));
-        toolsRow.addChildren(toolsLabel, tools);
-        addChild(toolsRow);
+        addSwitchRow("Tool calling", tools);
+        addSwitchRow("Image input", imageInput);
 
         var buttons = new UIElement();
         buttons.layout(layout -> layout.widthPercent(100)
@@ -148,6 +140,20 @@ public final class AgentProviderTab extends UIElement {
         button.layout(layout -> layout.flex(1).height(16));
         button.setOnClick(event -> action.run());
         return button;
+    }
+
+    private void addSwitchRow(String label, Switch toggle) {
+        var row = new UIElement();
+        row.layout(layout -> layout.widthPercent(100)
+                .height(16)
+                .flexDirection(FlexDirection.ROW)
+                .gapAll(4));
+        var text = new Label();
+        text.setText(Component.literal(label));
+        text.layout(layout -> layout.width(100).height(14));
+        toggle.layout(layout -> layout.width(30).height(14));
+        row.addChildren(text, toggle);
+        addChild(row);
     }
 
     private void addRow(String label, UIElement field, int height) {
@@ -193,6 +199,7 @@ public final class AgentProviderTab extends UIElement {
         contextWindow.setText(Integer.toString(profile.contextWindow()));
         thinkingBudget.setText(Integer.toString(profile.thinkingBudgetTokens()));
         tools.setOn(profile.tools(), false);
+        imageInput.setOn(profile.imageInput(), false);
         deleteArmed = false;
     }
 
@@ -208,6 +215,7 @@ public final class AgentProviderTab extends UIElement {
         contextWindow.setText(Integer.toString(preset.contextWindow()));
         thinkingBudget.setText(Integer.toString(preset.thinkingBudgetTokens()));
         tools.setOn(preset.tools(), false);
+        imageInput.setOn(preset.imageInput(), false);
         deleteArmed = false;
     }
 
@@ -319,7 +327,9 @@ public final class AgentProviderTab extends UIElement {
                     Integer.parseInt(maxOutput.getRawText()),
                     Integer.parseInt(contextWindow.getRawText()),
                     tools.getValue(),
-                    Integer.parseInt(thinkingBudget.getRawText()));
+                    Integer.parseInt(thinkingBudget.getRawText()),
+                    java.util.Map.of(),
+                    imageInput.getValue());
             return draft;
         } catch (NumberFormatException failure) {
             showError("Limits must be numbers.");

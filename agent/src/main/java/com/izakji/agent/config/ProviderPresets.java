@@ -15,7 +15,13 @@ public final class ProviderPresets {
 
     public static ProviderProfile openAi(String apiKey) {
         return profile(
-                "openai", "OpenAI", ProviderType.OPENAI_COMPATIBLE, "https://api.openai.com/v1", "gpt-4o-mini", apiKey);
+                "openai",
+                "OpenAI",
+                ProviderType.OPENAI_COMPATIBLE,
+                "https://api.openai.com/v1",
+                "gpt-4o-mini",
+                apiKey,
+                true);
     }
 
     public static ProviderProfile openRouter(String apiKey) {
@@ -25,7 +31,8 @@ public final class ProviderPresets {
                 ProviderType.OPENAI_COMPATIBLE,
                 "https://openrouter.ai/api/v1",
                 "openai/gpt-4o-mini",
-                apiKey);
+                apiKey,
+                true);
     }
 
     public static ProviderProfile deepSeek(String apiKey) {
@@ -35,7 +42,8 @@ public final class ProviderPresets {
                 ProviderType.OPENAI_COMPATIBLE,
                 "https://api.deepseek.com",
                 "deepseek-chat",
-                apiKey);
+                apiKey,
+                false);
     }
 
     public static ProviderProfile groq(String apiKey) {
@@ -45,16 +53,24 @@ public final class ProviderPresets {
                 ProviderType.OPENAI_COMPATIBLE,
                 "https://api.groq.com/openai/v1",
                 "llama-3.3-70b-versatile",
-                apiKey);
+                apiKey,
+                false);
     }
 
     public static ProviderProfile ollama(String apiKey) {
         return profile(
-                "ollama", "Ollama", ProviderType.OPENAI_COMPATIBLE, "http://localhost:11434/v1", "llama3.2", apiKey);
+                "ollama",
+                "Ollama",
+                ProviderType.OPENAI_COMPATIBLE,
+                "http://localhost:11434/v1",
+                "llama3.2",
+                apiKey,
+                false);
     }
 
     public static ProviderProfile lmStudio(String apiKey) {
-        return profile("lmstudio", "LM Studio", ProviderType.OPENAI_COMPATIBLE, "http://localhost:1234/v1", "", apiKey);
+        return profile(
+                "lmstudio", "LM Studio", ProviderType.OPENAI_COMPATIBLE, "http://localhost:1234/v1", "", apiKey, false);
     }
 
     public static ProviderProfile anthropic(String apiKey) {
@@ -64,15 +80,22 @@ public final class ProviderPresets {
                 ProviderType.ANTHROPIC,
                 "https://api.anthropic.com",
                 "claude-sonnet-4-5",
-                apiKey);
+                apiKey,
+                true);
     }
 
     public static ProviderProfile custom(ProviderType type) {
-        return profile("custom", "Custom", type, "https://api.openai.com/v1", "", "");
+        return profile("custom", "Custom", type, "https://api.openai.com/v1", "", "", false);
     }
 
     private static ProviderProfile profile(
-            String id, String displayName, ProviderType type, String baseUrl, String model, String apiKey) {
+            String id,
+            String displayName,
+            ProviderType type,
+            String baseUrl,
+            String model,
+            String apiKey,
+            boolean imageInput) {
         return new ProviderProfile(
                 id,
                 displayName,
@@ -85,6 +108,8 @@ public final class ProviderPresets {
                 DEFAULT_MAX_OUTPUT,
                 DEFAULT_CONTEXT_WINDOW,
                 true,
-                true);
+                true,
+                0,
+                imageInput);
     }
 }

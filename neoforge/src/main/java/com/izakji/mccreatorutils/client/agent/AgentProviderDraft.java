@@ -20,6 +20,7 @@ import java.util.Map;
  * @param tools whether tool calling is supported
  * @param thinkingBudgetTokens extended-thinking budget, or zero
  * @param headers custom request headers
+ * @param imageInput whether the model accepts image input
  * @author Izakji
  */
 public record AgentProviderDraft(
@@ -33,7 +34,8 @@ public record AgentProviderDraft(
         int contextWindow,
         boolean tools,
         int thinkingBudgetTokens,
-        Map<String, String> headers) {
+        Map<String, String> headers,
+        boolean imageInput) {
 
     public AgentProviderDraft(
             String displayName,
@@ -57,7 +59,8 @@ public record AgentProviderDraft(
                 contextWindow,
                 tools,
                 thinkingBudgetTokens,
-                Map.of());
+                Map.of(),
+                false);
     }
 
     public AgentProviderDraft {
@@ -87,7 +90,8 @@ public record AgentProviderDraft(
                 profile.contextWindow(),
                 profile.tools(),
                 profile.thinkingBudgetTokens(),
-                profile.headers());
+                profile.headers(),
+                profile.imageInput());
     }
 
     @Override
@@ -110,7 +114,8 @@ public record AgentProviderDraft(
                 contextWindow,
                 tools,
                 thinkingBudgetTokens,
-                headers);
+                headers,
+                imageInput);
     }
 
     /**
@@ -156,6 +161,7 @@ public record AgentProviderDraft(
                 contextWindow,
                 true,
                 tools,
-                thinkingBudgetTokens);
+                thinkingBudgetTokens,
+                imageInput);
     }
 }
