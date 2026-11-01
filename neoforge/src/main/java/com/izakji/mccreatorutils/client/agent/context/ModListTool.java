@@ -59,8 +59,8 @@ public final class ModListTool implements AgentTool {
 
     @Override
     public CompletableFuture<ToolResult> execute(ToolInvocation invocation, ToolContext context) {
-        String query = string(invocation.arguments(), "query");
-        int limit = integer(invocation.arguments(), "limit", 200);
+        String query = ToolArguments.string(invocation.arguments(), "query", "");
+        int limit = ToolArguments.integer(invocation.arguments(), "limit", 200);
         return CompletableFuture.completedFuture(
                 new ToolResult(invocation.callId(), ModListReport.format(mods(), query, limit), false, List.of()));
     }
@@ -100,13 +100,5 @@ public final class ModListTool implements AgentTool {
         } catch (RuntimeException ignored) {
             return "";
         }
-    }
-
-    private static String string(JsonObject arguments, String name) {
-        return arguments != null && arguments.has(name) ? arguments.get(name).getAsString() : "";
-    }
-
-    private static int integer(JsonObject arguments, String name, int fallback) {
-        return arguments != null && arguments.has(name) ? arguments.get(name).getAsInt() : fallback;
     }
 }

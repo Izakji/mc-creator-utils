@@ -13,6 +13,7 @@ import com.lowdragmc.lowdraglib2.gui.ui.elements.TextField;
 import com.lowdragmc.lowdraglib2.gui.ui.utils.UIElementProvider;
 import dev.vfyjxf.taffy.style.FlexDirection;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import net.minecraft.client.Minecraft;
@@ -238,8 +239,10 @@ public final class AgentProviderTab extends UIElement {
             return;
         }
         String id = selectedId.isBlank() ? UUID.randomUUID().toString() : selectedId;
-        String existingKey = service.profile(id).map(ProviderProfile::apiKey).orElse("");
-        ProviderProfile profile = draft.toProfile(id, existingKey);
+        ProviderProfile existing = service.profile(id).orElse(null);
+        String existingKey = existing == null ? "" : existing.apiKey();
+        ProviderProfile profile = draft.withHeaders(existing == null ? Map.of() : existing.headers())
+                .toProfile(id, existingKey);
         AgentChatSession.instance().stop();
         status.setText(Component.literal("Saving provider..."));
         status.textStyle(style -> style.textColor(ColorPattern.YELLOW.color));
@@ -269,8 +272,10 @@ public final class AgentProviderTab extends UIElement {
             return;
         }
         String id = selectedId.isBlank() ? "connection-test" : selectedId;
-        String existingKey = service.profile(id).map(ProviderProfile::apiKey).orElse("");
-        ProviderProfile profile = draft.toProfile(id, existingKey);
+        ProviderProfile existing = service.profile(id).orElse(null);
+        String existingKey = existing == null ? "" : existing.apiKey();
+        ProviderProfile profile = draft.withHeaders(existing == null ? Map.of() : existing.headers())
+                .toProfile(id, existingKey);
         status.setText(Component.literal("Testing connection..."));
         status.textStyle(style -> style.textColor(ColorPattern.YELLOW.color));
         new AgentConnectionTester()

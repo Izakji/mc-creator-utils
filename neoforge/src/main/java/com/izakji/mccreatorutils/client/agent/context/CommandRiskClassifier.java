@@ -13,7 +13,7 @@ import com.izakji.agent.runtime.ToolRiskClassifier;
 public final class CommandRiskClassifier implements ToolRiskClassifier {
     @Override
     public ToolRisk classify(AgentTool tool, ToolInvocation invocation, ToolRisk declared) {
-        if (!"run_command".equals(tool.name())) {
+        if (!(tool instanceof CommandExecutingTool)) {
             return declared;
         }
         return CommandSafety.isReadOnly(invocation.arguments()) ? ToolRisk.READ_ONLY : ToolRisk.MUTATING;

@@ -33,24 +33,24 @@ public final class PermissionGate {
         }
         String name = tool.name();
         if (rules.deniedTools().contains(name)) {
-            return PermissionDecision.deny("Tool is denied by configuration");
+            return PermissionDecision.deny("Tool is denied by configuration", risk);
         }
         if (risk == ToolRisk.DANGEROUS) {
             return rules.enabledDangerousTools().contains(name)
-                    ? PermissionDecision.allow("Dangerous tool explicitly enabled")
-                    : PermissionDecision.deny("Dangerous tool requires explicit enablement");
+                    ? PermissionDecision.allow("Dangerous tool explicitly enabled", risk)
+                    : PermissionDecision.deny("Dangerous tool requires explicit enablement", risk);
         }
         if (rules.allowedTools().contains(name)) {
-            return PermissionDecision.allow("Tool is allowed by configuration");
+            return PermissionDecision.allow("Tool is allowed by configuration", risk);
         }
         if (conversation.conversationApprovals().contains(approvalKey(name, invocation.arguments()))
                 && tool.allowsConversationApproval()) {
-            return PermissionDecision.allow("Tool is approved for this conversation");
+            return PermissionDecision.allow("Tool is approved for this conversation", risk);
         }
         if (risk == ToolRisk.READ_ONLY && rules.readOnlyAutoApprove()) {
-            return PermissionDecision.allow("Read-only tool");
+            return PermissionDecision.allow("Read-only tool", risk);
         }
-        return PermissionDecision.ask("Tool requires user approval");
+        return PermissionDecision.ask("Tool requires user approval", risk);
     }
 
     /**

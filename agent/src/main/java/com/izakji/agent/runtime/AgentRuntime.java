@@ -202,8 +202,9 @@ public final class AgentRuntime implements AutoCloseable {
                     .forType(profile.type())
                     .orElseThrow(() -> new AgentException("Provider not registered: " + profile.type()));
 
-            String systemPrompt =
-                    promptBuilder.build(settings, skills, agentsMarkdown, snapshots(conversationId, handle));
+            boolean toolsEnabled = profile.tools() && provider.supportsTools();
+            String systemPrompt = promptBuilder.build(
+                    settings, skills, agentsMarkdown, snapshots(conversationId, handle), toolsEnabled);
             int historyBudget = Math.max(
                     1,
                     profile.contextWindow()
@@ -354,14 +355,21 @@ public final class AgentRuntime implements AutoCloseable {
         if (tool == null) {
             return rejected(conversation, call, observer, "Unknown tool: " + call.name());
         }
-        PermissionDecision decision = permissions.decide(
-                tool, new com.izakji.agent.api.ToolInvocation(call.id(), call.name(), call.arguments()), conversation);
+        PermissionDecision decision;
+        try {
+            decision = permissions.decide(
+                    tool,
+                    new com.izakji.agent.api.ToolInvocation(call.id(), call.name(), call.arguments()),
+                    conversation);
+        } catch (RuntimeException failure) {
+            return rejected(conversation, call, observer, "Permission check failed: " + failure.getMessage());
+        }
         if (decision.kind() == PermissionKind.DENY) {
             return rejected(conversation, call, observer, "Permission denied: " + decision.reason());
         }
         if (decision.kind() == PermissionKind.ASK) {
             ApprovalRequest request =
-                    new ApprovalRequest(null, tool.name(), tool.risk(), call.arguments(), "Run " + tool.name());
+                    new ApprovalRequest(null, tool.name(), decision.risk(), call.arguments(), "Run " + tool.name());
             CompletableFuture<ApprovalChoice> future = new CompletableFuture<>();
             String key = approvalKey(conversation.id(), request.id());
             pendingApprovals.put(key, future);
@@ -393,20 +401,29 @@ public final class AgentRuntime implements AutoCloseable {
         }
         observer.onToolStarted(call);
         ToolResult result;
-        CompletableFuture<ToolResult> future = tool.execute(
-                new com.izakji.agent.api.ToolInvocation(call.id(), call.name(), call.arguments()),
-                new ToolContext(conversation.id(), handle::isCancelled));
-        Runnable cancel = () -> future.cancel(true);
+        CompletableFuture<ToolResult> future;
+        try {
+            future = tool.execute(
+                    new com.izakji.agent.api.ToolInvocation(call.id(), call.name(), call.arguments()),
+                    new ToolContext(conversation.id(), handle::isCancelled));
+        } catch (RuntimeException failure) {
+            future = CompletableFuture.failedFuture(failure);
+        }
+        if (future == null) {
+            future = CompletableFuture.failedFuture(new IllegalStateException("Tool returned no result future"));
+        }
+        CompletableFuture<ToolResult> toolFuture = future;
+        Runnable cancel = () -> toolFuture.cancel(true);
         handle.onCancel(cancel);
         try {
-            result = future.get(60, TimeUnit.SECONDS);
+            result = toolFuture.get(60, TimeUnit.SECONDS);
         } catch (InterruptedException interrupted) {
             Thread.currentThread().interrupt();
             result = error(call, "Tool interrupted");
         } catch (CancellationException cancelled) {
             result = error(call, "Cancelled");
         } catch (ExecutionException | TimeoutException failure) {
-            future.cancel(true);
+            toolFuture.cancel(true);
             result = error(call, "Tool failed: " + failure.getMessage());
         } finally {
             handle.removeOnCancel(cancel);

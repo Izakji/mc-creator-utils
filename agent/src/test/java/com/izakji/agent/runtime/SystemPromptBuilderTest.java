@@ -39,4 +39,12 @@ class SystemPromptBuilderTest {
         assertTrue(prompt.contains("authoritative"));
         assertTrue(prompt.contains("untrusted") || prompt.contains("tool output"));
     }
+
+    @Test
+    void omitsToolInstructionsWhenToolsAreDisabled() {
+        String prompt = new SystemPromptBuilder().build(TestSettings.settings(), List.of(), "", List.of(), false);
+        assertTrue(prompt.contains("Tool calling is disabled"));
+        assertTrue(!prompt.contains("show_performance_report"));
+        assertTrue(!prompt.contains("run_command"));
+    }
 }

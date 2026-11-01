@@ -65,10 +65,10 @@ public final class RegistrySearchTool implements AgentTool {
 
     @Override
     public CompletableFuture<ToolResult> execute(ToolInvocation invocation, ToolContext context) {
-        String kindId = string(invocation.arguments(), "kind");
-        String query = string(invocation.arguments(), "query");
-        String namespace = string(invocation.arguments(), "namespace");
-        int limit = integer(invocation.arguments(), "limit", 25);
+        String kindId = ToolArguments.string(invocation.arguments(), "kind", "");
+        String query = ToolArguments.string(invocation.arguments(), "query", "");
+        String namespace = ToolArguments.string(invocation.arguments(), "namespace", "");
+        int limit = ToolArguments.integer(invocation.arguments(), "limit", 25);
         return ClientThread.supply(() -> search(kindId, query, namespace, limit))
                 .thenApply(text -> new ToolResult(invocation.callId(), text, false, List.of()))
                 .exceptionally(failure -> new ToolResult(invocation.callId(), message(failure), true, List.of()));
@@ -80,14 +80,6 @@ public final class RegistrySearchTool implements AgentTool {
             throw new IllegalArgumentException("Unknown registry kind: " + kindId);
         }
         return RegistrySearchReader.search(kind, query, namespace, limit);
-    }
-
-    private static String string(JsonObject arguments, String name) {
-        return arguments != null && arguments.has(name) ? arguments.get(name).getAsString() : "";
-    }
-
-    private static int integer(JsonObject arguments, String name, int fallback) {
-        return arguments != null && arguments.has(name) ? arguments.get(name).getAsInt() : fallback;
     }
 
     private static String message(Throwable failure) {

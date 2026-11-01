@@ -102,6 +102,22 @@ public record AgentProviderDraft(
                 + thinkingBudgetTokens + ", apiKey=<redacted>, headers=<redacted>]";
     }
 
+    public AgentProviderDraft withHeaders(Map<String, String> value) {
+        return new AgentProviderDraft(
+                displayName,
+                type,
+                baseUrl,
+                model,
+                apiKey,
+                temperature,
+                maxOutputTokens,
+                contextWindow,
+                tools,
+                thinkingBudgetTokens,
+                value,
+                imageInput);
+    }
+
     public AgentProviderDraft withApiKey(String value) {
         return new AgentProviderDraft(
                 displayName,

@@ -14,7 +14,7 @@ import java.util.concurrent.CompletableFuture;
  *
  * @author Izakji
  */
-public final class RunCommandTool implements AgentTool {
+public final class RunCommandTool implements AgentTool, CommandExecutingTool {
 
     @Override
     public String name() {
@@ -49,18 +49,24 @@ public final class RunCommandTool implements AgentTool {
 
     @Override
     public CompletableFuture<ToolResult> execute(ToolInvocation invocation, ToolContext context) {
-        String command =
-                invocation.arguments() != null && invocation.arguments().has("command")
-                        ? invocation.arguments().get("command").getAsString()
-                        : "";
-        return ClientThread.supply(() -> CommandRunner.run(command))
+        String command = ToolArguments.string(invocation.arguments(), "command", "");
+        CompletableFuture<ToolResult> result = ClientThread.supply(() -> {
+                    context.cancellationToken().throwIfCancelled();
+                    return CommandRunner.run(command, context.cancellationToken()::isCancelled);
+                })
                 .thenCompose(future -> future)
-                .thenApply(result -> new ToolResult(invocation.callId(), format(result), false, List.of()))
+                .thenApply(value -> new ToolResult(invocation.callId(), format(value), false, List.of()))
                 .exceptionally(failure -> {
                     Throwable cause = failure.getCause() == null ? failure : failure.getCause();
                     String message = cause.getMessage() == null ? "Command failed." : cause.getMessage();
                     return new ToolResult(invocation.callId(), message, true, List.of());
                 });
+        result.whenComplete((ignored, failure) -> {
+            if (result.isCancelled()) {
+                CommandRunner.cancel();
+            }
+        });
+        return result;
     }
 
     private static String format(CommandRunner.CommandResult result) {
@@ -74,8 +80,13 @@ public final class RunCommandTool implements AgentTool {
             for (String line : result.lines()) {
                 report.append(line).append('\n');
             }
+            if (result.droppedLines() > 0) {
+                report.append("... ")
+                        .append(result.droppedLines())
+                        .append(" more lines omitted by the capture limit.\n");
+            }
         }
-        report.append("Server permissions still apply.");
+        report.append("Server permissions still apply. Capture may include unrelated system chat.");
         return report.toString();
     }
 }

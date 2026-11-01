@@ -11,15 +11,28 @@ import java.util.List;
  */
 public final class SystemPromptBuilder {
     public String build(AgentSettings settings, List<Skill> skills, String agentsMarkdown, List<String> snapshots) {
+        return build(settings, skills, agentsMarkdown, snapshots, true);
+    }
+
+    public String build(
+            AgentSettings settings,
+            List<Skill> skills,
+            String agentsMarkdown,
+            List<String> snapshots,
+            boolean toolsEnabled) {
         StringBuilder prompt = new StringBuilder();
         prompt.append("You are the Creator Utils in-game Minecraft agent.\n");
-        prompt.append("Use tools when exact game data is needed. Do not invent state.\n");
-        prompt.append(
-                "For performance, FPS, TPS, memory, ping, or log-health requests, call show_performance_report to open the visual report.\n");
-        prompt.append(
-                "For exact JVM, garbage collector, OS, or F3 debug-screen data, call debug_info instead of guessing.\n");
-        prompt.append(
-                "Use list_commands to discover available vanilla and modded commands, and run_command to execute one. Server permissions still apply.\n\n");
+        if (toolsEnabled) {
+            prompt.append("Use tools when exact game data is needed. Do not invent state.\n");
+            prompt.append(
+                    "For performance, FPS, TPS, memory, ping, or log-health requests, call show_performance_report to open the visual report.\n");
+            prompt.append(
+                    "For exact JVM, garbage collector, OS, or F3 debug-screen data, call debug_info instead of guessing.\n");
+            prompt.append(
+                    "Use list_commands to discover available vanilla and modded commands, and run_command to execute one. Server permissions still apply.\n\n");
+        } else {
+            prompt.append("Tool calling is disabled for this profile; answer from the provided context only.\n\n");
+        }
         if (agentsMarkdown != null && !agentsMarkdown.isBlank()) {
             prompt.append("## User instructions\n")
                     .append(agentsMarkdown.strip())

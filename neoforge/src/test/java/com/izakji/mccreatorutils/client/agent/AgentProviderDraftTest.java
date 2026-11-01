@@ -43,6 +43,26 @@ class AgentProviderDraftTest {
     }
 
     @Test
+    void preservesStoredHeadersAcrossEdits() {
+        AgentProviderDraft draft = new AgentProviderDraft(
+                        "OpenAI",
+                        ProviderType.OPENAI_COMPATIBLE,
+                        "https://api.openai.com/v1",
+                        "gpt-4o-mini",
+                        "",
+                        0.7,
+                        2048,
+                        128000,
+                        true,
+                        0,
+                        Map.of("X-Test", "value"),
+                        true)
+                .withHeaders(Map.of("X-Test", "value"));
+        ProviderProfile profile = draft.toProfile("openai", "sk-existing");
+        assertEquals("value", profile.headers().get("X-Test"));
+    }
+
+    @Test
     void toStringRedactsKeysAndHeaders() {
         AgentProviderDraft draft = new AgentProviderDraft(
                         "OpenAI",

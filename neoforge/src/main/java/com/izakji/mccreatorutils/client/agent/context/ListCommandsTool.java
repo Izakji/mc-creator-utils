@@ -50,12 +50,8 @@ public final class ListCommandsTool implements AgentTool {
 
     @Override
     public CompletableFuture<ToolResult> execute(ToolInvocation invocation, ToolContext context) {
-        String query = invocation.arguments() != null && invocation.arguments().has("query")
-                ? invocation.arguments().get("query").getAsString()
-                : "";
-        int limit = invocation.arguments() != null && invocation.arguments().has("limit")
-                ? invocation.arguments().get("limit").getAsInt()
-                : 150;
+        String query = ToolArguments.string(invocation.arguments(), "query", "");
+        int limit = ToolArguments.integer(invocation.arguments(), "limit", 150);
         return ClientThread.supply(() -> CommandCatalog.describe(query, limit))
                 .thenApply(text -> new ToolResult(invocation.callId(), text, false, List.of()))
                 .exceptionally(failure -> new ToolResult(

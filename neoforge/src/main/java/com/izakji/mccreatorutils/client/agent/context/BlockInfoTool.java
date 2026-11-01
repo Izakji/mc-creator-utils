@@ -45,10 +45,7 @@ public final class BlockInfoTool implements AgentTool {
 
     @Override
     public CompletableFuture<ToolResult> execute(ToolInvocation invocation, ToolContext context) {
-        String blockId =
-                invocation.arguments() != null && invocation.arguments().has("block")
-                        ? invocation.arguments().get("block").getAsString()
-                        : "";
+        String blockId = ToolArguments.string(invocation.arguments(), "block", "");
         return ClientThread.supply(() -> BlockInfoReader.build(blockId))
                 .thenApply(text -> new ToolResult(invocation.callId(), text, false, List.of()))
                 .exceptionally(failure -> new ToolResult(

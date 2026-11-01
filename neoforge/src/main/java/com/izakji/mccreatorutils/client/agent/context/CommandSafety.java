@@ -12,10 +12,7 @@ final class CommandSafety {
     private CommandSafety() {}
 
     static String command(JsonObject arguments) {
-        if (arguments == null || !arguments.has("command")) {
-            return "";
-        }
-        return arguments.get("command").getAsString();
+        return ToolArguments.string(arguments, "command", "");
     }
 
     static boolean isReadOnly(JsonObject arguments) {
@@ -40,7 +37,7 @@ final class CommandSafety {
         if (root.equals("worldborder") && tokens.length > 1 && tokens[1].equals("get")) {
             return true;
         }
-        if (root.equals("xp") && tokens.length > 1 && tokens[1].equals("query")) {
+        if ((root.equals("xp") || root.equals("experience")) && tokens.length > 1 && tokens[1].equals("query")) {
             return true;
         }
         if (root.equals("difficulty") && tokens.length == 1) {

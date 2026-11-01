@@ -52,9 +52,7 @@ public final class LogSummaryTool implements AgentTool {
 
     @Override
     public CompletableFuture<ToolResult> execute(ToolInvocation invocation, ToolContext context) {
-        int groups = invocation.arguments() != null && invocation.arguments().has("groups")
-                ? invocation.arguments().get("groups").getAsInt()
-                : 15;
+        int groups = ToolArguments.integer(invocation.arguments(), "groups", 15);
         return reader.summary(groups).thenApply(text -> new ToolResult(invocation.callId(), text, false, List.of()));
     }
 }

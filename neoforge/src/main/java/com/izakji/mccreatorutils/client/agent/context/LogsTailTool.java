@@ -52,11 +52,7 @@ public final class LogsTailTool implements AgentTool {
 
     @Override
     public CompletableFuture<ToolResult> execute(ToolInvocation invocation, ToolContext context) {
-        int lines = integer(invocation.arguments(), "lines", 100);
+        int lines = ToolArguments.integer(invocation.arguments(), "lines", 100);
         return reader.tail(lines).thenApply(text -> new ToolResult(invocation.callId(), text, false, List.of()));
-    }
-
-    private static int integer(JsonObject arguments, String name, int fallback) {
-        return arguments != null && arguments.has(name) ? arguments.get(name).getAsInt() : fallback;
     }
 }

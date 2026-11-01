@@ -1,6 +1,7 @@
 package com.izakji.mccreatorutils.client;
 
 import com.izakji.mccreatorutils.McCreatorUtils;
+import com.izakji.mccreatorutils.client.agent.context.CommandRunner;
 import com.izakji.mccreatorutils.locate.LocateCommands;
 import com.izakji.mccreatorutils.locate.LocateFeedback;
 import java.util.Set;
@@ -124,6 +125,9 @@ public final class ClientLocateTeleporter {
 
     @SubscribeEvent
     static void onChat(ClientChatReceivedEvent event) {
+        if (CommandRunner.isLocateRunning()) {
+            return;
+        }
         Pending request = pending;
         if (request == null) {
             return;

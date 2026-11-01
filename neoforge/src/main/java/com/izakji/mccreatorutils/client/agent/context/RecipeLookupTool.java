@@ -54,12 +54,8 @@ public final class RecipeLookupTool implements AgentTool {
 
     @Override
     public CompletableFuture<ToolResult> execute(ToolInvocation invocation, ToolContext context) {
-        String query = invocation.arguments() != null && invocation.arguments().has("query")
-                ? invocation.arguments().get("query").getAsString()
-                : "";
-        int limit = invocation.arguments() != null && invocation.arguments().has("limit")
-                ? invocation.arguments().get("limit").getAsInt()
-                : 25;
+        String query = ToolArguments.string(invocation.arguments(), "query", "");
+        int limit = ToolArguments.integer(invocation.arguments(), "limit", 25);
         return ClientThread.supply(() -> RecipeIndex.lookup(query, limit))
                 .thenApply(text -> new ToolResult(invocation.callId(), text, false, List.of()))
                 .exceptionally(failure -> new ToolResult(

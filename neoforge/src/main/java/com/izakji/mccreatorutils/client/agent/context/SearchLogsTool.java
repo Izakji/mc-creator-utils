@@ -71,19 +71,10 @@ public final class SearchLogsTool implements AgentTool {
 
     @Override
     public CompletableFuture<ToolResult> execute(ToolInvocation invocation, ToolContext context) {
-        String query = invocation.arguments() != null && invocation.arguments().has("query")
-                ? invocation.arguments().get("query").getAsString()
-                : "";
-        int limit = invocation.arguments() != null && invocation.arguments().has("limit")
-                ? invocation.arguments().get("limit").getAsInt()
-                : 100;
-        String level = invocation.arguments() != null && invocation.arguments().has("level")
-                ? invocation.arguments().get("level").getAsString()
-                : "";
-        int surrounding =
-                invocation.arguments() != null && invocation.arguments().has("context")
-                        ? invocation.arguments().get("context").getAsInt()
-                        : 0;
+        String query = ToolArguments.string(invocation.arguments(), "query", "");
+        int limit = ToolArguments.integer(invocation.arguments(), "limit", 100);
+        String level = ToolArguments.string(invocation.arguments(), "level", "");
+        int surrounding = ToolArguments.integer(invocation.arguments(), "context", 0);
         return reader.search(query, limit, level, surrounding)
                 .thenApply(text -> new ToolResult(invocation.callId(), text, false, List.of()));
     }
