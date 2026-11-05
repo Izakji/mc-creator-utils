@@ -32,6 +32,14 @@ bin/
 ### Mac OS ###
 .DS_Store
 
+### Local secrets ###
+.env
+.env.*
+!.env.example
+secrets/
+*.key
+*.pem
+
 ### Local planning documents ###
 docs/superpowers/
 
