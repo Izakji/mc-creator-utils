@@ -24,7 +24,6 @@ import org.lwjgl.glfw.GLFW;
  * @author Izakji
  */
 public final class BrowserFocusScreen extends Screen {
-    private static final int NAV_BUTTON_WIDTH = 20;
     private static final int TITLE_BUTTON_WIDTH = BrowserWorkspaceRenderer.TITLE_BUTTON_WIDTH;
 
     private final BrowserWorkspace workspace = BrowserWorkspace.instance();
@@ -65,6 +64,7 @@ public final class BrowserFocusScreen extends Screen {
         addressBar.setValue(workspace.activeUrl());
         addRenderableWidget(addressBar);
         workspace.resizeActiveTab();
+        focusContent();
     }
 
     @Override
@@ -236,17 +236,29 @@ public final class BrowserFocusScreen extends Screen {
     }
 
     private void handleNavigationClick(double mouseX) {
-        double relative = mouseX - layout.navBar().x();
         BrowserTabHandle active = workspace.activeTab();
         if (active == null) {
             return;
         }
-        if (relative < NAV_BUTTON_WIDTH) {
-            active.goBack();
-        } else if (relative < NAV_BUTTON_WIDTH * 2) {
-            active.goForward();
-        } else if (relative < NAV_BUTTON_WIDTH * 3) {
-            active.reload();
+        switch (BrowserLayout.navButtonAt(layout.navBar(), mouseX)) {
+            case 0 -> active.goBack();
+            case 1 -> active.goForward();
+            case 2 -> active.reload();
+            default -> {
+                // Click landed in the gap between navigation buttons.
+            }
+        }
+    }
+
+    private void focusContent() {
+        BrowserTabHandle active = workspace.activeTab();
+        if (addressBar != null) {
+            addressBar.setFocused(false);
+        }
+        setFocused(null);
+        contentFocused = active != null;
+        if (active != null) {
+            active.setFocus(true);
         }
     }
 
@@ -286,10 +298,7 @@ public final class BrowserFocusScreen extends Screen {
         error = null;
         active.load(normalized.get());
         addressBar.setValue(normalized.get());
-        addressBar.setFocused(false);
-        setFocused(null);
-        contentFocused = true;
-        active.setFocus(true);
+        focusContent();
     }
 
     @Override
@@ -361,7 +370,7 @@ public final class BrowserFocusScreen extends Screen {
         if (super.mouseScrolled(mouseX, mouseY, scrollX, scrollY)) {
             return true;
         }
-        if (contentFocused && in(layout.content(), mouseX, mouseY)) {
+        if (in(layout.content(), mouseX, mouseY)) {
             BrowserTabHandle active = workspace.activeTab();
             if (active != null) {
                 active.sendMouseWheel(contentPixelX(mouseX), contentPixelY(mouseY), scrollY, 0);

@@ -23,6 +23,10 @@ public record BrowserLayout(
     public static final int TITLE_HEIGHT = 16;
     public static final int TAB_HEIGHT = 16;
     public static final int NAV_HEIGHT = 20;
+    public static final int NAV_BUTTON_WIDTH = 20;
+    public static final int NAV_BUTTON_GAP = 4;
+    public static final int NAV_PADDING = 2;
+    public static final int NAV_BUTTON_COUNT = 3;
     public static final int ADDRESS_HEIGHT = 16;
     public static final int MIN_WINDOW_WIDTH = 320;
     public static final int MIN_WINDOW_HEIGHT = 220;
@@ -55,5 +59,33 @@ public record BrowserLayout(
         BrowserGeometry grip = new BrowserGeometry(
                 window.right() - RESIZE_GRIP, window.bottom() - RESIZE_GRIP, RESIZE_GRIP, RESIZE_GRIP);
         return new BrowserLayout(window, title, tabs, nav, address, content, grip);
+    }
+
+    /**
+     * Returns the left edge of one navigation button, including the leading padding and gaps.
+     *
+     * @param navBar navigation bar rectangle
+     * @param index zero-based button index
+     * @return left GUI coordinate
+     */
+    public static int navButtonLeft(BrowserGeometry navBar, int index) {
+        return navBar.x() + NAV_PADDING + index * (NAV_BUTTON_WIDTH + NAV_BUTTON_GAP);
+    }
+
+    /**
+     * Returns which navigation button contains a horizontal coordinate.
+     *
+     * @param navBar navigation bar rectangle
+     * @param mouseX GUI x coordinate
+     * @return zero-based button index, or -1 when no button is under the cursor
+     */
+    public static int navButtonAt(BrowserGeometry navBar, double mouseX) {
+        for (int index = 0; index < NAV_BUTTON_COUNT; index++) {
+            int left = navButtonLeft(navBar, index);
+            if (mouseX >= left && mouseX < left + NAV_BUTTON_WIDTH) {
+                return index;
+            }
+        }
+        return -1;
     }
 }

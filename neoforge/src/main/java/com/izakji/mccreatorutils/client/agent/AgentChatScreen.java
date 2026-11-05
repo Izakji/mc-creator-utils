@@ -386,11 +386,7 @@ public final class AgentChatScreen extends Screen {
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
-            if (chatWindow.state().fullscreen()) {
-                toggleFullscreen();
-            } else {
-                onClose();
-            }
+            onClose();
             return true;
         }
         if (input != null
@@ -406,8 +402,8 @@ public final class AgentChatScreen extends Screen {
     public void onClose() {
         if (chatWindow.state().fullscreen()) {
             toggleFullscreen();
-            return;
         }
+        chatWindow.hide();
         super.onClose();
     }
 

@@ -43,7 +43,7 @@ notice instead of failing.
 | `.` | Open or close the Creator Utils panel |
 | `]` | Toggle the floating browser |
 | `B` | Focus the browser and release the cursor |
-| `G` | Open and focus Agent Chat |
+| `` ` `` | Open and focus Agent Chat |
 
 All keybinds are configurable in Minecraft's Controls screen. Agent settings, conversations,
 skills, and instructions live under `config/mccreatorutils/agent/`. API keys stay local and are

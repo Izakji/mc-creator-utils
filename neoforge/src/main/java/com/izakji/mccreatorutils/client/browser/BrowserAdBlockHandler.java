@@ -1,5 +1,6 @@
 package com.izakji.mccreatorutils.client.browser;
 
+import net.minecraft.client.Minecraft;
 import org.cef.browser.CefBrowser;
 import org.cef.browser.CefFrame;
 import org.cef.callback.CefAuthCallback;
@@ -112,7 +113,23 @@ final class BrowserAdBlockHandler implements CefRequestHandler, CefResourceReque
             CefResponse response,
             CefURLRequest.Status status,
             long receivedContentLength) {
-        // No per-request logging; avoid leaking URLs.
+        if (browser == null
+                || frame == null
+                || !frame.isValid()
+                || !frame.isMain()
+                || request == null
+                || request.getResourceType() != CefRequest.ResourceType.RT_MAIN_FRAME) {
+            return;
+        }
+        String requestedUrl = request.getURL();
+        String sourceUrl = requestedUrl == null ? "" : requestedUrl;
+        Minecraft.getInstance().execute(() -> {
+            try {
+                browser.executeJavaScript(BrowserAdBlockCosmetics.script(), sourceUrl, 0);
+            } catch (RuntimeException failure) {
+                // The page may have closed between load completion and injection.
+            }
+        });
     }
 
     @Override

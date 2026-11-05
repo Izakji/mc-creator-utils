@@ -59,6 +59,7 @@ public final class AgentChatWindow implements AgentChatPresenter {
         if (!(minecraft.screen instanceof AgentChatScreen)) {
             minecraft.setScreen(new AgentChatScreen());
         }
+        session.ensureConversation();
     }
 
     @Override

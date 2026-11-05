@@ -31,6 +31,7 @@ public final class BrowserWorkspaceRenderer {
     private static final int LOADING = 0xFFFFD45A;
     static final int TITLE_BUTTON_WIDTH = 18;
     private static final int TITLE_ICON_SIZE = 16;
+    private static final int NAV_LABEL_OFFSET = 7;
     private static final ResourceLocation CLOSE_ICON =
             ResourceLocation.fromNamespaceAndPath(McCreatorUtils.MOD_ID, "textures/gui/close.png");
     private static final ResourceLocation MAXIMIZE_ICON =
@@ -159,13 +160,21 @@ public final class BrowserWorkspaceRenderer {
                 layout.navBar().right(),
                 layout.navBar().bottom(),
                 NAV_BACKGROUND);
+        int backX = BrowserLayout.navButtonLeft(layout.navBar(), 0);
+        int forwardX = BrowserLayout.navButtonLeft(layout.navBar(), 1);
+        int reloadX = BrowserLayout.navButtonLeft(layout.navBar(), 2);
         graphics.drawString(
-                minecraft.font, "<", layout.navBar().x() + 6, layout.navBar().y() + 6, TEXT, false);
+                minecraft.font, "<", backX + NAV_LABEL_OFFSET, layout.navBar().y() + 6, TEXT, false);
         graphics.drawString(
-                minecraft.font, ">", layout.navBar().x() + 26, layout.navBar().y() + 6, TEXT, false);
+                minecraft.font,
+                ">",
+                forwardX + NAV_LABEL_OFFSET,
+                layout.navBar().y() + 6,
+                TEXT,
+                false);
         graphics.blit(
                 RELOAD_ICON,
-                layout.navBar().x() + 42,
+                reloadX + (BrowserLayout.NAV_BUTTON_WIDTH - TITLE_ICON_SIZE) / 2,
                 layout.navBar().y() + 2,
                 0.0F,
                 0.0F,

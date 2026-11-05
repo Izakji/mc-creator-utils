@@ -151,6 +151,45 @@ class AgentChatSessionTest {
     }
 
     @Test
+    void ensureConversationOpensTheMostRecentlyUpdatedConversation() {
+        FakePort port = FakePort.withProfile();
+        Conversation older = port.conversations.create("Older", "openai");
+        port.conversations.save(older.withTitle("Older", Instant.parse("2024-01-01T00:00:00Z")));
+        Conversation newer = port.conversations.create("Newer", "openai");
+        port.conversations.save(newer.withTitle("Newer", Instant.parse("2025-01-01T00:00:00Z")));
+        AgentChatSession session = new AgentChatSession(port, Runnable::run);
+        session.presenter(new FakePresenter());
+
+        assertTrue(session.ensureConversation());
+        assertEquals(newer.id(), session.conversationId());
+        assertTrue(session.model().entries().isEmpty());
+    }
+
+    @Test
+    void ensureConversationCreatesOneWhenNoneExist() {
+        FakePort port = FakePort.withProfile();
+        AgentChatSession session = new AgentChatSession(port, Runnable::run);
+        session.presenter(new FakePresenter());
+
+        assertTrue(session.ensureConversation());
+        assertTrue(session.conversation().isPresent());
+        assertEquals("openai", session.profileId());
+        assertEquals(1, port.conversations.list().size());
+    }
+
+    @Test
+    void ensureConversationKeepsAnAlreadyOpenConversation() {
+        FakePort port = FakePort.withProfile();
+        String conversationId = port.storeConversation("openai");
+        AgentChatSession session = new AgentChatSession(port, Runnable::run);
+        session.presenter(new FakePresenter());
+        assertTrue(session.open(conversationId));
+
+        assertFalse(session.ensureConversation());
+        assertEquals(conversationId, session.conversationId());
+    }
+
+    @Test
     void lateCallbacksAfterLogoutAreIgnored() {
         FakePort port = FakePort.withProfile();
         AgentChatSession session = new AgentChatSession(port, Runnable::run);

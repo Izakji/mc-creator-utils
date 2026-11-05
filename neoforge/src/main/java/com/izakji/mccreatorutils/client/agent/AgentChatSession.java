@@ -6,6 +6,7 @@ import com.izakji.agent.api.ToolResult;
 import com.izakji.agent.config.AgentSettings;
 import com.izakji.agent.config.ProviderProfile;
 import com.izakji.agent.conversation.Conversation;
+import com.izakji.agent.conversation.ConversationSummary;
 import com.izakji.agent.runtime.ApprovalChoice;
 import com.izakji.agent.runtime.ApprovalRequest;
 import com.izakji.agent.runtime.TurnHandle;
@@ -15,6 +16,7 @@ import com.izakji.agent.runtime.TurnResult;
 import com.izakji.mccreatorutils.agent.AgentChatTitles;
 import java.net.URI;
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Executor;
@@ -163,6 +165,68 @@ public final class AgentChatSession {
                 } else {
                     applyConversation(loaded.get());
                 }
+                presenter.refresh();
+            });
+        });
+        return true;
+    }
+
+    /**
+     * Opens the most recently updated conversation, or creates one when none exists.
+     *
+     * <p>Does nothing when a conversation is already open or an open/create request is in flight,
+     * so the keybind and the Agent panel always share the same session.
+     *
+     * @return true when a load or creation was scheduled
+     */
+    public boolean ensureConversation() {
+        if (opening || busy || conversation != null) {
+            return false;
+        }
+        long generation = ++turnGeneration;
+        opening = true;
+        model.clear();
+        presenter.refresh();
+        ioExecutor.execute(() -> {
+            ConversationSummary latest;
+            try {
+                latest = port.conversations().list().stream()
+                        .max(Comparator.comparing(ConversationSummary::updated))
+                        .orElse(null);
+            } catch (RuntimeException failure) {
+                uiExecutor.execute(() -> failOpen(generation, "Conversations could not be loaded."));
+                return;
+            }
+            if (latest != null) {
+                uiExecutor.execute(() -> {
+                    if (generation != turnGeneration) {
+                        return;
+                    }
+                    opening = false;
+                    open(latest.id());
+                });
+                return;
+            }
+            String selected = port.settings().defaultProfileId();
+            if (!hasProfile(selected)) {
+                uiExecutor.execute(
+                        () -> failOpen(generation, "Add a provider profile in the Agent panel before chatting."));
+                return;
+            }
+            Conversation created;
+            try {
+                created = port.conversations().create("New Chat", selected);
+                port.conversations().save(created);
+            } catch (RuntimeException failure) {
+                uiExecutor.execute(() -> failOpen(generation, "Could not create the conversation."));
+                return;
+            }
+            uiExecutor.execute(() -> {
+                if (generation != turnGeneration) {
+                    return;
+                }
+                opening = false;
+                applyConversation(created);
                 presenter.refresh();
             });
         });
