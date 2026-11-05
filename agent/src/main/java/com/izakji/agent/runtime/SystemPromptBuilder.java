@@ -29,7 +29,10 @@ public final class SystemPromptBuilder {
             prompt.append(
                     "For exact JVM, garbage collector, OS, or F3 debug-screen data, call debug_info instead of guessing.\n");
             prompt.append(
-                    "Use list_commands to discover available vanilla and modded commands, and run_command to execute one. Server permissions still apply.\n\n");
+                    "Use list_commands to discover available vanilla and modded commands, and run_command to execute one. Server permissions still apply.\n");
+            prompt.append(
+                    "Use curseforge_search, curseforge_mod, curseforge_files, and curseforge_file for CurseForge mod metadata. "
+                            + "They require a configured API key.\n\n");
         } else {
             prompt.append("Tool calling is disabled for this profile; answer from the provided context only.\n\n");
         }

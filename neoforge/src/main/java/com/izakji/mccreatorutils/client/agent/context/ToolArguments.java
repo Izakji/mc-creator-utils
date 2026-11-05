@@ -24,6 +24,22 @@ final class ToolArguments {
         return primitive.isString() ? primitive.getAsString() : fallback;
     }
 
+    static boolean bool(JsonObject arguments, String name, boolean fallback) {
+        if (arguments == null) {
+            return fallback;
+        }
+        JsonElement value = arguments.get(name);
+        if (value == null || !value.isJsonPrimitive()) {
+            return fallback;
+        }
+        JsonPrimitive primitive = value.getAsJsonPrimitive();
+        try {
+            return primitive.isBoolean() ? primitive.getAsBoolean() : Boolean.parseBoolean(primitive.getAsString());
+        } catch (UnsupportedOperationException invalid) {
+            return fallback;
+        }
+    }
+
     static int integer(JsonObject arguments, String name, int fallback) {
         if (arguments == null) {
             return fallback;

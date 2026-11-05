@@ -28,6 +28,12 @@ import com.izakji.agent.skill.SkillRegistry;
 import com.izakji.mccreatorutils.client.agent.context.BlockInfoTool;
 import com.izakji.mccreatorutils.client.agent.context.ClientLogReader;
 import com.izakji.mccreatorutils.client.agent.context.CommandRiskClassifier;
+import com.izakji.mccreatorutils.client.agent.context.CurseForgeClient;
+import com.izakji.mccreatorutils.client.agent.context.CurseForgeFileTool;
+import com.izakji.mccreatorutils.client.agent.context.CurseForgeFilesTool;
+import com.izakji.mccreatorutils.client.agent.context.CurseForgeKey;
+import com.izakji.mccreatorutils.client.agent.context.CurseForgeModTool;
+import com.izakji.mccreatorutils.client.agent.context.CurseForgeSearchTool;
 import com.izakji.mccreatorutils.client.agent.context.DebugInfoTool;
 import com.izakji.mccreatorutils.client.agent.context.EntityInfoTool;
 import com.izakji.mccreatorutils.client.agent.context.GameSnapshotProvider;
@@ -74,6 +80,7 @@ public final class AgentClientService implements AutoCloseable, AgentTurnPort {
     private final GameSnapshotProvider gameSnapshotProvider = new GameSnapshotProvider();
     private final ExecutorService ioExecutor = Executors.newSingleThreadExecutor(daemonThreads("io"));
     private final ClientLogReader logReader;
+    private final CurseForgeClient curseForgeClient;
     private final Path gameDirectory;
     private AgentSettings settings;
     private List<Skill> skills = List.of();
@@ -86,6 +93,7 @@ public final class AgentClientService implements AutoCloseable, AgentTurnPort {
         Path parent = configDir.toAbsolutePath().getParent();
         this.gameDirectory = parent == null ? configDir.toAbsolutePath() : parent;
         this.logReader = new ClientLogReader(gameDirectory.resolve("logs").resolve("latest.log"), ioExecutor);
+        this.curseForgeClient = new CurseForgeClient(ioExecutor, () -> CurseForgeKey.current());
         try {
             paths.ensureDirectories();
         } catch (IOException failure) {
@@ -373,6 +381,10 @@ public final class AgentClientService implements AutoCloseable, AgentTurnPort {
         tools.register(new ScreenshotTool(gameDirectory, ioExecutor));
         tools.register(new ListCommandsTool());
         tools.register(new RunCommandTool());
+        tools.register(new CurseForgeSearchTool(curseForgeClient));
+        tools.register(new CurseForgeModTool(curseForgeClient));
+        tools.register(new CurseForgeFilesTool(curseForgeClient));
+        tools.register(new CurseForgeFileTool(curseForgeClient));
         tools.register(new ModListTool());
         tools.register(new InventoryTool());
         tools.register(new BlockInfoTool());
