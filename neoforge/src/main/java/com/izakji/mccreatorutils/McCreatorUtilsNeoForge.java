@@ -1,5 +1,6 @@
 package com.izakji.mccreatorutils;
 
+import com.izakji.mccreatorutils.client.browser.BrowserConfig;
 import com.izakji.mccreatorutils.client.explore.ExploreModsConfig;
 import com.izakji.mccreatorutils.locate.LocateConfig;
 import com.izakji.mccreatorutils.locate.LocateLifecycle;
@@ -18,6 +19,7 @@ public final class McCreatorUtilsNeoForge {
     public McCreatorUtilsNeoForge(IEventBus modEventBus, ModContainer modContainer) {
         modContainer.registerConfig(ModConfig.Type.SERVER, LocateConfig.SPEC);
         modContainer.registerConfig(ModConfig.Type.CLIENT, ExploreModsConfig.SPEC);
+        modContainer.registerConfig(ModConfig.Type.CLIENT, BrowserConfig.SPEC, "mccreatorutils-browser-client.toml");
         modEventBus.addListener(LocateLifecycle::onConfigReloading);
     }
 }
